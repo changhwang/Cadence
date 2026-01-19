@@ -21,6 +21,33 @@ const ROUTINE_TEMPLATES = {
     "Cardio & Core": {
         title: "유산소 & 코어 (Cardio & Core)",
         exercises: ["러닝 (Running)", "플랭크 (Plank)", "크런치 (Crunch)"]
+    },
+    // V28: New Routines (User Request)
+    "Upper Body Split": {
+        title: "2분할 상체 (2-Day Split Upper)",
+        exercises: [
+            "행잉 니 레이즈 (Hanging Knee Raise)",
+            "슬로우 푸시업 (Slow Push-up)",
+            "스미스 머신 벤치 (Smith Machine Bench)",
+            "시티드 로우 (Seated Row)",
+            "어시스트 풀업 (Assist Pull-up)",
+            "스탠딩 덤벨 숄더 프레스 (Standing DB Shoulder Press)",
+            "리버스 펙덱 플라이 (Reverse Pec Deck Fly)",
+            "케이블 컬 (Cable Curl)",
+            "트라이셉 푸시다운 (Tricep Pushdown)"
+        ]
+    },
+    "Lower Body Split": {
+        title: "2분할 하체 (2-Day Split Lower)",
+        exercises: [
+            "크런치 (Crunch)",
+            "플랭크 (Plank)",
+            "레그 프레스 (Leg Press)",
+            "루마니안 데드리프트 (Romanian Deadlift)",
+            "스미스 머신 스쿼트 (Smith Machine Squat)",
+            "레그 익스텐션 (Leg Extension)",
+            "레그 컬 (Leg Curl)"
+        ]
     }
 };
 
@@ -54,6 +81,13 @@ window.EXERCISE_DB = {
         category: "Chest", type: "Bodyweight",
         muscles: { primary: ["chest"], secondary: ["triceps", "front_delts"], muscleGroup: "chest" },
         rest: 60, target: "Max", sets: 3
+    },
+    "슬로우 푸시업 (Slow Push-up)": {
+        name_ko: "슬로우 푸시업", name_en: "Slow Push-up",
+        searchTerms: ["슬로우", "푸시업", "slow", "pushup"],
+        category: "Chest", type: "Bodyweight",
+        muscles: { primary: ["chest"], secondary: ["triceps", "core"], muscleGroup: "chest" },
+        rest: 60, target: "Max", sets: 2
     },
     "케이블 플라이 (Cable Fly)": {
         name_ko: "케이블 플라이", name_en: "Cable Fly",
@@ -134,6 +168,13 @@ window.EXERCISE_DB = {
         muscles: { primary: ["lats"], secondary: ["biceps", "rear_delts"], muscleGroup: "back" },
         rest: 150, target: "Max", sets: 3
     },
+    "어시스트 풀업 (Assist Pull-up)": {
+        name_ko: "어시스트 풀업", name_en: "Assist Pull-up",
+        searchTerms: ["어시스트", "풀업", "assist", "pullup", "machine"],
+        category: "Back", type: "Compound",
+        muscles: { primary: ["lats"], secondary: ["biceps", "rear_delts"], muscleGroup: "back" },
+        rest: 120, target: "8-12", sets: 4
+    },
     "친업 (Chin-up)": {
         name_ko: "친업", name_en: "Chin-up",
         searchTerms: ["친업", "chin", "up", "chinup"],
@@ -182,6 +223,13 @@ window.EXERCISE_DB = {
         category: "Back", type: "Isolation",
         muscles: { primary: ["rear_delts", "upper_back"], secondary: ["traps"], muscleGroup: "back" },
         rest: 75, target: "12-15", sets: 3
+    },
+    "리버스 펙덱 플라이 (Reverse Pec Deck Fly)": {
+        name_ko: "리버스 펙덱 플라이", name_en: "Reverse Pec Deck Fly",
+        searchTerms: ["리버스", "펙덱", "reverse", "pec", "deck", "rear"],
+        category: "Back", type: "Isolation",
+        muscles: { primary: ["rear_delts"], secondary: ["upper_back"], muscleGroup: "back" },
+        rest: 75, target: "12-15", sets: 4
     },
     "T-바 로우 (T-Bar Row)": {
         name_ko: "T-바 로우", name_en: "T-Bar Row",
@@ -241,6 +289,13 @@ window.EXERCISE_DB = {
         muscles: { primary: ["front_delts", "side_delts"], secondary: ["triceps"], muscleGroup: "shoulder" },
         rest: 120, target: "8-12", sets: 3
     },
+    "스탠딩 덤벨 숄더 프레스 (Standing DB Shoulder Press)": {
+        name_ko: "스탠딩 덤벨 숄더 프레스", name_en: "Standing DB Shoulder Press",
+        searchTerms: ["스탠딩", "덤벨", "숄더", "standing", "dumbbell", "shoulder"],
+        category: "Shoulders", type: "Compound",
+        muscles: { primary: ["front_delts", "side_delts", "core"], secondary: ["triceps"], muscleGroup: "shoulder" },
+        rest: 120, target: "8-12", sets: 3
+    },
     "프론트 레이즈 (Front Raise)": {
         name_ko: "프론트 레이즈", name_en: "Front Raise",
         searchTerms: ["프론트", "레이즈", "front", "raise"],
@@ -270,6 +325,13 @@ window.EXERCISE_DB = {
         category: "Arms", type: "Isolation",
         muscles: { primary: ["biceps", "forearms"], secondary: [], muscleGroup: "arm" },
         rest: 75, target: "10-15", sets: 3
+    },
+    "케이블 컬 (Cable Curl)": {
+        name_ko: "케이블 컬", name_en: "Cable Curl",
+        searchTerms: ["케이블", "컬", "cable", "curl"],
+        category: "Arms", type: "Isolation",
+        muscles: { primary: ["biceps"], secondary: [], muscleGroup: "arm" },
+        rest: 75, target: "10-15", sets: 4
     },
 
     // ===== TRICEPS (삼두) - 5 exercises =====
@@ -302,6 +364,13 @@ window.EXERCISE_DB = {
         category: "Legs", type: "Compound",
         muscles: { primary: ["quads", "glutes"], secondary: ["hamstrings", "core"], muscleGroup: "leg" },
         rest: 180, target: "5-8", sets: 4
+    },
+    "스미스 머신 스쿼트 (Smith Machine Squat)": {
+        name_ko: "스미스 머신 스쿼트", name_en: "Smith Machine Squat",
+        searchTerms: ["스미스", "스쿼트", "smith", "squat"],
+        category: "Legs", type: "Compound",
+        muscles: { primary: ["quads", "glutes"], secondary: ["hamstrings"], muscleGroup: "leg" },
+        rest: 150, target: "8-12", sets: 4
     },
     "레그 프레스 (Leg Press)": {
         name_ko: "레그 프레스", name_en: "Leg Press",
@@ -371,6 +440,13 @@ window.EXERCISE_DB = {
     "행잉 레그 레이즈 (Hanging Leg Raise)": {
         name_ko: "행잉 레그 레이즈", name_en: "Hanging Leg Raise",
         searchTerms: ["행잉", "레그", "레이즈", "hanging", "leg", "raise"],
+        category: "Core", type: "Compound",
+        muscles: { primary: ["abs", "hip_flexors"], secondary: [], muscleGroup: "core" },
+        rest: 75, target: "10-15", sets: 3
+    },
+    "행잉 니 레이즈 (Hanging Knee Raise)": {
+        name_ko: "행잉 니 레이즈", name_en: "Hanging Knee Raise",
+        searchTerms: ["행잉", "니", "레이즈", "hanging", "knee", "raise"],
         category: "Core", type: "Compound",
         muscles: { primary: ["abs", "hip_flexors"], secondary: [], muscleGroup: "core" },
         rest: 75, target: "10-15", sets: 3
