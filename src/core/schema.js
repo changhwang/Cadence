@@ -7,6 +7,7 @@ export const createDefaultUserDb = () => ({
     workout: {},
     diet: {},
     body: {},
+    routines: [],
     goals: {
         timeline: [],
         overrideByDate: {}
@@ -20,6 +21,7 @@ export const createDefaultUserDb = () => ({
     },
     meta: {
         selectedDate: {
+            dashboard: nowIso().slice(0, 10),
             workout: nowIso().slice(0, 10),
             diet: nowIso().slice(0, 10),
             body: nowIso().slice(0, 10)

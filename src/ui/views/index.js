@@ -1,9 +1,11 @@
+import { renderDashboardView } from './DashboardView.js';
 import { renderWorkoutView } from './WorkoutView.js';
 import { renderDietView } from './DietView.js';
 import { renderBodyView } from './BodyView.js';
 import { renderSettingsView } from './SettingsView.js';
 
 const VIEW_RENDERERS = {
+    dashboard: renderDashboardView,
     workout: renderWorkoutView,
     diet: renderDietView,
     body: renderBodyView,

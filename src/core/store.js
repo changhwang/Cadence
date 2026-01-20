@@ -3,7 +3,8 @@ import { DEFAULT_ROUTE } from './constants.js';
 const initialUiState = {
     route: DEFAULT_ROUTE,
     modal: { open: false, type: null, payload: null },
-    saveStatus: { ok: true, lastError: null, lastSavedAt: null }
+    saveStatus: { ok: true, lastError: null, lastSavedAt: null },
+    workoutManageMode: false
 };
 
 const createStore = (initialState) => {
@@ -52,6 +53,14 @@ const reducer = (state, action) => {
             return { ...state, userdb: action.payload };
         case 'UPDATE_SETTINGS':
             return { ...state, settings: action.payload };
+        case 'TOGGLE_WORKOUT_MANAGE':
+            return {
+                ...state,
+                ui: {
+                    ...state.ui,
+                    workoutManageMode: !state.ui.workoutManageMode
+                }
+            };
         default:
             return state;
     }

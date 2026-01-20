@@ -197,6 +197,71 @@ h1 {
     margin: 10px 0 20px 0;
 }
 
+.dashboard-summary .row {
+    align-items: center;
+}
+
+.nutrition-donut {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--ios-green) 0%,
+        var(--ios-green) var(--p-protein, 0%),
+        var(--ios-blue) var(--p-protein, 0%),
+        var(--ios-blue) calc(var(--p-protein, 0%) + var(--p-carb, 0%)),
+        var(--ios-orange) calc(var(--p-protein, 0%) + var(--p-carb, 0%)),
+        var(--ios-orange) calc(var(--p-protein, 0%) + var(--p-carb, 0%) + var(--p-fat, 0%)),
+        #E5E5EA calc(var(--p-protein, 0%) + var(--p-carb, 0%) + var(--p-fat, 0%))
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.nutrition-donut .donut-center {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--ios-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.donut-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.donut {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(var(--ios-blue) calc(var(--percent, 0) * 1%), #E5E5EA 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.donut-center {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--ios-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
 h2 {
     font-size: 22px;
     font-weight: 700;
@@ -574,6 +639,54 @@ label.input-label input[type="checkbox"] {
 .list-actions .btn {
     padding: 5px 8px;
     font-size: 12px;
+}
+
+.list-actions .badge {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.btn-danger-text {
+    color: var(--ios-red);
+}
+
+.workout-select {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ios-red);
+}
+
+.badge-ok {
+    background: rgba(52, 199, 89, 0.15);
+    color: var(--ios-green);
+}
+
+.badge-warn {
+    background: rgba(255, 149, 0, 0.18);
+    color: var(--ios-orange);
+}
+
+.progress-row {
+    display: grid;
+    gap: 6px;
+    margin: 4px 0 8px;
+}
+
+.progress-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #E5E5EA;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: calc(var(--percent, 0) * 1%);
+    background: var(--ios-blue);
+    border-radius: 999px;
 }
 
 .row {

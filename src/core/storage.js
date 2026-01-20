@@ -77,7 +77,15 @@ export const loadUserDb = () => {
                 ...((parsed.goals || {}).overrideByDate || {})
             }
         },
-        meta: { ...defaults.meta, ...(parsed.meta || {}) }
+        routines: Array.isArray(parsed.routines) ? parsed.routines : defaults.routines,
+        meta: {
+            ...defaults.meta,
+            ...(parsed.meta || {}),
+            selectedDate: {
+                ...defaults.meta.selectedDate,
+                ...((parsed.meta || {}).selectedDate || {})
+            }
+        }
     };
 };
 

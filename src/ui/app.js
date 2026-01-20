@@ -4,8 +4,12 @@ import { buildExportPayload, downloadJson, parseImportPayload } from '../service
 import { shiftDate } from './components/DateBar.js';
 import { calcAge, parseDateInput, todayIso } from '../utils/date.js';
 import { closeModal, openModal } from './components/Modal.js';
+import { openRestTimerModal } from './components/RestTimer.js';
+import { openWorkoutDetailModal } from './components/WorkoutDetailModal.js';
 import { el } from '../utils/dom.js';
 import { ROUTINE_TEMPLATES } from '../data/routines.js';
+import { EXERCISE_DB } from '../data/exercises.js';
+import { FOOD_DB } from '../data/foods.js';
 import { computeBaseTargets } from '../services/nutrition/targetEngine.js';
 import { addGoalTimelineEntry, clearGoalOverride, setGoalOverride } from '../services/goals/goalService.js';
 import { selectGoalForDate, selectSelectedDate } from '../selectors/goalSelectors.js';
@@ -14,13 +18,14 @@ const buildDefaultSets = (log) => {
     const count = Math.max(Number(log.sets || 0), 1);
     const reps = Number(log.reps || 0);
     const weight = Number(log.weight || 0);
-    return Array.from({ length: count }, () => ({ reps, weight }));
+    return Array.from({ length: count }, () => ({ reps, weight, completed: false }));
 };
 
-const createWorkoutLog = ({ name, sets, reps, weight, unit }) => {
+const createWorkoutLog = ({ name, sets, reps, weight, unit, exerciseId }) => {
     const nextLog = {
         id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
         name,
+        exerciseId,
         sets,
         reps,
         weight: Number.isNaN(weight) ? 0 : weight,
@@ -49,26 +54,65 @@ const appendWorkoutLogs = (store, logs) => {
     });
 };
 
-const openWorkoutAddModal = (store) => {
+const getLabelByLang = (labels, lang) => {
+    if (!labels) return '';
+    if (labels[lang]) return labels[lang];
+    return labels.ko || labels.en || Object.values(labels)[0] || '';
+};
+
+const openWorkoutAddModal = (store, options = {}) => {
+    const settings = store.getState().settings;
+    const preferredUnit = settings.units?.workout || 'kg';
     const body = el(
         'div',
         { className: 'stack-form' },
-        el('input', { name: 'exerciseName', type: 'text', placeholder: '운동명' }),
+        el(
+            'label',
+            { className: 'input-label' },
+            '운동 이름',
+            el('input', {
+                name: 'exerciseName',
+                type: 'text',
+                placeholder: '운동명',
+                value: options.initialName || ''
+            })
+        ),
+        el('input', { name: 'exerciseId', type: 'hidden', value: options.exerciseId || '' }),
         el(
             'div',
             { className: 'row row-gap' },
-            el('input', { name: 'sets', type: 'number', min: '1', value: 3 }),
-            el('input', { name: 'reps', type: 'number', min: '1', value: 10 })
+            el(
+                'label',
+                { className: 'input-label' },
+                '세트 수',
+                el('input', { name: 'sets', type: 'number', min: '1', value: 3 })
+            ),
+            el(
+                'label',
+                { className: 'input-label' },
+                '횟수(1세트)',
+                el('input', { name: 'reps', type: 'number', min: '1', value: 10 })
+            )
         ),
         el(
             'div',
             { className: 'row row-gap' },
-            el('input', { name: 'weight', type: 'number', min: '0', value: 0 }),
             el(
-                'select',
-                { name: 'unit' },
-                el('option', { value: 'kg' }, 'kg'),
-                el('option', { value: 'lb' }, 'lb')
+                'label',
+                { className: 'input-label' },
+                '중량',
+                el('input', { name: 'weight', type: 'number', min: '0', value: 0 })
+            ),
+            el(
+                'label',
+                { className: 'input-label' },
+                '단위',
+                el(
+                    'select',
+                    { name: 'unit' },
+                    el('option', { value: 'kg', selected: preferredUnit === 'kg' }, 'kg'),
+                    el('option', { value: 'lb', selected: preferredUnit === 'lb' }, 'lb')
+                )
             )
         )
     );
@@ -82,48 +126,815 @@ const openWorkoutAddModal = (store) => {
             const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
             const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
             const unit = form.querySelector('[name="unit"]')?.value || 'kg';
+            const exerciseId = form.querySelector('[name="exerciseId"]')?.value || '';
             if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
-            const log = createWorkoutLog({ name, sets, reps, weight, unit });
+            const log = createWorkoutLog({ name, sets, reps, weight, unit, exerciseId });
             appendWorkoutLogs(store, [log]);
             return true;
         }
     });
 };
 
-const openWorkoutRoutineModal = (store) => {
+const buildRoutineForm = (store, routine) => {
+    const state = store.getState();
+    const lang = state.settings.lang || 'ko';
+    const defaults = routine?.defaults || { sets: 3, reps: 10, weight: 0, unit: 'kg' };
+    const titleInput = el('input', { type: 'text', placeholder: '루틴 이름', value: routine?.title || '' });
+    const categorySelect = el(
+        'select',
+        {},
+        el('option', { value: 'strength', selected: routine?.category === 'strength' }, '스트렝스'),
+        el('option', { value: 'hypertrophy', selected: routine?.category === 'hypertrophy' }, '근비대'),
+        el('option', { value: 'cardio', selected: routine?.category === 'cardio' }, '유산소'),
+        el('option', { value: 'full_body', selected: routine?.category === 'full_body' }, '전신'),
+        el('option', { value: 'mobility', selected: routine?.category === 'mobility' }, '유연성')
+    );
+    const tagsInput = el('input', {
+        type: 'text',
+        placeholder: '태그 (쉼표로 구분)',
+        value: (routine?.tags || []).join(', ')
+    });
+    const searchInput = el('input', { type: 'text', placeholder: '운동 검색' });
     const list = el('div', { className: 'list-group' });
-    Object.entries(ROUTINE_TEMPLATES).forEach(([key, routine]) => {
-        const item = el(
+    const selectedList = el('div', { className: 'list-group' });
+    const selectedOrder = Array.isArray(routine?.exerciseIds) ? [...routine.exerciseIds] : [];
+    const setsInput = el('input', { type: 'number', min: '1', value: defaults.sets });
+    const repsInput = el('input', { type: 'number', min: '1', value: defaults.reps });
+    const weightInput = el('input', { type: 'number', min: '0', value: defaults.weight });
+    const unitSelect = el(
+        'select',
+        {},
+        el('option', { value: 'kg', selected: defaults.unit === 'kg' }, 'kg'),
+        el('option', { value: 'lb', selected: defaults.unit === 'lb' }, 'lb')
+    );
+
+    const renderSelectedList = () => {
+        selectedList.textContent = '';
+        if (selectedOrder.length === 0) {
+            selectedList.appendChild(el('p', { className: 'empty-state' }, '선택된 운동이 없습니다.'));
+            return;
+        }
+        selectedOrder.forEach((id, index) => {
+            const exercise = EXERCISE_DB.find((item) => item.id === id);
+            const label = exercise ? getLabelByLang(exercise.labels, lang) : id;
+            selectedList.appendChild(
+                el(
+                    'div',
+                    { className: 'list-item', dataset: { id } },
+                    el('div', { className: 'list-title' }, label),
+                    el(
+                        'div',
+                        { className: 'list-actions' },
+                        el(
+                            'button',
+                            {
+                                type: 'button',
+                                className: 'btn btn-secondary btn-sm',
+                                disabled: index === 0,
+                                dataset: { action: 'routine.move', dir: 'up', id }
+                            },
+                            '위'
+                        ),
+                        el(
+                            'button',
+                            {
+                                type: 'button',
+                                className: 'btn btn-secondary btn-sm',
+                                disabled: index === selectedOrder.length - 1,
+                                dataset: { action: 'routine.move', dir: 'down', id }
+                            },
+                            '아래'
+                        )
+                    )
+                )
+            );
+        });
+    };
+
+    const renderList = (query = '') => {
+        const lowered = query.trim().toLowerCase();
+        list.textContent = '';
+        EXERCISE_DB.filter((item) => {
+            if (!lowered) return true;
+            const label = getLabelByLang(item.labels, lang).toLowerCase();
+            return label.includes(lowered) || item.id.includes(lowered);
+        }).forEach((item) => {
+            const label = getLabelByLang(item.labels, lang);
+            const checkbox = el('input', {
+                type: 'checkbox',
+                value: item.id,
+                checked: selectedOrder.includes(item.id)
+            });
+            list.appendChild(
+                el(
+                    'label',
+                    { className: 'list-item' },
+                    el('div', { className: 'list-title' }, label),
+                    el('div', { className: 'list-actions' }, checkbox)
+                )
+            );
+        });
+    };
+
+    renderList('');
+    renderSelectedList();
+    searchInput.addEventListener('input', (event) => renderList(event.target.value));
+    list.addEventListener('change', (event) => {
+        const input = event.target.closest('input[type="checkbox"]');
+        if (!input) return;
+        const id = input.value;
+        if (!id) return;
+        if (input.checked) {
+            if (!selectedOrder.includes(id)) selectedOrder.push(id);
+        } else {
+            const index = selectedOrder.indexOf(id);
+            if (index >= 0) selectedOrder.splice(index, 1);
+        }
+        renderSelectedList();
+    });
+    selectedList.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('[data-action="routine.move"]');
+        if (!actionEl) return;
+        const id = actionEl.dataset.id;
+        const dir = actionEl.dataset.dir;
+        const index = selectedOrder.indexOf(id);
+        if (index < 0) return;
+        const nextIndex = dir === 'up' ? index - 1 : index + 1;
+        if (nextIndex < 0 || nextIndex >= selectedOrder.length) return;
+        const [item] = selectedOrder.splice(index, 1);
+        selectedOrder.splice(nextIndex, 0, item);
+        renderSelectedList();
+    });
+
+    return {
+        body: el(
             'div',
-            { className: 'list-item', dataset: { action: 'routine.select', key } },
+            { className: 'stack-form' },
+            titleInput,
+            categorySelect,
+            tagsInput,
             el(
                 'div',
-                {},
-                el('div', { className: 'list-title' }, routine.title),
-                el('div', { className: 'list-subtitle' }, `${routine.exercises.length}개 운동`)
+                { className: 'row row-gap' },
+                el('label', { className: 'input-label' }, '기본 세트', setsInput),
+                el('label', { className: 'input-label' }, '기본 횟수', repsInput)
             ),
-            el('div', { className: 'list-actions' }, el('span', { className: 'badge' }, '추가'))
-        );
-        list.appendChild(item);
+            el(
+                'div',
+                { className: 'row row-gap' },
+                el('label', { className: 'input-label' }, '기본 중량', weightInput),
+                el('label', { className: 'input-label' }, '단위', unitSelect)
+            ),
+            el('div', { className: 'list-subtitle' }, '선택된 운동'),
+            selectedList,
+            searchInput,
+            list
+        ),
+        getValues: (form) => {
+            const title = titleInput.value.trim();
+            const selected = [...selectedOrder];
+            const tags = tagsInput.value
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean);
+            const defaults = {
+                sets: Number(setsInput.value || 3),
+                reps: Number(repsInput.value || 10),
+                weight: Number(weightInput.value || 0),
+                unit: unitSelect.value || 'kg'
+            };
+            return { title, selected, defaults, category: categorySelect.value, tags };
+        }
+    };
+};
+
+const openRoutineCreateModal = (store) => {
+    const { body, getValues } = buildRoutineForm(store);
+    openModal({
+        title: '내 루틴 추가',
+        body,
+        submitLabel: '저장',
+        onSubmit: (form) => {
+            const { title, selected, defaults, category, tags } = getValues(form);
+            if (!title || selected.length === 0) {
+                window.alert('루틴 이름과 운동을 선택해 주세요.');
+                return false;
+            }
+            updateUserDb(store, (nextDb) => {
+                const routines = Array.isArray(nextDb.routines) ? nextDb.routines : [];
+                routines.push({
+                    id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                    title,
+                    exerciseIds: selected,
+                    defaults,
+                    category,
+                    tags,
+                    createdAt: Date.now()
+                });
+                nextDb.routines = routines;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+            return true;
+        }
     });
+};
+
+const openRoutineEditModal = (store, routine) => {
+    const { body, getValues } = buildRoutineForm(store, routine);
+    openModal({
+        title: '루틴 수정',
+        body,
+        submitLabel: '저장',
+        onSubmit: (form) => {
+            const { title, selected, defaults, category, tags } = getValues(form);
+            if (!title || selected.length === 0) {
+                window.alert('루틴 이름과 운동을 선택해 주세요.');
+                return false;
+            }
+            updateUserDb(store, (nextDb) => {
+                const routines = Array.isArray(nextDb.routines) ? nextDb.routines : [];
+                const target = routines.find((item) => item.id === routine.id);
+                if (!target) return;
+                target.title = title;
+                target.exerciseIds = selected;
+                target.defaults = defaults;
+                target.category = category;
+                target.tags = tags;
+                nextDb.routines = routines;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+            return true;
+        }
+    });
+};
+
+const openWorkoutRoutineModal = (store) => {
+    const state = store.getState();
+    const lang = state.settings.lang || 'ko';
+    const list = el('div', { className: 'list-group' });
+    const userRoutines = Array.isArray(state.userdb?.routines) ? state.userdb.routines : [];
+    const typeSelect = el(
+        'select',
+        { name: 'routineType' },
+        el('option', { value: 'all' }, '전체 루틴'),
+        el('option', { value: 'preset' }, '프리셋'),
+        el('option', { value: 'user' }, '내 루틴')
+    );
+    const categorySelect = el(
+        'select',
+        { name: 'routineCategory' },
+        el('option', { value: 'all' }, '카테고리 전체'),
+        el('option', { value: 'strength' }, '스트렝스'),
+        el('option', { value: 'hypertrophy' }, '근비대'),
+        el('option', { value: 'cardio' }, '유산소'),
+        el('option', { value: 'full_body' }, '전신'),
+        el('option', { value: 'mobility' }, '모빌리티')
+    );
+    const searchInput = el('input', { type: 'text', placeholder: '루틴 검색' });
+
+    const formatDefaults = (defaults) => {
+        if (!defaults) return '3x10';
+        return `${defaults.sets || 3}x${defaults.reps || 10}`;
+    };
+    const categoryLabel = (value) => {
+        const map = {
+            strength: '스트렝스',
+            hypertrophy: '근비대',
+            cardio: '유산소',
+            full_body: '전신',
+            mobility: '유연성'
+        };
+        return map[value] || value || '';
+    };
+    const addRoutineItem = ({ id, title, count, type, defaults, category, tags }) => {
+        const meta = [
+            `${count}개 운동`,
+            formatDefaults(defaults),
+            categoryLabel(category),
+            ...(tags || [])
+        ]
+            .filter(Boolean)
+            .join(' · ');
+        list.appendChild(
+            el(
+                'div',
+                { className: 'list-item', dataset: { action: 'routine.select', id, type } },
+                el(
+                    'div',
+                    {},
+                    el('div', { className: 'list-title' }, title),
+                    el('div', { className: 'list-subtitle' }, meta)
+                ),
+                el(
+                    'div',
+                    { className: 'list-actions' },
+                    type === 'user'
+                        ? el(
+                            'div',
+                            { className: 'row row-gap' },
+                            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.edit', id } }, '수정'),
+                            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.delete', id } }, '삭제')
+                        )
+                        : el('span', { className: 'badge' }, '추가')
+                )
+            )
+        );
+    };
+
+    const renderList = () => {
+        const typeFilter = typeSelect.value;
+        const categoryFilter = categorySelect.value;
+        const query = searchInput.value.trim().toLowerCase();
+        list.textContent = '';
+
+        const addPreset = ([key, routine]) => {
+            if (typeFilter !== 'all' && typeFilter !== 'preset') return;
+            if (categoryFilter !== 'all' && routine.category !== categoryFilter) return;
+            if (query && !routine.title.toLowerCase().includes(query)) return;
+            addRoutineItem({
+                id: key,
+                title: routine.title,
+                count: routine.exercises.length,
+                type: 'preset',
+                defaults: routine.defaults,
+                category: routine.category,
+                tags: routine.tags
+            });
+        };
+        const addUser = (routine) => {
+            if (typeFilter !== 'all' && typeFilter !== 'user') return;
+            if (categoryFilter !== 'all' && routine.category !== categoryFilter) return;
+            if (query && !routine.title.toLowerCase().includes(query)) return;
+            addRoutineItem({
+                id: routine.id,
+                title: routine.title,
+                count: routine.exerciseIds.length,
+                type: 'user',
+                defaults: routine.defaults,
+                category: routine.category,
+                tags: routine.tags
+            });
+        };
+
+        Object.entries(ROUTINE_TEMPLATES).forEach(addPreset);
+        userRoutines.forEach(addUser);
+    };
+
+    renderList();
+    typeSelect.addEventListener('change', renderList);
+    categorySelect.addEventListener('change', renderList);
+    searchInput.addEventListener('input', renderList);
 
     list.addEventListener('click', (event) => {
         const actionEl = event.target.closest('[data-action]');
         if (!actionEl) return;
-        if (actionEl.dataset.action !== 'routine.select') return;
-        const key = actionEl.dataset.key;
-        const routine = ROUTINE_TEMPLATES[key];
+        const action = actionEl.dataset.action;
+        const type = actionEl.dataset.type;
+        const id = actionEl.dataset.id;
+        const routine =
+            type === 'user'
+                ? userRoutines.find((item) => item.id === id)
+                : ROUTINE_TEMPLATES[id];
         if (!routine) return;
-        const logs = routine.exercises.map((name) =>
-            createWorkoutLog({ name, sets: 3, reps: 10, weight: 0, unit: 'kg' })
-        );
+        if (action === 'routine.edit') {
+            openRoutineEditModal(store, routine);
+            return;
+        }
+        if (action === 'routine.delete') {
+            if (!window.confirm('이 루틴을 삭제할까요?')) return;
+            updateUserDb(store, (nextDb) => {
+                nextDb.routines = (nextDb.routines || []).filter((item) => item.id !== id);
+                nextDb.updatedAt = new Date().toISOString();
+            });
+            return;
+        }
+        if (action !== 'routine.select') return;
+        const exerciseIds = routine.exerciseIds || routine.exercises || [];
+        const defaults = routine.defaults || { sets: 3, reps: 10, weight: 0, unit: 'kg' };
+        const logs = exerciseIds.map((exerciseId) => {
+            const exercise = EXERCISE_DB.find((item) => item.id === exerciseId);
+            const name = exercise ? getLabelByLang(exercise.labels, lang) : exerciseId;
+            return createWorkoutLog({
+                name,
+                sets: defaults.sets || 3,
+                reps: defaults.reps || 10,
+                weight: defaults.weight || 0,
+                unit: defaults.unit || 'kg',
+                exerciseId
+            });
+        });
         appendWorkoutLogs(store, logs);
         closeModal();
     });
 
     openModal({
         title: '루틴 가져오기',
-        body: el('div', { className: 'stack-form' }, list),
+        body: el(
+            'div',
+            { className: 'stack-form' },
+            el('button', { type: 'button', className: 'btn btn-secondary', dataset: { action: 'routine.add' } }, '내 루틴 추가'),
+            typeSelect,
+            categorySelect,
+            searchInput,
+            list
+        ),
+        submitLabel: '닫기',
+        onSubmit: () => true
+    });
+};
+
+const openExerciseSearchModal = (store) => {
+    const state = store.getState();
+    const lang = state.settings.lang || 'ko';
+    const list = el('div', { className: 'list-group' });
+    const searchInput = el('input', { type: 'text', placeholder: '운동 검색' });
+    const filterSelect = el(
+        'select',
+        { name: 'exerciseFilter' },
+        el('option', { value: 'all' }, '전체'),
+        el('option', { value: 'chest' }, '가슴'),
+        el('option', { value: 'back' }, '등'),
+        el('option', { value: 'legs' }, '하체'),
+        el('option', { value: 'shoulders' }, '어깨'),
+        el('option', { value: 'arms' }, '팔'),
+        el('option', { value: 'core' }, '코어')
+    );
+    const sortSelect = el(
+        'select',
+        { name: 'exerciseSort' },
+        el('option', { value: 'name' }, '이름순'),
+        el('option', { value: 'difficulty' }, '난이도순')
+    );
+    const patternSelect = el(
+        'select',
+        { name: 'exercisePattern' },
+        el('option', { value: 'all' }, '패턴 전체'),
+        el('option', { value: 'push_horizontal' }, '수평 푸시'),
+        el('option', { value: 'push_vertical' }, '수직 푸시'),
+        el('option', { value: 'pull_vertical' }, '수직 풀'),
+        el('option', { value: 'pull_horizontal' }, '수평 풀'),
+        el('option', { value: 'squat' }, '스쿼트'),
+        el('option', { value: 'hinge' }, '힌지'),
+        el('option', { value: 'core' }, '코어'),
+        el('option', { value: 'mobility' }, '유연성'),
+        el('option', { value: 'cardio' }, '유산소')
+    );
+    const difficultySelect = el(
+        'select',
+        { name: 'exerciseDifficulty' },
+        el('option', { value: 'all' }, '난이도 전체'),
+        el('option', { value: 'beginner' }, '초급'),
+        el('option', { value: 'intermediate' }, '중급'),
+        el('option', { value: 'advanced' }, '상급')
+    );
+    const muscleLabel = (key) => {
+        const map = {
+            chest: '가슴',
+            back: '등',
+            lats: '광배',
+            posterior_chain: '후면',
+            quads: '대퇴',
+            glutes: '둔근',
+            shoulders: '어깨',
+            biceps: '이두',
+            triceps: '삼두',
+            core: '코어'
+        };
+        return map[key] || key;
+    };
+    const patternLabel = (pattern) => {
+        const map = {
+            push_horizontal: '수평 푸시',
+            push_vertical: '수직 푸시',
+            pull_vertical: '수직 풀',
+            pull_horizontal: '수평 풀',
+            squat: '스쿼트',
+            hinge: '힌지',
+            core: '코어',
+            mobility: '유연성',
+            cardio: '유산소'
+        };
+        return map[pattern] || pattern;
+    };
+    const equipmentLabel = (items) => {
+        const map = {
+            barbell: '바벨',
+            bench: '벤치',
+            bodyweight: '맨몸',
+            bar: '바',
+            dumbbell: '덤벨',
+            cable: '케이블',
+            machine: '머신',
+            cardio: '유산소'
+        };
+        return (items || []).map((item) => map[item] || item).join(' · ');
+    };
+
+    const renderList = (query = '') => {
+        const lowered = query.trim().toLowerCase();
+        const filter = filterSelect.value;
+        const pattern = patternSelect.value;
+        const difficulty = difficultySelect.value;
+        const sort = sortSelect.value;
+        list.textContent = '';
+        const items = EXERCISE_DB.filter((item) => {
+            if (!lowered) return true;
+            const label = getLabelByLang(item.labels, lang).toLowerCase();
+            return label.includes(lowered) || item.id.includes(lowered);
+        })
+            .filter((item) => {
+                if (filter === 'all') return true;
+                const primary = item.muscle?.primary || [];
+                if (filter === 'chest') return primary.includes('chest');
+                if (filter === 'back') return primary.includes('back') || primary.includes('lats') || primary.includes('posterior_chain');
+                if (filter === 'legs') return primary.includes('quads') || primary.includes('glutes');
+                if (filter === 'shoulders') return primary.includes('shoulders');
+                if (filter === 'arms') return primary.includes('biceps') || primary.includes('triceps');
+                if (filter === 'core') return primary.includes('core');
+                return true;
+            })
+            .filter((item) => (pattern === 'all' ? true : item.pattern === pattern))
+            .filter((item) => (difficulty === 'all' ? true : item.difficulty === difficulty));
+        const difficultyScore = (value) => {
+            if (value === 'beginner') return 1;
+            if (value === 'intermediate') return 2;
+            if (value === 'advanced') return 3;
+            return 0;
+        };
+        items.sort((a, b) => {
+            if (sort === 'difficulty') {
+                return difficultyScore(a.difficulty) - difficultyScore(b.difficulty);
+            }
+            const aLabel = getLabelByLang(a.labels, lang);
+            const bLabel = getLabelByLang(b.labels, lang);
+            return aLabel.localeCompare(bLabel);
+        });
+        items.forEach((item) => {
+            const label = getLabelByLang(item.labels, lang);
+                const primary = item.muscle?.primary || [];
+                const equipment = equipmentLabel(item.equipment);
+                const pattern = patternLabel(item.pattern);
+                const difficultyLabel = item.difficulty
+                    ? item.difficulty === 'beginner'
+                        ? '초급'
+                        : item.difficulty === 'intermediate'
+                            ? '중급'
+                            : '상급'
+                    : '';
+            list.appendChild(
+                el(
+                    'div',
+                    { className: 'list-item', dataset: { action: 'exercise.select', id: item.id } },
+                    el(
+                        'div',
+                        {},
+                        el('div', { className: 'list-title' }, label),
+                            el(
+                                'div',
+                                { className: 'list-subtitle' },
+                                primary.length ? primary.map(muscleLabel).join(' · ') : '-'
+                            ),
+                            difficultyLabel ? el('div', { className: 'list-subtitle' }, difficultyLabel) : null,
+                            equipment ? el('div', { className: 'list-subtitle' }, equipment) : null,
+                            pattern ? el('div', { className: 'list-subtitle' }, pattern) : null
+                    ),
+                    el('div', { className: 'list-actions' }, el('span', { className: 'badge' }, '선택'))
+                )
+            );
+        });
+    };
+
+    renderList('');
+    searchInput.addEventListener('input', (event) => renderList(event.target.value));
+    filterSelect.addEventListener('change', () => renderList(searchInput.value));
+    patternSelect.addEventListener('change', () => renderList(searchInput.value));
+    difficultySelect.addEventListener('change', () => renderList(searchInput.value));
+    sortSelect.addEventListener('change', () => renderList(searchInput.value));
+    list.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('[data-action="exercise.select"]');
+        if (!actionEl) return;
+        const id = actionEl.dataset.id;
+        const exercise = EXERCISE_DB.find((item) => item.id === id);
+        if (!exercise) return;
+        const label = getLabelByLang(exercise.labels, lang);
+        closeModal();
+        openWorkoutAddModal(store, { initialName: label, exerciseId: exercise.id });
+    });
+
+    openModal({
+        title: '운동 검색',
+        body: el(
+            'div',
+            { className: 'stack-form' },
+            filterSelect,
+            patternSelect,
+            difficultySelect,
+            sortSelect,
+            searchInput,
+            list
+        ),
+        submitLabel: '닫기',
+        onSubmit: () => true
+    });
+};
+
+const openFoodSearchModal = (store) => {
+    const state = store.getState();
+    const lang = state.settings.lang || 'ko';
+    const list = el('div', { className: 'list-group' });
+    const searchInput = el('input', { type: 'text', placeholder: '음식 검색' });
+    const typeSelect = el(
+        'select',
+        { name: 'mealType' },
+        el('option', { value: '아침' }, '아침'),
+        el('option', { value: '점심' }, '점심'),
+        el('option', { value: '저녁' }, '저녁'),
+        el('option', { value: '간식' }, '간식')
+    );
+    const amountInput = el('input', { type: 'number', min: '0', value: 1, placeholder: '수량' });
+    const unitSelect = el(
+        'select',
+        { name: 'foodAmountUnit' },
+        el('option', { value: 'serving' }, '서빙'),
+        el('option', { value: 'g' }, '그램(g)')
+    );
+    const categorySelect = el(
+        'select',
+        { name: 'foodCategory' },
+        el('option', { value: 'all' }, '전체 카테고리'),
+        el('option', { value: 'protein' }, '단백질'),
+        el('option', { value: 'carb' }, '탄수'),
+        el('option', { value: 'fat' }, '지방'),
+        el('option', { value: 'fruit' }, '과일'),
+        el('option', { value: 'veg' }, '채소'),
+        el('option', { value: 'oil' }, '오일/소스'),
+        el('option', { value: 'meal' }, '식사'),
+        el('option', { value: 'snack' }, '간식')
+    );
+    const cuisineSelect = el(
+        'select',
+        { name: 'foodCuisine' },
+        el('option', { value: 'all' }, '전체 지역'),
+        el('option', { value: 'korean' }, '한식'),
+        el('option', { value: 'japanese' }, '일식'),
+        el('option', { value: 'chinese' }, '중식'),
+        el('option', { value: 'western' }, '양식'),
+        el('option', { value: 'global' }, '기타')
+    );
+    const sortSelect = el(
+        'select',
+        { name: 'foodSort' },
+        el('option', { value: 'name' }, '이름순'),
+        el('option', { value: 'kcal' }, '칼로리'),
+        el('option', { value: 'protein' }, '단백질'),
+        el('option', { value: 'fiber' }, '식이섬유')
+    );
+
+    const renderList = (query = '') => {
+        const lowered = query.trim().toLowerCase();
+        const category = categorySelect.value;
+        const cuisine = cuisineSelect.value;
+        list.textContent = '';
+        const items = FOOD_DB.filter((item) => {
+            if (!lowered) return true;
+            const label = getLabelByLang(item.labels, lang).toLowerCase();
+            return label.includes(lowered) || item.id.includes(lowered);
+        })
+            .filter((item) => (category === 'all' ? true : item.category === category))
+            .filter((item) => {
+                if (cuisine === 'all') return true;
+                return Array.isArray(item.cuisine) ? item.cuisine.includes(cuisine) : item.cuisine === cuisine;
+            });
+        const getValue = (item) => {
+            const n = item.nutrition || {};
+            if (sortSelect.value === 'kcal') return n.kcal || 0;
+            if (sortSelect.value === 'protein') return n.proteinG || 0;
+            if (sortSelect.value === 'fiber') return n.fiberG || 0;
+            return 0;
+        };
+        items.sort((a, b) => {
+            if (sortSelect.value === 'name') {
+                return getLabelByLang(a.labels, lang).localeCompare(getLabelByLang(b.labels, lang));
+            }
+            return getValue(b) - getValue(a);
+        });
+        items.forEach((item) => {
+            const label = getLabelByLang(item.labels, lang);
+            const kcal = item.nutrition?.kcal ?? '-';
+            const fiber = item.nutrition?.fiberG ?? '-';
+            const sugar = item.nutrition?.sugarG ?? '-';
+            const satFat = item.nutrition?.satFatG ?? '-';
+            const sodium = item.nutrition?.sodiumMg ?? '-';
+            const potassium = item.nutrition?.potassiumMg ?? '-';
+            const meta = [item.category, ...(item.cuisine || [])].filter(Boolean).join(' · ');
+            list.appendChild(
+                el(
+                    'div',
+                    { className: 'list-item', dataset: { action: 'food.select', id: item.id } },
+                    el(
+                        'div',
+                        {},
+                        el('div', { className: 'list-title' }, label),
+                        el(
+                            'div',
+                            { className: 'list-subtitle' },
+                            `기준 ${item.serving?.size || '-'}${item.serving?.unit || ''} · ${kcal} kcal`
+                        ),
+                        meta ? el('div', { className: 'list-subtitle' }, meta) : null,
+                        el(
+                            'div',
+                            { className: 'list-subtitle' },
+                            `식이섬유 ${fiber}g · 당 ${sugar}g · 포화지방 ${satFat}g`
+                        ),
+                        el(
+                            'div',
+                            { className: 'list-subtitle' },
+                            `나트륨 ${sodium}mg · 칼륨 ${potassium}mg`
+                        )
+                    ),
+                    el('div', { className: 'list-actions' }, el('span', { className: 'badge' }, '추가'))
+                )
+            );
+        });
+    };
+
+    renderList('');
+    searchInput.addEventListener('input', (event) => renderList(event.target.value));
+    categorySelect.addEventListener('change', () => renderList(searchInput.value));
+    cuisineSelect.addEventListener('change', () => renderList(searchInput.value));
+    sortSelect.addEventListener('change', () => renderList(searchInput.value));
+    list.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('[data-action="food.select"]');
+        if (!actionEl) return;
+        const id = actionEl.dataset.id;
+        const food = FOOD_DB.find((item) => item.id === id);
+        if (!food) return;
+        const type = typeSelect.value || '기타';
+        const amount = Math.max(0, Number(amountInput.value || 1));
+        const unit = unitSelect.value || 'serving';
+        const label = getLabelByLang(food.labels, lang);
+        const per = food.nutrition || {};
+        const servingSize = food.serving?.size || 1;
+        const multiplier = unit === 'g' ? amount / servingSize : amount;
+        const scaled = {
+            kcal: (per.kcal || 0) * multiplier,
+            proteinG: (per.proteinG || 0) * multiplier,
+            carbG: (per.carbG || 0) * multiplier,
+            fatG: (per.fatG || 0) * multiplier,
+            fiberG: (per.fiberG || 0) * multiplier,
+            unsatFatG: (per.unsatFatG || 0) * multiplier,
+            satFatG: (per.satFatG || 0) * multiplier,
+            transFatG: (per.transFatG || 0) * multiplier,
+            sugarG: (per.sugarG || 0) * multiplier,
+            addedSugarG: (per.addedSugarG || 0) * multiplier,
+            sodiumMg: (per.sodiumMg || 0) * multiplier,
+            potassiumMg: (per.potassiumMg || 0) * multiplier
+        };
+        updateUserDb(store, (userdb) => {
+            const dateKey = userdb.meta.selectedDate.diet;
+            const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
+            entry.meals = entry.meals.concat({
+                id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                type,
+                name: label,
+                foodId: food.id,
+                serving: food.serving,
+                nutrition: food.nutrition,
+                amount,
+                amountUnit: unit,
+                kcal: scaled.kcal,
+                proteinG: scaled.proteinG,
+                carbG: scaled.carbG,
+                fatG: scaled.fatG,
+                fiberG: scaled.fiberG,
+                unsatFatG: scaled.unsatFatG,
+                satFatG: scaled.satFatG,
+                transFatG: scaled.transFatG,
+                sugarG: scaled.sugarG,
+                addedSugarG: scaled.addedSugarG,
+                sodiumMg: scaled.sodiumMg,
+                potassiumMg: scaled.potassiumMg
+            });
+            userdb.diet[dateKey] = entry;
+            userdb.updatedAt = new Date().toISOString();
+        });
+        closeModal();
+    });
+
+    openModal({
+        title: '음식 검색',
+        body: el(
+            'div',
+            { className: 'stack-form' },
+            typeSelect,
+            unitSelect,
+            amountInput,
+            categorySelect,
+            cuisineSelect,
+            sortSelect,
+            searchInput,
+            list
+        ),
         submitLabel: '닫기',
         onSubmit: () => true
     });
@@ -133,7 +944,8 @@ const openWorkoutAddMenuModal = (store) => {
     const body = el(
         'div',
         { className: 'stack-form' },
-        el('button', { type: 'button', className: 'btn', dataset: { action: 'workout.add' } }, '운동 추가'),
+        el('button', { type: 'button', className: 'btn', dataset: { action: 'workout.search' } }, '운동 검색'),
+        el('button', { type: 'button', className: 'btn btn-secondary', dataset: { action: 'workout.add' } }, '직접 입력'),
         el('button', { type: 'button', className: 'btn btn-secondary', dataset: { action: 'workout.routine' } }, '루틴 가져오기')
     );
 
@@ -144,6 +956,10 @@ const openWorkoutAddMenuModal = (store) => {
         if (action === 'workout.add') {
             closeModal();
             openWorkoutAddModal(store);
+        }
+        if (action === 'workout.search') {
+            closeModal();
+            openExerciseSearchModal(store);
         }
         if (action === 'workout.routine') {
             closeModal();
@@ -318,9 +1134,17 @@ const openGoalChangeDefaultModal = (store, { dateISO }) => {
     });
 };
 
+ 
+
 const openWorkoutEditModal = (store, { log, dateKey, id }) => {
+    const settings = store.getState().settings;
+    const preferredUnit = settings.units?.workout || log.unit || 'kg';
     const setsDetail = Array.isArray(log.setsDetail) && log.setsDetail.length > 0
-        ? log.setsDetail.map((set) => ({ reps: Number(set.reps || 0), weight: Number(set.weight || 0) }))
+        ? log.setsDetail.map((set) => ({
+            reps: Number(set.reps || 0),
+            weight: Number(set.weight || 0),
+            completed: Boolean(set.completed)
+        }))
         : buildDefaultSets(log);
 
     const setsContainer = el('div', { className: 'stack-form', dataset: { role: 'sets-container' } });
@@ -352,6 +1176,15 @@ const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                         dataset: { action: 'set.remove', index: String(index) }
                     },
                     '삭제'
+                ),
+                el(
+                    'button',
+                    {
+                        type: 'button',
+                        className: `btn btn-secondary btn-sm ${set.completed ? 'is-active' : ''}`,
+                        dataset: { action: 'set.toggle', index: String(index) }
+                    },
+                    set.completed ? '완료' : '미완료'
                 )
             );
             setsContainer.appendChild(row);
@@ -363,31 +1196,61 @@ const openWorkoutEditModal = (store, { log, dateKey, id }) => {
         { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'set.add' } },
         '세트 추가'
     );
+    const restTimerButton = el(
+        'button',
+        { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'rest.timer' } },
+        '휴식 타이머'
+    );
 
     const body = el(
         'div',
         { className: 'stack-form', dataset: { role: 'workout-edit' } },
-        el('input', { name: 'exerciseName', type: 'text', value: log.name }),
         el(
-            'div',
-            { className: 'row row-gap' },
-            el('input', { name: 'sets', type: 'number', min: '1', value: log.sets }),
-            el('input', { name: 'reps', type: 'number', min: '1', value: log.reps })
+            'label',
+            { className: 'input-label' },
+            '운동 이름',
+            el('input', { name: 'exerciseName', type: 'text', value: log.name })
         ),
         el(
             'div',
             { className: 'row row-gap' },
-            el('input', { name: 'weight', type: 'number', min: '0', value: log.weight || 0 }),
             el(
-                'select',
-                { name: 'unit' },
-                el('option', { value: 'kg', selected: log.unit === 'kg' }, 'kg'),
-                el('option', { value: 'lb', selected: log.unit === 'lb' }, 'lb')
+                'label',
+                { className: 'input-label' },
+                '세트 수',
+                el('input', { name: 'sets', type: 'number', min: '1', value: log.sets })
+            ),
+            el(
+                'label',
+                { className: 'input-label' },
+                '횟수(1세트)',
+                el('input', { name: 'reps', type: 'number', min: '1', value: log.reps })
+            )
+        ),
+        el(
+            'div',
+            { className: 'row row-gap' },
+            el(
+                'label',
+                { className: 'input-label' },
+                '중량',
+                el('input', { name: 'weight', type: 'number', min: '0', value: log.weight || 0 })
+            ),
+            el(
+                'label',
+                { className: 'input-label' },
+                '단위',
+                el(
+                    'select',
+                    { name: 'unit' },
+                    el('option', { value: 'kg', selected: preferredUnit === 'kg' }, 'kg'),
+                    el('option', { value: 'lb', selected: preferredUnit === 'lb' }, 'lb')
+                )
             )
         ),
         el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '세트 상세')),
         setsContainer,
-        addSetButton
+        el('div', { className: 'row row-gap' }, addSetButton, restTimerButton)
     );
 
     body.addEventListener('click', (event) => {
@@ -397,7 +1260,7 @@ const openWorkoutEditModal = (store, { log, dateKey, id }) => {
         if (!actionEl) return;
         const action = actionEl.dataset.action;
         if (action === 'set.add') {
-            setsDetail.push({ reps: 0, weight: 0 });
+            setsDetail.push({ reps: 0, weight: 0, completed: false });
             renderSets();
         }
         if (action === 'set.remove') {
@@ -405,9 +1268,18 @@ const openWorkoutEditModal = (store, { log, dateKey, id }) => {
             if (index < 0) return;
             setsDetail.splice(index, 1);
             if (setsDetail.length === 0) {
-                setsDetail.push({ reps: 0, weight: 0 });
+                setsDetail.push({ reps: 0, weight: 0, completed: false });
             }
             renderSets();
+        }
+        if (action === 'set.toggle') {
+            const index = Number(actionEl.dataset.index || -1);
+            if (index < 0) return;
+            setsDetail[index].completed = !setsDetail[index].completed;
+            renderSets();
+        }
+        if (action === 'rest.timer') {
+            openRestTimerModal(store, 60);
         }
     });
 
@@ -485,6 +1357,8 @@ const handleActionClick = (store, event) => {
         const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
         const target = entry.meals.find((meal) => meal.id === id);
         if (!target) return;
+        const food = target.foodId ? FOOD_DB.find((item) => item.id === target.foodId) : null;
+        const servingSize = food?.serving?.size || 1;
         openModal({
             title: '식단 수정',
             body: el(
@@ -498,11 +1372,30 @@ const handleActionClick = (store, event) => {
                     el('option', { value: '점심', selected: target.type === '점심' }, '점심'),
                     el('option', { value: '저녁', selected: target.type === '저녁' }, '저녁'),
                     el('option', { value: '간식', selected: target.type === '간식' }, '간식')
+                ),
+                el(
+                    'div',
+                    { className: 'row row-gap' },
+                    el('input', {
+                        name: 'amount',
+                        type: 'number',
+                        min: '0',
+                        value: target.amount ?? 1
+                    }),
+                    el(
+                        'select',
+                        { name: 'amountUnit' },
+                        el('option', { value: 'serving', selected: target.amountUnit === 'serving' }, '서빙'),
+                        el('option', { value: 'g', selected: target.amountUnit === 'g' }, '그램')
+                    )
                 )
             ),
             onSubmit: (form) => {
                 const name = form.querySelector('[name="mealName"]')?.value.trim() || '';
                 const type = form.querySelector('[name="mealType"]')?.value || target.type;
+                const amountRaw = Number(form.querySelector('[name="amount"]')?.value || 0);
+                const amount = Number.isNaN(amountRaw) ? target.amount ?? 1 : Math.max(0, amountRaw);
+                const amountUnit = form.querySelector('[name="amountUnit"]')?.value || target.amountUnit || 'serving';
                 if (!name) return false;
                 updateUserDb(store, (nextDb) => {
                     const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
@@ -510,6 +1403,26 @@ const handleActionClick = (store, event) => {
                     if (!nextTarget) return;
                     nextTarget.name = name;
                     nextTarget.type = type;
+                    nextTarget.amount = amount;
+                    nextTarget.amountUnit = amountUnit;
+                    if (food) {
+                        const per = food.nutrition || {};
+                        const multiplier = amountUnit === 'g' ? amount / servingSize : amount;
+                        nextTarget.nutrition = food.nutrition;
+                        nextTarget.serving = food.serving;
+                        nextTarget.kcal = (per.kcal || 0) * multiplier;
+                        nextTarget.proteinG = (per.proteinG || 0) * multiplier;
+                        nextTarget.carbG = (per.carbG || 0) * multiplier;
+                        nextTarget.fatG = (per.fatG || 0) * multiplier;
+                        nextTarget.fiberG = (per.fiberG || 0) * multiplier;
+                        nextTarget.unsatFatG = (per.unsatFatG || 0) * multiplier;
+                        nextTarget.satFatG = (per.satFatG || 0) * multiplier;
+                        nextTarget.transFatG = (per.transFatG || 0) * multiplier;
+                        nextTarget.sugarG = (per.sugarG || 0) * multiplier;
+                        nextTarget.addedSugarG = (per.addedSugarG || 0) * multiplier;
+                        nextTarget.sodiumMg = (per.sodiumMg || 0) * multiplier;
+                        nextTarget.potassiumMg = (per.potassiumMg || 0) * multiplier;
+                    }
                     nextDb.diet[dateKey] = nextEntry;
                     nextDb.updatedAt = new Date().toISOString();
                 });
@@ -532,11 +1445,39 @@ const handleActionClick = (store, event) => {
     if (action === 'workout.addMenu') {
         openWorkoutAddMenuModal(store);
     }
+    if (action === 'workout.manage.toggle') {
+        store.dispatch({ type: 'TOGGLE_WORKOUT_MANAGE' });
+    }
+    if (action === 'workout.delete.selected') {
+        const checked = Array.from(document.querySelectorAll('[data-role="workout-select"]:checked'));
+        const ids = checked.map((item) => item.dataset.id).filter(Boolean);
+        if (ids.length === 0) {
+            window.alert('삭제할 항목을 선택해 주세요.');
+            return;
+        }
+        if (!window.confirm('선택한 운동 기록을 삭제할까요?')) return;
+        updateUserDb(store, (nextDb) => {
+            const dateKey = nextDb.meta.selectedDate.workout;
+            const entry = nextDb.workout[dateKey] || { logs: [] };
+            entry.logs = entry.logs.filter((log) => !ids.includes(log.id));
+            nextDb.workout[dateKey] = entry;
+            nextDb.updatedAt = new Date().toISOString();
+        });
+    }
     if (action === 'workout.add') {
         openWorkoutAddModal(store);
     }
+    if (action === 'workout.search') {
+        openExerciseSearchModal(store);
+    }
     if (action === 'workout.routine') {
         openWorkoutRoutineModal(store);
+    }
+    if (action === 'routine.add') {
+        openRoutineCreateModal(store);
+    }
+    if (action === 'diet.search') {
+        openFoodSearchModal(store);
     }
     if (action === 'workout.edit') {
         const id = actionEl.dataset.id;
@@ -548,7 +1489,37 @@ const handleActionClick = (store, event) => {
         if (!target) return;
         openWorkoutEditModal(store, { log: target, dateKey, id });
     }
-    if (action === 'backup.export') {
+    if (action === 'workout.detail') {
+        const id = actionEl.dataset.id;
+        if (!id) return;
+        const { userdb } = store.getState();
+        const dateKey = userdb.meta.selectedDate.workout;
+        const entry = userdb.workout[dateKey] || { logs: [] };
+        const target = entry.logs.find((log) => log.id === id);
+        if (!target) return;
+        openWorkoutDetailModal(store, {
+            log: target,
+            dateISO: dateKey,
+            onUpdate: ({ setsDetail, target: nextTarget }) => {
+                updateUserDb(store, (nextDb) => {
+                    const nextEntry = nextDb.workout[dateKey] || { logs: [] };
+                    const nextLog = nextEntry.logs.find((log) => log.id === id);
+                    if (!nextLog) return;
+                    if (Array.isArray(setsDetail)) nextLog.setsDetail = setsDetail;
+                    if (nextTarget) {
+                        nextLog.target = {
+                            sets: Number(nextTarget.sets || nextLog.sets || 1),
+                            reps: Number(nextTarget.reps || nextLog.reps || 0),
+                            restSec: Number(nextTarget.restSec || nextLog.target?.restSec || 60)
+                        };
+                    }
+                    nextDb.workout[dateKey] = nextEntry;
+                    nextDb.updatedAt = new Date().toISOString();
+                });
+            }
+        });
+    }
+if (action === 'backup.export') {
         const payload = buildExportPayload(store.getState());
         const filename = `cadence_backup_${new Date().toISOString().slice(0, 10)}.json`;
         downloadJson(payload, filename);
@@ -639,6 +1610,7 @@ const handleActionClick = (store, event) => {
         const nextDate = shiftDate(userdb.meta.selectedDate[ui.route], offset);
         updateUserDb(store, (nextDb) => {
             if (settings.dateSync) {
+                nextDb.meta.selectedDate.dashboard = nextDate;
                 nextDb.meta.selectedDate.workout = nextDate;
                 nextDb.meta.selectedDate.diet = nextDate;
                 nextDb.meta.selectedDate.body = nextDate;
@@ -653,6 +1625,7 @@ const handleActionClick = (store, event) => {
         const nextDate = todayIso();
         updateUserDb(store, (nextDb) => {
             if (settings.dateSync) {
+                nextDb.meta.selectedDate.dashboard = nextDate;
                 nextDb.meta.selectedDate.workout = nextDate;
                 nextDb.meta.selectedDate.diet = nextDate;
                 nextDb.meta.selectedDate.body = nextDate;
@@ -1011,3 +1984,8 @@ export const initApp = (store) => {
     store.subscribe(() => render(store));
     render(store);
 };
+
+
+
+
+

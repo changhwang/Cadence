@@ -1,4 +1,4 @@
-const VALID_ROUTES = new Set(['workout', 'diet', 'body', 'settings']);
+const VALID_ROUTES = new Set(['dashboard', 'workout', 'diet', 'body', 'settings']);
 let routeListener = () => {};
 
 const getRouteFromHash = () => {

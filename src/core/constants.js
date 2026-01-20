@@ -4,5 +4,5 @@ export const STORAGE_KEYS = {
     META: 'cadence.meta'
 };
 
-export const DEFAULT_ROUTE = 'workout';
+export const DEFAULT_ROUTE = 'dashboard';
 export const SAVE_DEBOUNCE_MS = 500;

@@ -62,6 +62,7 @@ export const selectGoalForDate = (state, dateISO) => {
 
 export const selectSelectedDate = (state, domain) => {
     const selected = state?.userdb?.meta?.selectedDate || {};
+    if (domain === 'dashboard') return selected.dashboard;
     if (domain === 'diet') return selected.diet;
     if (domain === 'workout') return selected.workout;
     if (domain === 'body') return selected.body;
