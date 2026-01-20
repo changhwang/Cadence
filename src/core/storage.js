@@ -33,6 +33,7 @@ export const loadSettings = () => {
         ...parsed,
         units: { ...defaults.units, ...(parsed.units || {}) },
         sound: { ...defaults.sound, ...(parsed.sound || {}) },
+        nutrition: { ...defaults.nutrition, ...(parsed.nutrition || {}) },
         dev: { ...defaults.dev, ...(parsed.dev || {}) }
     };
     if (merged.dateFormat === 'YMD_DOTS' || merged.dateFormat === 'YMD_DASH') {

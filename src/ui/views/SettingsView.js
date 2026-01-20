@@ -36,7 +36,6 @@ export const renderSettingsView = (container, store) => {
     const profileSection = el(
         'div',
         { className: 'settings-section' },
-        el('h3', { className: 'section-title' }, '프로필'),
         el(
             'div',
             { className: 'row row-gap' },
@@ -183,25 +182,16 @@ export const renderSettingsView = (container, store) => {
         )
     );
 
-    const form = el(
-        'form',
-        { className: 'stack-form', dataset: { action: 'settings.save' } },
-        profileSection,
-        dateSection,
+    const languageSection = el(
+        'div',
+        { className: 'settings-section' },
+        el('h3', { className: 'section-title' }, 'Language'),
         el(
-            'div',
-            { className: 'settings-section' },
-            el('h3', { className: 'section-title' }, 'Language'),
-            el(
-                'select',
-                { name: 'lang' },
-                el('option', { value: 'ko', selected: settings.lang === 'ko' }, '한국어'),
-                el('option', { value: 'en', selected: settings.lang === 'en' }, 'English')
-            )
-        ),
-        unitSection,
-        soundSection,
-        el('button', { type: 'submit', className: 'btn' }, '저장')
+            'select',
+            { name: 'lang' },
+            el('option', { value: 'ko', selected: settings.lang === 'ko' }, '한국어'),
+            el('option', { value: 'en', selected: settings.lang === 'en' }, 'English')
+        )
     );
 
     const backupSection = el(
@@ -221,21 +211,69 @@ export const renderSettingsView = (container, store) => {
         )
     );
 
-    container.appendChild(headerWrap);
-    container.appendChild(
+    const nutritionSection = el(
+        'div',
+        { className: 'settings-section' },
+        el('h3', { className: 'section-title' }, '영양 목표'),
         el(
-            'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '일반')),
-            form
+            'label',
+            { className: 'input-label' },
+            '목표',
+            el(
+                'select',
+                { name: 'nutritionGoal' },
+                el('option', { value: 'maintain', selected: settings.nutrition.goal === 'maintain' }, '유지'),
+                el('option', { value: 'cut', selected: settings.nutrition.goal === 'cut' }, '감량'),
+                el('option', { value: 'minicut', selected: settings.nutrition.goal === 'minicut' }, '미니컷'),
+                el('option', { value: 'bulk', selected: settings.nutrition.goal === 'bulk' }, '증량'),
+                el('option', { value: 'leanbulk', selected: settings.nutrition.goal === 'leanbulk' }, '린 벌크'),
+                el('option', { value: 'recomp', selected: settings.nutrition.goal === 'recomp' }, '리컴프'),
+                el('option', { value: 'performance', selected: settings.nutrition.goal === 'performance' }, '퍼포먼스')
+            )
+        ),
+        el(
+            'label',
+            { className: 'input-label' },
+            '프레임워크',
+            el(
+                'select',
+                { name: 'nutritionFramework' },
+                el('option', { value: 'dga_2025', selected: settings.nutrition.framework === 'dga_2025' }, 'DGA 2025–2030'),
+                el('option', { value: 'amdr', selected: settings.nutrition.framework === 'amdr' }, 'AMDR Balanced'),
+                el('option', { value: 'issn_strength', selected: settings.nutrition.framework === 'issn_strength' }, 'ISSN Strength'),
+                el('option', { value: 'acsm_endurance', selected: settings.nutrition.framework === 'acsm_endurance' }, 'ACSM Endurance')
+            )
         )
     );
-    container.appendChild(
+
+    const form = el(
+        'form',
+        { className: 'stack-form', dataset: { action: 'settings.save' } },
         el(
             'div',
             { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '백업/복원')),
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '프로필')),
+            profileSection
+        ),
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '목표')),
+            nutritionSection
+        ),
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '시스템')),
+            dateSection,
+            languageSection,
+            unitSection,
+            soundSection,
             backupSection
-        )
+        ),
+        el('button', { type: 'submit', className: 'btn' }, '저장')
     );
+
+    container.appendChild(headerWrap);
+    container.appendChild(form);
 };

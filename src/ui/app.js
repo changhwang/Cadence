@@ -562,6 +562,8 @@ const handleSettingsSubmit = (store, event, form) => {
     const profileActivity = form.querySelector('[name="profileActivity"]')?.value || 'light';
     const lang = form.querySelector('[name="lang"]')?.value || 'ko';
     const profileBirth = parseDateInput(profileBirthRaw, dateFormat) || '';
+    const nutritionGoal = form.querySelector('[name="nutritionGoal"]')?.value || 'maintain';
+    const nutritionFramework = form.querySelector('[name="nutritionFramework"]')?.value || 'dga_2025';
 
     const nextSettings = {
         ...store.getState().settings,
@@ -580,6 +582,11 @@ const handleSettingsSubmit = (store, event, form) => {
             ...store.getState().settings.sound,
             timerEnabled: nextTimerSound,
             volume: soundVolume
+        },
+        nutrition: {
+            ...store.getState().settings.nutrition,
+            goal: nutritionGoal,
+            framework: nutritionFramework
         }
     };
 

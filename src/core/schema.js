@@ -31,5 +31,10 @@ export const createDefaultSettings = () => ({
     lang: 'ko',
     units: { height: 'cm', weight: 'kg', water: 'ml', food: 'g', workout: 'kg' },
     sound: { timerEnabled: true, volume: 100 },
+    nutrition: {
+        goal: 'maintain',
+        framework: 'dga_2025',
+        overrides: {}
+    },
     dev: { debugToolEnabled: false }
 });
