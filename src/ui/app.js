@@ -2,6 +2,9 @@ import { renderTabBar } from './components/TabBar.js';
 import { renderView } from './views/index.js';
 import { buildExportPayload, downloadJson, parseImportPayload } from '../services/backupService.js';
 import { shiftDate } from './components/DateBar.js';
+import { todayIso } from '../utils/date.js';
+import { openModal } from './components/Modal.js';
+import { el } from '../utils/dom.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -33,6 +36,46 @@ const handleActionClick = (store, event) => {
             userdb.updatedAt = new Date().toISOString();
         });
     }
+    if (action === 'diet.edit') {
+        const id = actionEl.dataset.id;
+        if (!id) return;
+        const { userdb } = store.getState();
+        const dateKey = userdb.meta.selectedDate.diet;
+        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
+        const target = entry.meals.find((meal) => meal.id === id);
+        if (!target) return;
+        openModal({
+            title: '식단 수정',
+            body: el(
+                'div',
+                { className: 'stack-form' },
+                el('input', { name: 'mealName', type: 'text', value: target.name }),
+                el(
+                    'select',
+                    { name: 'mealType' },
+                    el('option', { value: '아침', selected: target.type === '아침' }, '아침'),
+                    el('option', { value: '점심', selected: target.type === '점심' }, '점심'),
+                    el('option', { value: '저녁', selected: target.type === '저녁' }, '저녁'),
+                    el('option', { value: '간식', selected: target.type === '간식' }, '간식')
+                )
+            ),
+            onSubmit: (form) => {
+                const name = form.querySelector('[name="mealName"]')?.value.trim() || '';
+                const type = form.querySelector('[name="mealType"]')?.value || target.type;
+                if (!name) return false;
+                updateUserDb(store, (nextDb) => {
+                    const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
+                    const nextTarget = nextEntry.meals.find((meal) => meal.id === id);
+                    if (!nextTarget) return;
+                    nextTarget.name = name;
+                    nextTarget.type = type;
+                    nextDb.diet[dateKey] = nextEntry;
+                    nextDb.updatedAt = new Date().toISOString();
+                });
+                return true;
+            }
+        });
+    }
     if (action === 'workout.remove') {
         const id = actionEl.dataset.id;
         if (!id) return;
@@ -42,6 +85,61 @@ const handleActionClick = (store, event) => {
             entry.logs = entry.logs.filter((log) => log.id !== id);
             userdb.workout[dateKey] = entry;
             userdb.updatedAt = new Date().toISOString();
+        });
+    }
+    if (action === 'workout.edit') {
+        const id = actionEl.dataset.id;
+        if (!id) return;
+        const { userdb } = store.getState();
+        const dateKey = userdb.meta.selectedDate.workout;
+        const entry = userdb.workout[dateKey] || { logs: [] };
+        const target = entry.logs.find((log) => log.id === id);
+        if (!target) return;
+        openModal({
+            title: '운동 수정',
+            body: el(
+                'div',
+                { className: 'stack-form' },
+                el('input', { name: 'exerciseName', type: 'text', value: target.name }),
+                el(
+                    'div',
+                    { className: 'row row-gap' },
+                    el('input', { name: 'sets', type: 'number', min: '1', value: target.sets }),
+                    el('input', { name: 'reps', type: 'number', min: '1', value: target.reps })
+                ),
+                el(
+                    'div',
+                    { className: 'row row-gap' },
+                    el('input', { name: 'weight', type: 'number', min: '0', value: target.weight || 0 }),
+                    el(
+                        'select',
+                        { name: 'unit' },
+                        el('option', { value: 'kg', selected: target.unit === 'kg' }, 'kg'),
+                        el('option', { value: 'lb', selected: target.unit === 'lb' }, 'lb')
+                    )
+                )
+            ),
+            onSubmit: (form) => {
+                const name = form.querySelector('[name="exerciseName"]')?.value.trim() || '';
+                const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
+                const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
+                const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
+                const unit = form.querySelector('[name="unit"]')?.value || target.unit;
+                if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
+                updateUserDb(store, (nextDb) => {
+                    const nextEntry = nextDb.workout[dateKey] || { logs: [] };
+                    const nextTarget = nextEntry.logs.find((log) => log.id === id);
+                    if (!nextTarget) return;
+                    nextTarget.name = name;
+                    nextTarget.sets = sets;
+                    nextTarget.reps = reps;
+                    nextTarget.weight = Number.isNaN(weight) ? 0 : weight;
+                    nextTarget.unit = unit;
+                    nextDb.workout[dateKey] = nextEntry;
+                    nextDb.updatedAt = new Date().toISOString();
+                });
+                return true;
+            }
         });
     }
     if (action === 'backup.export') {
@@ -54,6 +152,20 @@ const handleActionClick = (store, event) => {
         if (!offset) return;
         const { userdb, settings, ui } = store.getState();
         const nextDate = shiftDate(userdb.meta.selectedDate[ui.route], offset);
+        updateUserDb(store, (nextDb) => {
+            if (settings.dateSync) {
+                nextDb.meta.selectedDate.workout = nextDate;
+                nextDb.meta.selectedDate.diet = nextDate;
+                nextDb.meta.selectedDate.body = nextDate;
+            } else {
+                nextDb.meta.selectedDate[ui.route] = nextDate;
+            }
+            nextDb.updatedAt = new Date().toISOString();
+        });
+    }
+    if (action === 'date.today') {
+        const { settings, ui } = store.getState();
+        const nextDate = todayIso();
         updateUserDb(store, (nextDb) => {
             if (settings.dateSync) {
                 nextDb.meta.selectedDate.workout = nextDate;

@@ -21,16 +21,29 @@ const renderMealList = (meals) => {
             },
             '삭제'
         );
+        const editButton = el(
+            'button',
+            {
+                className: 'btn btn-secondary btn-sm',
+                dataset: { action: 'diet.edit', id: meal.id },
+                type: 'button'
+            },
+            '수정'
+        );
         const item = el(
             'div',
             { className: 'list-item' },
             el(
                 'div',
                 {},
-                el('div', { className: 'list-title' }, meal.name),
-                el('div', { className: 'list-subtitle' }, meal.type)
+                el(
+                    'div',
+                    { className: 'list-title-row' },
+                    el('div', { className: 'list-title' }, meal.name),
+                    el('span', { className: 'badge' }, meal.type)
+                )
             ),
-            el('div', { className: 'list-actions' }, removeButton)
+            el('div', { className: 'list-actions' }, editButton, removeButton)
         );
         list.appendChild(item);
     });
@@ -45,8 +58,13 @@ export const renderDietView = (container, store) => {
     const entry = getDietEntry(userdb, dateKey);
 
     const header = el('h1', {}, '식단');
-    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat });
-    const headerWrap = el('div', { className: 'page-header' }, header, dateLabel);
+    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat, className: 'compact' });
+    const todayButton = el(
+        'button',
+        { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'date.today' } },
+        '오늘'
+    );
+    const headerWrap = el('div', { className: 'page-header-row' }, header, dateLabel, todayButton);
 
     const form = el(
         'form',
@@ -82,8 +100,22 @@ export const renderDietView = (container, store) => {
     const list = renderMealList(entry.meals);
 
     container.appendChild(headerWrap);
-    container.appendChild(el('div', { className: 'card' }, form));
-    container.appendChild(el('div', { className: 'card' }, waterField));
+    container.appendChild(
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '입력')),
+            form
+        )
+    );
+    container.appendChild(
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '물')),
+            waterField
+        )
+    );
     container.appendChild(
         el(
             'div',
@@ -92,5 +124,4 @@ export const renderDietView = (container, store) => {
             list
         )
     );
-    container.appendChild(list);
 };

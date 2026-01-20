@@ -20,6 +20,15 @@ const renderWorkoutList = (logs) => {
             },
             '삭제'
         );
+        const editButton = el(
+            'button',
+            {
+                className: 'btn btn-secondary btn-sm',
+                dataset: { action: 'workout.edit', id: log.id },
+                type: 'button'
+            },
+            '수정'
+        );
         const meta = `${log.sets}세트 x ${log.reps}회`;
         const weightText = log.weight ? ` / ${log.weight}${log.unit}` : '';
         const item = el(
@@ -28,10 +37,15 @@ const renderWorkoutList = (logs) => {
             el(
                 'div',
                 {},
-                el('div', { className: 'list-title' }, log.name),
-                el('div', { className: 'list-subtitle' }, `${meta}${weightText}`)
+                el(
+                    'div',
+                    { className: 'list-title-row' },
+                    el('div', { className: 'list-title' }, log.name),
+                    el('span', { className: 'badge' }, meta)
+                ),
+                el('div', { className: 'list-subtitle' }, weightText ? `중량 ${weightText.trim()}` : '중량 없음')
             ),
-            el('div', { className: 'list-actions' }, removeButton)
+            el('div', { className: 'list-actions' }, editButton, removeButton)
         );
         list.appendChild(item);
     });
@@ -46,8 +60,13 @@ export const renderWorkoutView = (container, store) => {
     const entry = getWorkoutEntry(userdb, dateKey);
 
     const header = el('h1', {}, '운동');
-    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat });
-    const headerWrap = el('div', { className: 'page-header' }, header, dateLabel);
+    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat, className: 'compact' });
+    const todayButton = el(
+        'button',
+        { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'date.today' } },
+        '오늘'
+    );
+    const headerWrap = el('div', { className: 'page-header-row' }, header, dateLabel, todayButton);
 
     const form = el(
         'form',
@@ -76,7 +95,14 @@ export const renderWorkoutView = (container, store) => {
     const list = renderWorkoutList(entry.logs);
 
     container.appendChild(headerWrap);
-    container.appendChild(el('div', { className: 'card' }, form));
+    container.appendChild(
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '입력')),
+            form
+        )
+    );
     container.appendChild(
         el(
             'div',

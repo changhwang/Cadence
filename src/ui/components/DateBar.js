@@ -1,7 +1,7 @@
 import { el } from '../../utils/dom.js';
 import { addDays, formatDisplay } from '../../utils/date.js';
 
-export const renderDateBar = ({ dateKey, dateFormat }) => {
+export const renderDateBar = ({ dateKey, dateFormat, className = '' }) => {
     const prevBtn = el(
         'button',
         {
@@ -22,7 +22,7 @@ export const renderDateBar = ({ dateKey, dateFormat }) => {
     );
     const label = el('div', { className: 'date-label' }, formatDisplay(dateKey, dateFormat));
 
-    return el('div', { className: 'date-bar' }, prevBtn, label, nextBtn);
+    return el('div', { className: `date-bar ${className}`.trim() }, prevBtn, label, nextBtn);
 };
 
 export const shiftDate = (dateKey, offset) => {

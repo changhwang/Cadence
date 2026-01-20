@@ -75,7 +75,14 @@ export const renderSettingsView = (container, store) => {
     );
 
     container.appendChild(headerWrap);
-    container.appendChild(el('div', { className: 'card' }, form));
+    container.appendChild(
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '일반')),
+            form
+        )
+    );
     container.appendChild(
         el(
             'div',

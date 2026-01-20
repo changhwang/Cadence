@@ -13,8 +13,13 @@ export const renderBodyView = (container, store) => {
     const entry = getBodyEntry(userdb, dateKey);
 
     const header = el('h1', {}, '신체');
-    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat });
-    const headerWrap = el('div', { className: 'page-header' }, header, dateLabel);
+    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat, className: 'compact' });
+    const todayButton = el(
+        'button',
+        { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'date.today' } },
+        '오늘'
+    );
+    const headerWrap = el('div', { className: 'page-header-row' }, header, dateLabel, todayButton);
 
     const form = el(
         'form',
@@ -64,7 +69,14 @@ export const renderBodyView = (container, store) => {
     );
 
     container.appendChild(headerWrap);
-    container.appendChild(el('div', { className: 'card' }, form));
+    container.appendChild(
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '입력')),
+            form
+        )
+    );
     container.appendChild(
         el(
             'div',
