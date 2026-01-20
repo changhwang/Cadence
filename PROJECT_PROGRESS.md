@@ -12,9 +12,15 @@
 - [x] 운동 추가 모달
 - [x] 추가 버튼 → 모달 선택(루틴/운동 추가) UX 정리
 - [x] 설정 페이지 확장 (키/운동 단위/음식 단위/사운드 등)
+- [x] Settings > Nutrition UI 확장
+- [x] Goal timeline/override 데이터 구조 구축
+- [x] goalSelectors 구현 (date별 목표 계산 경로 고정)
+- [x] goalService/targetEngine/frameworks 스캐폴딩
 
 ## 진행중
 - [ ] 데이터베이스 분리 (exercise/food/cardio/routines)
+- [ ] 영양/목표 시스템 업그레이드 (Goal × Framework)
+- [ ] Exercise Credit 정책/계산 적용
 
 ## 예정
 - [ ] 다국어 DB 구조 리팩터 (exercise/food id + label 분리)
@@ -24,10 +30,11 @@
 - [ ] 통계/차트 복원
 - [ ] 스와이프 삭제 UX(선택)
 - [ ] 설정 페이지 UI/UX 마감
-- [ ] 영양/목표 시스템 업그레이드 (Goal × Framework)
 - [x] nutritionEngine + 정책 프리셋 구현
-- [ ] Settings > Nutrition UI 확장
 - [ ] Diet 화면 영양 카드/경고 배지 출력
+- [ ] iOS 홈화면 타이틀(meta) 정리
+- [ ] addDays() UTC-safe로 교체
+- [ ] change 이벤트 리스너 중복 제거 점검
 
 ## 페이지별 남은 작업
 ### 운동
@@ -49,9 +56,9 @@
 - [ ] 통계 카드(최근/최고/평균)
 
 ### 설정
-- [ ] 프로필(성별/키/체중/생년월일/활동량) 입력
-- [ ] 단위 설정(키/체중/운동/음식/물)
-- [ ] 사운드/알림 설정
+- [x] 프로필(성별/키/체중/생년월일/활동량) 입력
+- [x] 단위 설정(키/체중/운동/음식/물)
+- [x] 사운드/알림 설정
 - [ ] 백업/복원 UX 마감
 
 ## 공통/백엔드/유틸

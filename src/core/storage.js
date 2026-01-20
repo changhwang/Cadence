@@ -61,6 +61,14 @@ export const loadUserDb = () => {
         ...defaults,
         ...parsed,
         profile: { ...defaults.profile, ...(parsed.profile || {}) },
+        goals: {
+            ...defaults.goals,
+            ...(parsed.goals || {}),
+            overrideByDate: {
+                ...defaults.goals.overrideByDate,
+                ...((parsed.goals || {}).overrideByDate || {})
+            }
+        },
         meta: { ...defaults.meta, ...(parsed.meta || {}) }
     };
 };

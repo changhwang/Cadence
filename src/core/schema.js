@@ -7,7 +7,10 @@ export const createDefaultUserDb = () => ({
     workout: {},
     diet: {},
     body: {},
-    goals: {},
+    goals: {
+        timeline: [],
+        overrideByDate: {}
+    },
     profile: {
         sex: 'M',
         birth: '',
