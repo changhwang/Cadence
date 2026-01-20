@@ -1,5 +1,4 @@
 const TABS = [
-    { route: 'dashboard', label: '홈', icon: 'home' },
     { route: 'workout', label: '운동', icon: 'dumbbell' },
     { route: 'diet', label: '식단', icon: 'utensils' },
     { route: 'body', label: '신체', icon: 'scale' },

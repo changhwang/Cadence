@@ -4,7 +4,8 @@ const initialUiState = {
     route: DEFAULT_ROUTE,
     modal: { open: false, type: null, payload: null },
     saveStatus: { ok: true, lastError: null, lastSavedAt: null },
-    workoutManageMode: false
+    workoutManageMode: false,
+    dietManageMode: false
 };
 
 const createStore = (initialState) => {
@@ -59,6 +60,14 @@ const reducer = (state, action) => {
                 ui: {
                     ...state.ui,
                     workoutManageMode: !state.ui.workoutManageMode
+                }
+            };
+        case 'TOGGLE_DIET_MANAGE':
+            return {
+                ...state,
+                ui: {
+                    ...state.ui,
+                    dietManageMode: !state.ui.dietManageMode
                 }
             };
         default:

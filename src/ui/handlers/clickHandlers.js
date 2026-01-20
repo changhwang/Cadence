@@ -9,6 +9,7 @@ import {
     openWorkoutRoutineModal
 } from '../modals/workoutModals.js';
 import { openDietEditModal, openFoodSearchModal } from '../modals/foodModals.js';
+import { openDietAddMenuModal, openMealBatchModal, openWaterLogModal } from '../modals/dietModals.js';
 import { openWorkoutAddMenuModal } from '../modals/menuModals.js';
 
 export const handleRouteAction = (actionEl, action) => {
@@ -27,6 +28,89 @@ export const handleDietClickAction = (store, actionEl, action) => {
     }
     if (action === 'diet.search') {
         openFoodSearchModal(store);
+        return true;
+    }
+    if (action === 'diet.addMenu') {
+        openDietAddMenuModal(store);
+        return true;
+    }
+    if (action === 'diet.water.log') {
+        openWaterLogModal(store);
+        return true;
+    }
+    if (action === 'diet.water.edit') {
+        const { userdb } = store.getState();
+        const dateKey = userdb.meta.selectedDate.diet;
+        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
+        const log = Array.isArray(entry.logs) ? entry.logs.find((item) => item.id === actionEl.dataset.id) : null;
+        if (!log) return true;
+        openWaterLogModal(store, { log });
+        return true;
+    }
+    if (action === 'diet.group.edit') {
+        const groupId = actionEl.dataset.groupId;
+        const groupKey = actionEl.dataset.groupKey;
+        const groupCreatedAt = actionEl.dataset.createdAt;
+        const { userdb } = store.getState();
+        const dateKey = userdb.meta.selectedDate.diet;
+        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
+        const items = Array.isArray(entry.logs)
+            ? entry.logs.filter((log) => {
+                if (log.kind === 'water') return false;
+                if (groupId && log.groupId === groupId) return true;
+                if (!groupId && groupCreatedAt && log.createdAt === groupCreatedAt) return true;
+                if (!groupId && groupKey && `time-${log.timeHHMM || log.createdAt}` === groupKey) return true;
+                return false;
+            })
+            : [];
+        if (items.length === 0) return true;
+        const type = items[0]?.type || '식사';
+        const createdAt = items[0]?.groupCreatedAt || items[0]?.createdAt || null;
+        openMealBatchModal(store, type, { groupId: groupId || null, items, createdAt, groupCreatedAt: createdAt });
+        return true;
+    }
+    if (action === 'diet.manage.toggle') {
+        store.dispatch({ type: 'TOGGLE_DIET_MANAGE' });
+        return true;
+    }
+    if (action === 'diet.delete.selected') {
+        const checked = Array.from(document.querySelectorAll('[data-role="diet-select"]:checked'));
+        const ids = checked.map((item) => item.dataset.id).filter(Boolean);
+        const groups = checked.filter((item) => item.dataset.kind === 'mealGroup').map((item) => item.dataset.id);
+        const groupKeys = checked
+            .filter((item) => item.dataset.kind === 'mealGroup')
+            .map((item) => item.dataset.groupKey || '');
+        const waters = checked.filter((item) => item.dataset.kind === 'water').map((item) => item.dataset.id);
+        if (ids.length === 0 && groups.length === 0 && waters.length === 0) {
+            window.alert('삭제할 항목을 선택해 주세요.');
+            return true;
+        }
+        if (!window.confirm('선택한 식단 기록을 삭제할까요?')) return true;
+        updateUserDb(store, (nextDb) => {
+            const dateKey = nextDb.meta.selectedDate.diet;
+            const entry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
+            entry.meals = entry.meals.filter((meal) => {
+                if (ids.includes(meal.id)) return false;
+                if (groups.includes(meal.groupId)) return false;
+                if (groupKeys.some((key) => key && `time-${meal.timeHHMM || meal.createdAt}` === key)) return false;
+                return true;
+            });
+            if (Array.isArray(entry.logs)) {
+                entry.logs = entry.logs.filter((log) => {
+                    if (waters.includes(log.id)) return false;
+                    if (groups.includes(log.groupId)) return false;
+                    if (groupKeys.some((key) => key && `time-${log.timeHHMM || log.createdAt}` === key)) return false;
+                    return !ids.includes(log.id);
+                });
+                const waterTotal = entry.logs.reduce(
+                    (sum, log) => sum + (log.kind === 'water' ? Number(log.amountMl || 0) : 0),
+                    0
+                );
+                if (waterTotal > 0) entry.waterMl = waterTotal;
+            }
+            nextDb.diet[dateKey] = entry;
+            nextDb.updatedAt = new Date().toISOString();
+        });
         return true;
     }
     return false;

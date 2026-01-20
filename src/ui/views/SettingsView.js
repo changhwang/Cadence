@@ -14,12 +14,32 @@ export const renderSettingsView = (container, store) => {
     const dateSection = el(
         'div',
         { className: 'settings-section' },
-        el('h3', { className: 'section-title' }, '날짜 형식'),
+        el('h3', { className: 'section-title' }, '날짜/시간 형식'),
         el(
-            'select',
-            { name: 'dateFormat' },
-            el('option', { value: 'YMD', selected: settings.dateFormat === 'YMD' }, 'YYYY.MM.DD'),
-            el('option', { value: 'MDY', selected: settings.dateFormat === 'MDY' }, 'MM/DD/YYYY')
+            'div',
+            { className: 'settings-format-row' },
+            el(
+                'label',
+                { className: 'input-label' },
+                '날짜 형식',
+                el(
+                    'select',
+                    { name: 'dateFormat' },
+                    el('option', { value: 'YMD', selected: settings.dateFormat === 'YMD' }, 'YYYY.MM.DD'),
+                    el('option', { value: 'MDY', selected: settings.dateFormat === 'MDY' }, 'MM/DD/YYYY')
+                )
+            ),
+            el(
+                'label',
+                { className: 'input-label' },
+                '시간 형식',
+                el(
+                    'select',
+                    { name: 'timeFormat' },
+                    el('option', { value: 'H24', selected: settings.timeFormat !== 'H12' }, '24H'),
+                    el('option', { value: 'H12', selected: settings.timeFormat === 'H12' }, '12H (AM/PM)')
+                )
+            )
         ),
         el(
             'label',

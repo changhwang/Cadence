@@ -60,13 +60,22 @@ export function todayISO(): string;
 export function toISO(input: Date | number | string): string; // strict ISO normalize
 export function addDays(isoDate: string, delta: number): string;
 export function compareISO(a: string, b: string): number; // -1/0/1
-export function formatDate(isoDate: string, fmt: 'YMD'|'MDY'|'KO_DOTS'): string;
-export function parseDisplayDate(input: string, fmt: 'YMD'|'MDY'|'KO_DOTS'): string; // -> ISO
+export function formatDate(isoDate: string, fmt: 'YMD'|'MDY'): string;
+export function parseDisplayDate(input: string, fmt: 'YMD'|'MDY'): string; // -> ISO
 ```
 
 ---
 
-## 2) core/storage.js
+## 2) utils/time.js
+```js
+export function coerceTimeHHMM(input: string, fallbackHHMM?: string): string;
+export function parseTimeHHMM(input: string): { hh: number, mm: number } | null;
+export function formatTimeHHMM(timeHHMM: string, fmt: 'H24'|'H12'): string;
+```
+
+---
+
+## 3) core/storage.js
 ```js
 export function loadUserDB(): any;
 export function saveUserDB(userdb: any): void;
@@ -80,7 +89,7 @@ export function importBackup(jsonText: string): { userdb:any, settings:any };
 
 ---
 
-## 3) core/store.js
+## 4) core/store.js
 ```js
 export function createStore(initialState: any): {
   getState(): any;
@@ -111,7 +120,7 @@ export const Actions: {
 
 ---
 
-## 4) services/nutrition/frameworks.js
+## 5) services/nutrition/frameworks.js
 ```js
 export function getFrameworks(): Framework[];
 export function getFrameworkById(id:string): Framework | null;
@@ -120,7 +129,7 @@ export function validateFramework(fw: Framework): { ok:boolean, errors:string[] 
 
 ---
 
-## 5) services/nutrition/targetEngine.js
+## 6) services/nutrition/targetEngine.js
 ```js
 /**
  * profile/settings/spec을 받아 base targets를 계산합니다(운동 보정 제외).
@@ -154,7 +163,7 @@ export function distributeCredit(params:{
 
 ---
 
-## 6) services/goals/goalService.js (핵심)
+## 7) services/goals/goalService.js (핵심)
 ```js
 /**
  * timeline + overrideByDate를 바탕으로 해당 날짜의 base goal(스냅샷)을 구합니다.
@@ -202,7 +211,7 @@ export function clearGoalOverride(params:{
 
 ---
 
-## 7) services/workout/energy.js
+## 8) services/workout/energy.js
 ```js
 /**
  * cardio entry로부터 kcal를 계산(또는 entry에 kcal가 있으면 그 값을 신뢰).
@@ -224,7 +233,7 @@ export function getExerciseKcalForDate(params:{
 
 ---
 
-## 8) selectors/goalSelectors.js (UI가 반드시 이것만 사용)
+## 9) selectors/goalSelectors.js (UI가 반드시 이것만 사용)
 ```js
 export function selectGoalForDate(state:any, dateISO:string): {
   base: Targets,
@@ -241,7 +250,7 @@ export function selectSelectedDate(state:any, domain:'diet'|'workout'|'body'|'da
 
 ---
 
-## 9) UI Action Naming (data-action 표준)
+## 10) UI Action Naming (data-action 표준)
 - `goal.changeDefault`  // 오늘부터 목표 변경(설정 저장)
 - `goal.setOverride`    // 이 날짜만 수정
 - `goal.clearOverride`  // 이 날짜 오버라이드 해제
@@ -251,7 +260,7 @@ export function selectSelectedDate(state:any, domain:'diet'|'workout'|'body'|'da
 
 ---
 
-## 10) 테스트 케이스(최소 10개)
+## 11) 테스트 케이스(최소 10개)
 1) timeline baseline만 있을 때 날짜 A/B/C의 effectiveGoal이 baseline
 2) 오늘 timeline 추가 후, 내일은 새 목표, 어제는 baseline
 3) overrideByDate[특정일]이 해당 일만 우선 적용

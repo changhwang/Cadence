@@ -15,13 +15,23 @@ export const openModal = ({
     onSubmit,
     submitLabel = '저장',
     dangerLabel,
-    onDanger
+    onDanger,
+    onCancel,
+    showClose = false
 }) => {
     closeModal();
 
     const overlay = el('div', { className: 'modal-overlay open center' });
     const content = el('div', { className: 'modal-content' });
-    const header = el('h2', {}, title);
+    const headerTitle = el('h2', {}, title);
+    const header = showClose
+        ? el(
+            'div',
+            { className: 'modal-header-row' },
+            headerTitle,
+            el('button', { type: 'button', className: 'modal-close', dataset: { action: 'modal.close' } }, '×')
+        )
+        : headerTitle;
     const form = el('form', { className: 'stack-form' });
 
     if (body) {
@@ -43,7 +53,24 @@ export const openModal = ({
     const submitClass = submitLabel.trim() === '닫기' ? 'btn btn-text' : 'btn';
     actions.appendChild(el('button', { type: 'submit', className: submitClass }, submitLabel));
 
-    cancelButton.addEventListener('click', () => closeModal());
+    cancelButton.addEventListener('click', () => {
+        closeModal();
+        if (typeof onCancel === 'function') {
+            onCancel();
+        }
+    });
+
+    if (showClose) {
+        const closeButton = header.querySelector('[data-action="modal.close"]');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                closeModal();
+                if (typeof onCancel === 'function') {
+                    onCancel();
+                }
+            });
+        }
+    }
 
     form.appendChild(actions);
     content.appendChild(header);
@@ -53,6 +80,9 @@ export const openModal = ({
     overlay.addEventListener('click', (event) => {
         if (event.target === overlay) {
             closeModal();
+            if (typeof onCancel === 'function') {
+                onCancel();
+            }
         }
     });
 

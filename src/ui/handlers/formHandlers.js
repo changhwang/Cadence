@@ -89,6 +89,7 @@ export const handleSettingsSubmit = (store, event, form) => {
     event.preventDefault();
     const dateFormat = form.querySelector('[name="dateFormat"]')?.value || 'YMD';
     const dateSync = Boolean(form.querySelector('[name="dateSync"]')?.checked);
+    const timeFormat = form.querySelector('[name="timeFormat"]')?.value || 'H24';
     const weightUnit = form.querySelector('[name="weightUnit"]')?.value || 'kg';
     const waterUnit = form.querySelector('[name="waterUnit"]')?.value || 'ml';
     const heightUnit = form.querySelector('[name="heightUnit"]')?.value || 'cm';
@@ -121,6 +122,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         ...prevSettings,
         dateFormat,
         dateSync,
+        timeFormat,
         lang,
         units: {
             ...store.getState().settings.units,

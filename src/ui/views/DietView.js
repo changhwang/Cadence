@@ -4,6 +4,7 @@ import { FOOD_DB } from '../../data/foods.js';
 import { getDietTotalsForDate } from '../../services/nutrition/intake.js';
 import { selectGoalForDate } from '../../selectors/goalSelectors.js';
 import { getLabelByLang } from '../utils/labels.js';
+import { formatTimeHHMM, timeHHMMFromDate } from '../../utils/time.js';
 
 const getDietEntry = (userdb, dateKey) => {
     return userdb.diet[dateKey] || { meals: [], waterMl: 0 };
@@ -16,58 +17,209 @@ const formatAmount = (meal) => {
     return `${meal.amount}`;
 };
 
-    const renderMealList = (meals, lang) => {
-    if (meals.length === 0) {
+const formatTime = (value, timeFormat) => {
+    if (!value) return '';
+    if (typeof value === 'string' && !value.includes('T')) {
+        return formatTimeHHMM(value, timeFormat);
+    }
+    const timeHHMM = timeHHMMFromDate(value);
+    if (!timeHHMM) return '';
+    return formatTimeHHMM(timeHHMM, timeFormat);
+};
+
+const getTimeKey = (entry) => {
+    if (entry?.timeHHMM) return entry.timeHHMM;
+    if (entry?.createdAt) return timeHHMMFromDate(entry.createdAt) || entry.createdAt;
+    return '';
+};
+
+const renderTimelineList = (entries, lang, manageMode, waterUnit, displayWater, timeFormat) => {
+    if (entries.length === 0) {
         return el('p', { className: 'empty-state' }, '아직 기록이 없습니다.');
     }
 
     const list = el('div', { className: 'list-group' });
-    meals.forEach((meal) => {
-        const food = meal.foodId ? FOOD_DB.find((item) => item.id === meal.foodId) : null;
-        const displayName = food ? getLabelByLang(food.labels, lang) : meal.name;
-        const amountText = formatAmount(meal);
-        const kcalText = typeof meal.kcal === 'number' ? `${Math.round(meal.kcal)} kcal` : '';
-        const fiberText =
-            typeof meal.fiberG === 'number' ? `식이섬유 ${Math.round(meal.fiberG)}g` : '';
-        const unsatText =
-            typeof meal.unsatFatG === 'number' ? `불포화 ${Math.round(meal.unsatFatG)}g` : '';
-        const meta = [amountText, kcalText, fiberText, unsatText].filter(Boolean).join(' · ');
-            const tags = food?.tags ? food.tags.join(', ') : '';
-            const cuisine = food?.cuisine ? food.cuisine.join(', ') : '';
-            const extra = [food?.category, tags, cuisine].filter(Boolean).join(' · ');
-        const editButton = el(
-            'button',
-            {
-                className: 'btn btn-secondary btn-sm',
-                dataset: { action: 'diet.edit', id: meal.id },
-                type: 'button'
-            },
-            '수정/삭제'
-        );
+    entries.forEach((entry) => {
+        const isWater = entry.kind === 'water';
+        const isGroup = entry.kind === 'mealGroup';
+        const items = entry.items || [];
+        const names = items.map((item) => item.name).filter(Boolean);
+        const displayName = isWater
+            ? '물'
+            : isGroup
+                ? names.length > 2
+                    ? `${names.slice(0, 2).join(', ')} +${names.length - 2}`
+                    : names.join(', ')
+                : items[0]?.name || '식사';
+        const totalKcal = items.reduce((sum, item) => sum + Number(item.kcal || 0), 0);
+        const waterText = isWater ? `${displayWater(entry.amountMl || 0)} ${waterUnit}` : '';
+        const itemText = isWater ? waterText : displayName;
+        const rightText = isWater ? '0 kcal' : `${Math.round(totalKcal)} kcal`;
+        const selectId = entry.groupId || entry.groupKey || entry.id;
+        const actionButton = manageMode
+            ? el('input', {
+                type: 'checkbox',
+                className: 'workout-select',
+                dataset: {
+                    role: 'diet-select',
+                    id: selectId,
+                    kind: entry.kind
+                }
+            })
+            : null;
+        if (manageMode && actionButton) {
+            actionButton.addEventListener('click', (event) => event.stopPropagation());
+        }
+        let dataset = null;
+        if (!manageMode) {
+            if (entry.kind === 'water') dataset = { action: 'diet.water.edit', id: entry.id };
+            if (entry.kind === 'mealGroup') {
+                dataset = {
+                    action: 'diet.group.edit',
+                    groupId: entry.groupId || '',
+                    groupKey: entry.groupKey || '',
+                    createdAt: entry.createdAt || ''
+                };
+            }
+            if (entry.kind === 'mealSingle') dataset = { action: 'diet.edit', id: entry.id };
+        }
         const item = el(
             'div',
-            { className: 'list-item' },
+            dataset ? { className: 'list-item timeline-item', dataset } : { className: 'list-item timeline-item' },
             el(
                 'div',
-                {},
+                { className: 'timeline-content' },
                 el(
                     'div',
-                    { className: 'list-title-row' },
-                    el('div', { className: 'list-title' }, displayName),
-                    el('span', { className: 'badge' }, meal.type)
-                )
+                    { className: 'timeline-title-row' },
+                    el('span', { className: 'timeline-label' }, formatTime(entry.timeHHMM || entry.createdAt || entry.time, timeFormat) || '-'),
+                    el('span', { className: 'badge' }, isWater ? '물' : entry.type || '식사')
+                ),
+                el('div', { className: 'timeline-subtitle' }, itemText)
             ),
-            el('div', { className: 'list-actions' }, editButton)
+            manageMode
+                ? el('div', { className: 'list-actions' }, actionButton)
+                : el('div', { className: 'timeline-kcal' }, rightText)
         );
-        if (meta) {
-            item.firstChild.appendChild(el('div', { className: 'list-subtitle' }, meta));
-        }
-            if (extra) {
-                item.firstChild.appendChild(el('div', { className: 'list-subtitle' }, extra));
-            }
         list.appendChild(item);
     });
     return list;
+};
+
+const bucketMealType = (type) => {
+    if (!type) return '식사';
+    if (type === '간식') return '간식';
+    if (type === '식사') return '식사';
+    if (type === '아침' || type === '점심' || type === '저녁') return '식사';
+    return '식사';
+};
+
+const buildTimelineLogs = (entry) => {
+    if (Array.isArray(entry.logs) && entry.logs.length > 0) {
+        return [...entry.logs];
+    }
+    const logs = (entry.meals || []).map((meal) => ({
+        ...meal,
+        kind: 'meal',
+        createdAt: meal.createdAt || null
+    }));
+    if (entry.waterMl) {
+        logs.push({
+            id: `water-${Date.now()}`,
+            kind: 'water',
+            amountMl: entry.waterMl,
+            createdAt: null
+        });
+    }
+    return logs;
+};
+
+const buildTimelineEntries = (entry) => {
+    const logs = buildTimelineLogs(entry).map((log) => ({
+        ...log,
+        timeHHMM: log.timeHHMM || timeHHMMFromDate(log.createdAt)
+    }));
+    const groups = new Map();
+    const timeGroups = new Map();
+    const entries = [];
+    logs.forEach((log) => {
+        if (log.kind === 'water') {
+            entries.push({ ...log, kind: 'water' });
+            return;
+        }
+        const type = bucketMealType(log.type);
+        if (log.groupId) {
+            if (!groups.has(log.groupId)) {
+                groups.set(log.groupId, {
+                    kind: 'mealGroup',
+                    groupId: log.groupId,
+                    type,
+                    createdAt: log.groupCreatedAt || log.createdAt || null,
+                    timeHHMM: log.timeHHMM || timeHHMMFromDate(log.groupCreatedAt || log.createdAt),
+                    items: []
+                });
+            }
+            groups.get(log.groupId).items.push(log);
+            return;
+        }
+        const timeKey = getTimeKey(log);
+        if (timeKey) {
+            if (!timeGroups.has(timeKey)) {
+                timeGroups.set(timeKey, { type, items: [] });
+            }
+            timeGroups.get(timeKey).items.push(log);
+            return;
+        }
+        entries.push({
+            kind: 'mealSingle',
+            id: log.id,
+            type,
+            createdAt: log.createdAt || null,
+            timeHHMM: log.timeHHMM || '',
+            items: [log]
+        });
+    });
+    timeGroups.forEach((group, timeKey) => {
+        if (group.items.length > 1) {
+            entries.push({
+                kind: 'mealGroup',
+                groupKey: `time-${timeKey}`,
+                type: bucketMealType(group.items[0]?.type),
+                createdAt: group.items[0]?.createdAt || null,
+                timeHHMM: timeKey.includes(':') ? timeKey : timeHHMMFromDate(group.items[0]?.createdAt),
+                items: group.items
+            });
+        } else {
+            const single = group.items[0];
+            entries.push({
+                kind: 'mealSingle',
+                id: single.id,
+                type: bucketMealType(single.type),
+                createdAt: single.createdAt || null,
+                timeHHMM: single.timeHHMM || '',
+                items: [single]
+            });
+        }
+    });
+    groups.forEach((group) => entries.push(group));
+    entries.sort((a, b) => {
+        const toMinutes = (value) => {
+            if (!value) return null;
+            const parts = String(value).split(':');
+            if (parts.length !== 2) return null;
+            const hh = Number(parts[0]);
+            const mm = Number(parts[1]);
+            if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+            return hh * 60 + mm;
+        };
+        const aMinutes = toMinutes(a.timeHHMM);
+        const bMinutes = toMinutes(b.timeHHMM);
+        if (aMinutes !== null && bMinutes !== null) return aMinutes - bMinutes;
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return aTime - bTime;
+    });
+    return entries;
 };
 
 export const renderDietView = (container, store) => {
@@ -83,24 +235,44 @@ export const renderDietView = (container, store) => {
     const targetCarb = goal.final?.carbG || 0;
     const targetFat = goal.final?.fatG || 0;
     const targetSodium = goal.final?.sodiumMg || 0;
-    const targetPotassium = goal.final?.potassiumMg || 0;
-    const targetWater = goal.final?.waterMl || 0;
-    const progress = targetKcal > 0 ? Math.min(100, Math.round((totals.kcal / targetKcal) * 100)) : 0;
-    const progressDonut = el(
-        'div',
-        { className: 'donut', style: `--percent: ${progress}` },
-        el('div', { className: 'donut-center' }, targetKcal > 0 ? `${progress}%` : '-')
-    );
-    const totalMacro = (totals.proteinG || 0) + (totals.carbG || 0) + (totals.fatG || 0);
-    const pct = (value) => (totalMacro > 0 ? Math.round((value / totalMacro) * 100) : 0);
-    const macroDonut = el(
-        'div',
-        {
-            className: 'nutrition-donut',
-            style: `--p-protein: ${pct(totals.proteinG || 0)}%; --p-carb: ${pct(totals.carbG || 0)}%; --p-fat: ${pct(totals.fatG || 0)}%;`
-        },
-        el('div', { className: 'donut-center' }, totalMacro > 0 ? `${totalMacro}g` : '-')
-    );
+    const calcWaterTarget = (weightKg) => Math.min(4500, Math.max(1500, Math.round(weightKg * 35)));
+    const weightKg = Number(userdb.profile?.weightKg ?? userdb.profile?.weight_kg);
+    const targetWater = goal.final?.waterMl || (weightKg ? calcWaterTarget(weightKg) : 0);
+    const waterUnit = settings.units?.water || 'ml';
+    const displayWater = (value) => {
+        const numeric = Number(value || 0);
+        if (waterUnit === 'oz') return Math.round(numeric / 29.5735);
+        return Math.round(numeric);
+    };
+    const getHealthColor = (current, target, type) => {
+        if (!target) return '#9AA3AF';
+        const pct = (current / target) * 100;
+        const ranges = {
+            calories: { healthy: [80, 120], warning: [50, 150] },
+            water: { healthy: [80, 120], warning: [50, 150] },
+            protein: { healthy: [80, 120], warning: [60, 140] },
+            carbs: { healthy: [70, 130], warning: [50, 160] },
+            fat: { healthy: [70, 130], warning: [50, 160] },
+            sodium: { healthy: [30, 100], warning: [15, 130] }
+        };
+        const range = ranges[type] || ranges.calories;
+        if (pct >= range.healthy[0] && pct <= range.healthy[1]) return '#4ECDC4';
+        if (pct >= range.warning[0] && pct <= range.warning[1]) return '#FFB347';
+        return '#FF6B6B';
+    };
+    const buildSummaryItem = ({ icon, label, current, target, unit, type, displayValue, displayTarget }) => {
+        const pct = target > 0 ? Math.round((current / target) * 100) : 0;
+        const color = getHealthColor(current, target, type);
+        return el(
+            'div',
+            { className: 'diet-summary-item' },
+            el('div', { className: 'diet-summary-icon', style: { color } }, el('i', { dataset: { lucide: icon } })),
+            el('div', { className: 'diet-summary-label' }, label),
+            el('div', { className: 'diet-summary-current' }, `${displayValue ?? Math.round(current || 0)}`),
+            el('div', { className: 'diet-summary-pct', style: { color } }, target > 0 ? `${pct}%` : '-'),
+            el('div', { className: 'diet-summary-target' }, `/ ${displayTarget ?? Math.round(target || 0)} ${unit}`)
+        );
+    };
 
     const header = el('h1', {}, '식단');
     const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat, className: 'compact' });
@@ -111,282 +283,82 @@ export const renderDietView = (container, store) => {
     );
     const headerWrap = el('div', { className: 'page-header-row' }, header, dateLabel, todayButton);
 
-    const form = el(
-        'form',
-        { className: 'stack-form', dataset: { action: 'diet.add' } },
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el(
-                'select',
-                { name: 'mealType' },
-                el('option', { value: '아침' }, '아침'),
-                el('option', { value: '점심' }, '점심'),
-                el('option', { value: '저녁' }, '저녁'),
-                el('option', { value: '간식' }, '간식')
-            ),
-            el('button', { type: 'submit', className: 'btn btn-sm btn-inline' }, '추가')
-        ),
-        el('input', { name: 'mealName', type: 'text', placeholder: '식단 내용을 입력하세요' }),
-        el(
-            'button',
-            { type: 'button', className: 'btn btn-secondary btn-sm btn-inline', dataset: { action: 'diet.search' } },
-            '음식 검색'
-        )
+    const manageMode = Boolean(store.getState().ui.dietManageMode);
+    const entries = buildTimelineEntries(entry);
+    const list = renderTimelineList(
+        entries,
+        settings.lang,
+        manageMode,
+        waterUnit,
+        displayWater,
+        settings.timeFormat
     );
-
-    const waterField = el(
+    const waterTotal =
+        Array.isArray(entry.logs) && entry.logs.some((log) => log.kind === 'water')
+            ? entry.logs.reduce((sum, log) => sum + (log.kind === 'water' ? Number(log.amountMl || 0) : 0), 0)
+            : Number(entry.waterMl || 0);
+    const summaryGrid = el(
         'div',
-        { className: 'row row-gap' },
-        el('label', { className: 'input-label' }, '물(ml)'),
-        el('input', {
-            type: 'number',
-            min: '0',
-            value: entry.waterMl || 0,
-            dataset: { action: 'diet.water' }
+        { className: 'diet-summary-grid' },
+        buildSummaryItem({
+            icon: 'flame',
+            label: '칼로리',
+            current: totals.kcal || 0,
+            target: targetKcal,
+            unit: 'kcal',
+            type: 'calories'
+        }),
+        buildSummaryItem({
+            icon: 'droplet',
+            label: '수분',
+            current: waterTotal,
+            target: targetWater,
+            unit: waterUnit,
+            type: 'water',
+            displayValue: displayWater(waterTotal),
+            displayTarget: displayWater(targetWater)
+        }),
+        buildSummaryItem({
+            icon: 'zap',
+            label: '나트륨',
+            current: totals.sodiumMg || 0,
+            target: targetSodium,
+            unit: 'mg',
+            type: 'sodium'
+        }),
+        buildSummaryItem({
+            icon: 'drumstick',
+            label: '단백질',
+            current: totals.proteinG || 0,
+            target: targetProtein,
+            unit: 'g',
+            type: 'protein'
+        }),
+        buildSummaryItem({
+            icon: 'wheat',
+            label: '탄수/당',
+            current: totals.carbG || 0,
+            target: targetCarb,
+            unit: 'g',
+            type: 'carbs'
+        }),
+        buildSummaryItem({
+            icon: 'droplets',
+            label: '지방',
+            current: totals.fatG || 0,
+            target: targetFat,
+            unit: 'g',
+            type: 'fat'
         })
     );
-
-    const list = renderMealList(entry.meals, settings.lang);
 
     container.appendChild(headerWrap);
     container.appendChild(
         el(
             'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '영양 합산')),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el(
-                    'div',
-                    { className: 'donut-block' },
-                    progressDonut,
-                    el('div', { className: 'list-subtitle' }, '목표 대비')
-                ),
-                el(
-                    'div',
-                    { className: 'donut-block' },
-                    macroDonut,
-                    el('div', { className: 'list-subtitle' }, '매크로 비율')
-                )
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetKcal || 0)} kcal`),
-                el('div', { className: 'progress-bar', style: `--percent: ${progress}` })
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '칼로리'),
-                el('div', { className: 'badge' }, `${Math.round(totals.kcal || 0)} kcal`)
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '단백질'),
-                el('div', { className: 'badge' }, `${Math.round(totals.proteinG || 0)} g`)
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetProtein || 0)} g`),
-                el(
-                    'div',
-                    {
-                        className: 'progress-bar',
-                        style: `--percent: ${
-                            targetProtein > 0
-                                ? Math.min(100, Math.round((totals.proteinG / targetProtein) * 100))
-                                : 0
-                        }`
-                    }
-                )
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '탄수'),
-                el('div', { className: 'badge' }, `${Math.round(totals.carbG || 0)} g`)
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetCarb || 0)} g`),
-                el(
-                    'div',
-                    {
-                        className: 'progress-bar',
-                        style: `--percent: ${
-                            targetCarb > 0
-                                ? Math.min(100, Math.round((totals.carbG / targetCarb) * 100))
-                                : 0
-                        }`
-                    }
-                )
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '지방'),
-                el('div', { className: 'badge' }, `${Math.round(totals.fatG || 0)} g`)
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetFat || 0)} g`),
-                el(
-                    'div',
-                    {
-                        className: 'progress-bar',
-                        style: `--percent: ${
-                            targetFat > 0
-                                ? Math.min(100, Math.round((totals.fatG / targetFat) * 100))
-                                : 0
-                        }`
-                    }
-                )
-            ),
-            el('div', { className: 'list-subtitle' }, '섬유/당류'),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '식이섬유'),
-                el('div', { className: 'badge' }, `${Math.round(totals.fiberG || 0)} g`)
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '당'),
-                el(
-                    'div',
-                    { className: 'badge badge-warn' },
-                    `${Math.round(totals.sugarG || 0)} g`
-                )
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '첨가당'),
-                el(
-                    'div',
-                    { className: 'badge badge-warn' },
-                    `${Math.round(totals.addedSugarG || 0)} g`
-                )
-            ),
-            el('div', { className: 'list-subtitle' }, '지방산'),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '불포화지방'),
-                el('div', { className: 'badge badge-ok' }, `${Math.round(totals.unsatFatG || 0)} g`)
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '포화지방'),
-                el(
-                    'div',
-                    { className: 'badge badge-warn' },
-                    `${Math.round(totals.satFatG || 0)} g`
-                )
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '트랜스지방'),
-                el(
-                    'div',
-                    { className: 'badge badge-warn' },
-                    `${Math.round(totals.transFatG || 0)} g`
-                )
-            ),
-            el('div', { className: 'list-subtitle' }, '전해질'),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '나트륨'),
-                el('div', { className: 'badge' }, `${Math.round(totals.sodiumMg || 0)} mg`)
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetSodium || 0)} mg`),
-                el(
-                    'div',
-                    {
-                        className: 'progress-bar',
-                        style: `--percent: ${
-                            targetSodium > 0
-                                ? Math.min(100, Math.round((totals.sodiumMg / targetSodium) * 100))
-                                : 0
-                        }`
-                    }
-                )
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '칼륨'),
-                el('div', { className: 'badge' }, `${Math.round(totals.potassiumMg || 0)} mg`)
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetPotassium || 0)} mg`),
-                el(
-                    'div',
-                    {
-                        className: 'progress-bar',
-                        style: `--percent: ${
-                            targetPotassium > 0
-                                ? Math.min(100, Math.round((totals.potassiumMg / targetPotassium) * 100))
-                                : 0
-                        }`
-                    }
-                )
-            ),
-            el('div', { className: 'list-subtitle' }, '수분'),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('div', {}, '물'),
-                el('div', { className: 'badge' }, `${Math.round(entry.waterMl || 0)} ml`)
-            ),
-            el(
-                'div',
-                { className: 'progress-row' },
-                el('div', { className: 'list-subtitle' }, `목표 ${Math.round(targetWater || 0)} ml`),
-                el(
-                    'div',
-                    {
-                        className: 'progress-bar',
-                        style: `--percent: ${
-                            targetWater > 0
-                                ? Math.min(100, Math.round((Number(entry.waterMl || 0) / targetWater) * 100))
-                                : 0
-                        }`
-                    }
-                )
-            )
-        )
-    );
-    container.appendChild(
-        el(
-            'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '입력')),
-            form
-        )
-    );
-    container.appendChild(
-        el(
-            'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '물')),
-            waterField
+            { className: 'card diet-summary-card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '오늘 섭취 요약')),
+            summaryGrid
         )
     );
     container.appendChild(
@@ -394,7 +366,40 @@ export const renderDietView = (container, store) => {
             'div',
             { className: 'card' },
             el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '기록')),
+            manageMode ? el('div', { className: 'list-subtitle' }, '삭제할 항목을 선택하세요.') : null,
             list
         )
     );
+    const addButton = el(
+        'button',
+        { type: 'button', className: 'btn', dataset: { action: 'diet.addMenu' } },
+        '추가'
+    );
+    const manageButton = el(
+        'button',
+        {
+            type: 'button',
+            className: 'btn btn-secondary btn-danger-text',
+            dataset: { action: 'diet.manage.toggle' }
+        },
+        manageMode ? '완료' : '관리'
+    );
+    const deleteButton = manageMode
+        ? el(
+            'button',
+            {
+                type: 'button',
+                className: 'btn btn-secondary btn-danger-text',
+                dataset: { action: 'diet.delete.selected' }
+            },
+            '선택 삭제'
+        )
+        : null;
+    const actionRow = manageMode
+        ? el('div', { className: 'row row-gap' }, addButton, manageButton, deleteButton)
+        : el('div', { className: 'row row-gap' }, addButton, manageButton);
+    container.appendChild(actionRow);
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
 };

@@ -8,9 +8,9 @@ export const todayIso = () => {
 
 export const addDays = (isoDate, offset) => {
     const [year, month, day] = isoDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    date.setDate(date.getDate() + offset);
-    return date.toISOString().slice(0, 10);
+    const baseUtc = Date.UTC(year, month - 1, day);
+    const nextUtc = baseUtc + offset * 24 * 60 * 60 * 1000;
+    return new Date(nextUtc).toISOString().slice(0, 10);
 };
 
 export const formatDisplay = (isoDate, format) => {

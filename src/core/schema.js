@@ -32,6 +32,7 @@ export const createDefaultUserDb = () => ({
 export const createDefaultSettings = () => ({
     schemaVersion: 1,
     dateFormat: 'YMD',
+    timeFormat: 'H24',
     dateSync: true,
     lang: 'ko',
     units: { height: 'cm', weight: 'kg', water: 'ml', food: 'g', workout: 'kg' },

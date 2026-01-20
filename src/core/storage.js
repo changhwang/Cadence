@@ -50,6 +50,9 @@ export const loadSettings = () => {
     if (merged.dateFormat === 'MDY_SLASH') {
         merged.dateFormat = 'MDY';
     }
+    if (merged.timeFormat !== 'H12' && merged.timeFormat !== 'H24') {
+        merged.timeFormat = 'H24';
+    }
     if (typeof merged.sound.volume === 'number' && merged.sound.volume <= 1) {
         merged.sound.volume = Math.round(merged.sound.volume * 100);
     }

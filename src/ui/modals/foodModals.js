@@ -3,8 +3,11 @@ import { el } from '../../utils/dom.js';
 import { closeModal, openModal } from '../components/Modal.js';
 import { updateUserDb } from '../store/userDb.js';
 import { getLabelByLang } from '../utils/labels.js';
+import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime } from '../../utils/time.js';
 
-export const openFoodSearchModal = (store) => {
+const getNowHHMM = () => timeHHMMFromDate(Date.now()) || '12:00';
+
+export const openFoodSearchModal = (store, options = {}) => {
     const state = store.getState();
     const lang = state.settings.lang || 'ko';
     const list = el('div', { className: 'list-group' });
@@ -12,10 +15,11 @@ export const openFoodSearchModal = (store) => {
     const typeSelect = el(
         'select',
         { name: 'mealType' },
+        el('option', { value: '식사' }, '식사'),
+        el('option', { value: '간식' }, '간식'),
         el('option', { value: '아침' }, '아침'),
         el('option', { value: '점심' }, '점심'),
-        el('option', { value: '저녁' }, '저녁'),
-        el('option', { value: '간식' }, '간식')
+        el('option', { value: '저녁' }, '저녁')
     );
     const amountInput = el('input', { type: 'number', min: '0', value: 1, placeholder: '수량' });
     const unitSelect = el(
@@ -124,6 +128,9 @@ export const openFoodSearchModal = (store) => {
         });
     };
 
+    if (options.initialType) {
+        typeSelect.value = options.initialType;
+    }
     renderList('');
     searchInput.addEventListener('input', (event) => renderList(event.target.value));
     categorySelect.addEventListener('change', () => renderList(searchInput.value));
@@ -156,11 +163,19 @@ export const openFoodSearchModal = (store) => {
             sodiumMg: (per.sodiumMg || 0) * multiplier,
             potassiumMg: (per.potassiumMg || 0) * multiplier
         };
+        if (typeof options.onSelect === 'function') {
+            closeModal();
+            options.onSelect({ food, type, amount, unit, scaled, label });
+            return;
+        }
         updateUserDb(store, (userdb) => {
             const dateKey = userdb.meta.selectedDate.diet;
             const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-            entry.meals = entry.meals.concat({
-                id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+            const logId = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+            const timeHHMM = coerceTimeHHMM(getNowHHMM());
+            const createdAt = combineDateAndTime(dateKey, timeHHMM) || new Date().toISOString();
+            const mealPayload = {
+                id: logId,
                 type,
                 name: label,
                 foodId: food.id,
@@ -180,7 +195,10 @@ export const openFoodSearchModal = (store) => {
                 addedSugarG: scaled.addedSugarG,
                 sodiumMg: scaled.sodiumMg,
                 potassiumMg: scaled.potassiumMg
-            });
+            };
+            entry.meals = entry.meals.concat({ ...mealPayload, createdAt, timeHHMM });
+            entry.logs = Array.isArray(entry.logs) ? entry.logs : [];
+            entry.logs.push({ ...mealPayload, kind: 'meal', createdAt, timeHHMM });
             userdb.diet[dateKey] = entry;
             userdb.updatedAt = new Date().toISOString();
         });
@@ -202,9 +220,21 @@ export const openFoodSearchModal = (store) => {
             list
         ),
         submitLabel: '닫기',
-        onSubmit: () => true
+        onSubmit: () => {
+            if (typeof options.onCancel === 'function') {
+                options.onCancel();
+            }
+            return true;
+        },
+        onCancel: () => {
+            if (typeof options.onCancel === 'function') {
+                options.onCancel();
+            }
+        },
+        showClose: true
     });
 };
+
 
 export const openDietEditModal = (store, { id }) => {
     if (!id) return;
@@ -215,6 +245,11 @@ export const openDietEditModal = (store, { id }) => {
     if (!target) return;
     const food = target.foodId ? FOOD_DB.find((item) => item.id === target.foodId) : null;
     const servingSize = food?.serving?.size || 1;
+    const timeInput = el('input', {
+        name: 'timeHHMM',
+        type: 'time',
+        value: coerceTimeHHMM(target.timeHHMM || timeHHMMFromDate(target.createdAt) || getNowHHMM())
+    });
     openModal({
         title: '식단 수정',
         body: el(
@@ -224,11 +259,13 @@ export const openDietEditModal = (store, { id }) => {
             el(
                 'select',
                 { name: 'mealType' },
+                el('option', { value: '식사', selected: target.type === '식사' }, '식사'),
+                el('option', { value: '간식', selected: target.type === '간식' }, '간식'),
                 el('option', { value: '아침', selected: target.type === '아침' }, '아침'),
                 el('option', { value: '점심', selected: target.type === '점심' }, '점심'),
-                el('option', { value: '저녁', selected: target.type === '저녁' }, '저녁'),
-                el('option', { value: '간식', selected: target.type === '간식' }, '간식')
+                el('option', { value: '저녁', selected: target.type === '저녁' }, '저녁')
             ),
+            el('label', { className: 'input-label' }, '시간', timeInput),
             el(
                 'div',
                 { className: 'row row-gap' },
@@ -244,23 +281,43 @@ export const openDietEditModal = (store, { id }) => {
                     el('option', { value: 'serving', selected: target.amountUnit === 'serving' }, '서빙'),
                     el('option', { value: 'g', selected: target.amountUnit === 'g' }, '그램')
                 )
+            ),
+            el(
+                'div',
+                { className: 'row row-gap' },
+                el('label', { className: 'input-label' }, '칼로리', el('input', { name: 'kcal', type: 'number', min: '0', value: Math.round(target.kcal || 0) })),
+                el('label', { className: 'input-label' }, '단백질', el('input', { name: 'proteinG', type: 'number', min: '0', value: Math.round(target.proteinG || 0) }))
+            ),
+            el(
+                'div',
+                { className: 'row row-gap' },
+                el('label', { className: 'input-label' }, '탄수', el('input', { name: 'carbG', type: 'number', min: '0', value: Math.round(target.carbG || 0) })),
+                el('label', { className: 'input-label' }, '지방', el('input', { name: 'fatG', type: 'number', min: '0', value: Math.round(target.fatG || 0) }))
             )
         ),
         onSubmit: (form) => {
             const name = form.querySelector('[name="mealName"]')?.value.trim() || '';
             const type = form.querySelector('[name="mealType"]')?.value || target.type;
+            const timeHHMM = coerceTimeHHMM(form.querySelector('[name="timeHHMM"]')?.value || target.timeHHMM || '');
             const amountRaw = Number(form.querySelector('[name="amount"]')?.value || 0);
             const amount = Number.isNaN(amountRaw) ? target.amount ?? 1 : Math.max(0, amountRaw);
             const amountUnit = form.querySelector('[name="amountUnit"]')?.value || target.amountUnit || 'serving';
+            const readNumber = (key, fallback) => {
+                const value = Number(form.querySelector(`[name="${key}"]`)?.value || 0);
+                return Number.isNaN(value) ? fallback : value;
+            };
             if (!name) return false;
             updateUserDb(store, (nextDb) => {
                 const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
                 const nextTarget = nextEntry.meals.find((meal) => meal.id === id);
                 if (!nextTarget) return;
+                const createdAt = combineDateAndTime(dateKey, timeHHMM) || nextTarget.createdAt || new Date().toISOString();
                 nextTarget.name = name;
                 nextTarget.type = type;
                 nextTarget.amount = amount;
                 nextTarget.amountUnit = amountUnit;
+                nextTarget.timeHHMM = timeHHMM;
+                nextTarget.createdAt = createdAt;
                 if (food) {
                     const per = food.nutrition || {};
                     const multiplier = amountUnit === 'g' ? amount / servingSize : amount;
@@ -279,6 +336,27 @@ export const openDietEditModal = (store, { id }) => {
                     nextTarget.sodiumMg = (per.sodiumMg || 0) * multiplier;
                     nextTarget.potassiumMg = (per.potassiumMg || 0) * multiplier;
                 }
+                nextTarget.kcal = readNumber('kcal', nextTarget.kcal);
+                nextTarget.proteinG = readNumber('proteinG', nextTarget.proteinG);
+                nextTarget.carbG = readNumber('carbG', nextTarget.carbG);
+                nextTarget.fatG = readNumber('fatG', nextTarget.fatG);
+                if (Array.isArray(nextEntry.logs)) {
+                    const logTarget = nextEntry.logs.find((log) => log.id === id);
+                    if (logTarget) {
+                        logTarget.kind = 'meal';
+                        logTarget.type = type;
+                        logTarget.name = nextTarget.name;
+                        logTarget.amount = nextTarget.amount;
+                        logTarget.amountUnit = nextTarget.amountUnit;
+                        logTarget.kcal = nextTarget.kcal;
+                        logTarget.proteinG = nextTarget.proteinG;
+                        logTarget.carbG = nextTarget.carbG;
+                        logTarget.fatG = nextTarget.fatG;
+                        logTarget.foodId = nextTarget.foodId;
+                        logTarget.timeHHMM = timeHHMM;
+                        logTarget.createdAt = createdAt;
+                    }
+                }
                 nextDb.diet[dateKey] = nextEntry;
                 nextDb.updatedAt = new Date().toISOString();
             });
@@ -292,6 +370,9 @@ export const openDietEditModal = (store, { id }) => {
             updateUserDb(store, (nextDb) => {
                 const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
                 nextEntry.meals = nextEntry.meals.filter((meal) => meal.id !== id);
+                if (Array.isArray(nextEntry.logs)) {
+                    nextEntry.logs = nextEntry.logs.filter((log) => log.id !== id);
+                }
                 nextDb.diet[dateKey] = nextEntry;
                 nextDb.updatedAt = new Date().toISOString();
             });

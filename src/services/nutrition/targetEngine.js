@@ -25,6 +25,7 @@ const pickMid = (range) => (range ? (range[0] + range[1]) / 2 : null);
 const calcMacroFromPct = (kcal, pct) => (kcal * pct) / 4;
 
 const calcFatFromPct = (kcal, pct) => (kcal * pct) / 9;
+const calcWaterTarget = (weightKg) => clamp(Math.round(weightKg * 35), 1500, 4500);
 
 const resolveGoalDelta = (spec, settings) => {
     const cutPct = settings?.energyModel?.cutPct ?? 0.15;
@@ -87,7 +88,7 @@ export const computeBaseTargets = ({ profile, spec, settings }) => {
         carbG: clamp(carbsG, 0, 999),
         fatG: clamp(fatG, 0, 999),
         sodiumMg: policy.sodium_mg_max ?? null,
-        waterMl: null,
+        waterMl: calcWaterTarget(weightKg),
         fiberG: policy.fiber_g_per_1000kcal ? Math.round((targetCal / 1000) * policy.fiber_g_per_1000kcal) : null
     };
 
