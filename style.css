@@ -46,6 +46,10 @@ body {
     padding-top: calc(10px + var(--safe-area-top));
 }
 
+.page-header {
+    margin-bottom: 12px;
+}
+
 /* Tab Bar */
 .tab-bar {
     position: fixed;
@@ -95,6 +99,23 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+.stack-form {
+    gap: 10px;
+}
+
+.stack-form input,
+.stack-form select {
+    font-size: 16px;
+}
+
+.btn {
+    border-radius: 14px;
+}
+
+.btn-sm {
+    border-radius: 12px;
+}
+
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -108,6 +129,10 @@ body {
     margin: 0;
 }
 
+.card .list-group {
+    margin-top: 8px;
+}
+
 /* Headers */
 h1 {
     font-size: 34px;
@@ -119,6 +144,12 @@ h2 {
     font-size: 22px;
     font-weight: 700;
     margin: 20px 0 10px 0;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 /* Buttons */
@@ -154,6 +185,14 @@ h2 {
     background: var(--ios-card);
     border-radius: var(--radius-l);
     overflow: hidden;
+}
+
+.list-item {
+    gap: 12px;
+}
+
+.list-title {
+    font-weight: 600;
 }
 
 .list-item {
@@ -288,4 +327,89 @@ select {
     background: var(--ios-blue);
     width: 0%;
     transition: width 0.3s ease;
+}
+
+/* Date Bar */
+.date-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.date-label {
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Forms */
+.stack-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stack-form input,
+.stack-form select {
+    margin-bottom: 0;
+}
+
+.input-label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+label.input-label input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.date-bar .btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 4px 0 0 0;
+}
+
+.list-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.row > * {
+    flex: 1;
+}
+
+.row-gap {
+    gap: 10px;
+}
+
+.btn-inline {
+    width: auto;
+    padding: 8px 14px;
+}
+
+.stack-form .btn-inline {
+    align-self: flex-end;
 }
