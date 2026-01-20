@@ -9,7 +9,14 @@ export const closeModal = () => {
     }
 };
 
-export const openModal = ({ title, body, onSubmit, submitLabel = '저장' }) => {
+export const openModal = ({
+    title,
+    body,
+    onSubmit,
+    submitLabel = '저장',
+    dangerLabel,
+    onDanger
+}) => {
     closeModal();
 
     const overlay = el('div', { className: 'modal-overlay open center' });
@@ -21,14 +28,20 @@ export const openModal = ({ title, body, onSubmit, submitLabel = '저장' }) => 
         form.appendChild(body);
     }
 
-    const actions = el(
-        'div',
-        { className: 'modal-actions' },
-        el('button', { type: 'button', className: 'btn btn-secondary' }, '취소'),
-        el('button', { type: 'submit', className: 'btn' }, submitLabel)
-    );
+    const actions = el('div', { className: 'modal-actions' });
+    const cancelButton = el('button', { type: 'button', className: 'btn btn-secondary' }, '취소');
+    actions.appendChild(cancelButton);
+    if (dangerLabel && typeof onDanger === 'function') {
+        const dangerButton = el('button', { type: 'button', className: 'btn btn-secondary' }, dangerLabel);
+        dangerButton.addEventListener('click', () => {
+            const result = onDanger();
+            if (result === false) return;
+            closeModal();
+        });
+        actions.appendChild(dangerButton);
+    }
+    actions.appendChild(el('button', { type: 'submit', className: 'btn' }, submitLabel));
 
-    const cancelButton = actions.querySelector('button');
     cancelButton.addEventListener('click', () => closeModal());
 
     form.appendChild(actions);

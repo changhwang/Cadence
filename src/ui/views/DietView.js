@@ -12,15 +12,6 @@ const renderMealList = (meals) => {
 
     const list = el('div', { className: 'list-group' });
     meals.forEach((meal) => {
-        const removeButton = el(
-            'button',
-            {
-                className: 'btn btn-secondary btn-sm',
-                dataset: { action: 'diet.remove', id: meal.id },
-                type: 'button'
-            },
-            '삭제'
-        );
         const editButton = el(
             'button',
             {
@@ -28,7 +19,7 @@ const renderMealList = (meals) => {
                 dataset: { action: 'diet.edit', id: meal.id },
                 type: 'button'
             },
-            '수정'
+            '수정/삭제'
         );
         const item = el(
             'div',
@@ -43,7 +34,7 @@ const renderMealList = (meals) => {
                     el('span', { className: 'badge' }, meal.type)
                 )
             ),
-            el('div', { className: 'list-actions' }, editButton, removeButton)
+            el('div', { className: 'list-actions' }, editButton)
         );
         list.appendChild(item);
     });

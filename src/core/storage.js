@@ -26,7 +26,25 @@ export const loadSettings = () => {
         trySetItem(STORAGE_KEYS.SETTINGS, defaults);
         return defaults;
     }
-    return safeParse(raw, createDefaultSettings());
+    const defaults = createDefaultSettings();
+    const parsed = safeParse(raw, defaults);
+    const merged = {
+        ...defaults,
+        ...parsed,
+        units: { ...defaults.units, ...(parsed.units || {}) },
+        sound: { ...defaults.sound, ...(parsed.sound || {}) },
+        dev: { ...defaults.dev, ...(parsed.dev || {}) }
+    };
+    if (merged.dateFormat === 'YMD_DOTS' || merged.dateFormat === 'YMD_DASH') {
+        merged.dateFormat = 'YMD';
+    }
+    if (merged.dateFormat === 'MDY_SLASH') {
+        merged.dateFormat = 'MDY';
+    }
+    if (typeof merged.sound.volume === 'number' && merged.sound.volume <= 1) {
+        merged.sound.volume = Math.round(merged.sound.volume * 100);
+    }
+    return merged;
 };
 
 export const loadUserDb = () => {
@@ -36,7 +54,14 @@ export const loadUserDb = () => {
         trySetItem(STORAGE_KEYS.USERDB, defaults);
         return defaults;
     }
-    return safeParse(raw, createDefaultUserDb());
+    const defaults = createDefaultUserDb();
+    const parsed = safeParse(raw, defaults);
+    return {
+        ...defaults,
+        ...parsed,
+        profile: { ...defaults.profile, ...(parsed.profile || {}) },
+        meta: { ...defaults.meta, ...(parsed.meta || {}) }
+    };
 };
 
 export const saveSettings = (settings) => {

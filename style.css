@@ -342,6 +342,12 @@ h2 {
     margin: 0 0 12px 0;
 }
 
+.modal-content .card-header {
+    padding-bottom: 4px;
+    border-bottom: 0.5px solid var(--ios-separator);
+    margin-top: 8px;
+}
+
 .modal-overlay.open {
     display: flex;
 }
@@ -521,6 +527,20 @@ label.input-label input[type="checkbox"] {
     margin-right: 8px;
 }
 
+.inline-toggle {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.inline-toggle input[type="checkbox"] {
+    margin: 0;
+}
+
+.toggle-label {
+    color: var(--text-secondary);
+}
+
 .date-bar .btn {
     min-width: 36px;
     height: 36px;
@@ -565,6 +585,45 @@ label.input-label input[type="checkbox"] {
     flex: 0 0 auto;
 }
 
+.slider-value {
+    min-width: 28px;
+    text-align: right;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.slider-row input[type="range"] {
+    margin: 0;
+    padding: 0;
+    flex: 1;
+}
+
+.slider-row {
+    gap: 6px;
+    align-items: center;
+}
+
+.slider-row input[type="range"] {
+    width: 100%;
+}
+
+.settings-section {
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-section select {
+    width: 100%;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin: 0;
+}
 .stack-form .row + input,
 .stack-form .row + select {
     margin-top: 2px;

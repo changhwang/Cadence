@@ -2,9 +2,290 @@ import { renderTabBar } from './components/TabBar.js';
 import { renderView } from './views/index.js';
 import { buildExportPayload, downloadJson, parseImportPayload } from '../services/backupService.js';
 import { shiftDate } from './components/DateBar.js';
-import { todayIso } from '../utils/date.js';
-import { openModal } from './components/Modal.js';
+import { parseDateInput, todayIso } from '../utils/date.js';
+import { closeModal, openModal } from './components/Modal.js';
 import { el } from '../utils/dom.js';
+import { ROUTINE_TEMPLATES } from '../data/routines.js';
+
+const buildDefaultSets = (log) => {
+    const count = Math.max(Number(log.sets || 0), 1);
+    const reps = Number(log.reps || 0);
+    const weight = Number(log.weight || 0);
+    return Array.from({ length: count }, () => ({ reps, weight }));
+};
+
+const createWorkoutLog = ({ name, sets, reps, weight, unit }) => {
+    const nextLog = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+        name,
+        sets,
+        reps,
+        weight: Number.isNaN(weight) ? 0 : weight,
+        unit
+    };
+    nextLog.setsDetail = buildDefaultSets(nextLog);
+    return nextLog;
+};
+
+const appendWorkoutLogs = (store, logs) => {
+    updateUserDb(store, (userdb) => {
+        const dateKey = userdb.meta.selectedDate.workout;
+        const entry = userdb.workout[dateKey] || { logs: [] };
+        entry.logs = entry.logs.concat(logs);
+        userdb.workout[dateKey] = entry;
+        userdb.updatedAt = new Date().toISOString();
+    });
+};
+
+const openWorkoutAddModal = (store) => {
+    const body = el(
+        'div',
+        { className: 'stack-form' },
+        el('input', { name: 'exerciseName', type: 'text', placeholder: '운동명' }),
+        el(
+            'div',
+            { className: 'row row-gap' },
+            el('input', { name: 'sets', type: 'number', min: '1', value: 3 }),
+            el('input', { name: 'reps', type: 'number', min: '1', value: 10 })
+        ),
+        el(
+            'div',
+            { className: 'row row-gap' },
+            el('input', { name: 'weight', type: 'number', min: '0', value: 0 }),
+            el(
+                'select',
+                { name: 'unit' },
+                el('option', { value: 'kg' }, 'kg'),
+                el('option', { value: 'lb' }, 'lb')
+            )
+        )
+    );
+
+    openModal({
+        title: '운동 추가',
+        body,
+        onSubmit: (form) => {
+            const name = form.querySelector('[name="exerciseName"]')?.value.trim() || '';
+            const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
+            const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
+            const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
+            const unit = form.querySelector('[name="unit"]')?.value || 'kg';
+            if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
+            const log = createWorkoutLog({ name, sets, reps, weight, unit });
+            appendWorkoutLogs(store, [log]);
+            return true;
+        }
+    });
+};
+
+const openWorkoutRoutineModal = (store) => {
+    const list = el('div', { className: 'list-group' });
+    Object.entries(ROUTINE_TEMPLATES).forEach(([key, routine]) => {
+        const item = el(
+            'div',
+            { className: 'list-item', dataset: { action: 'routine.select', key } },
+            el(
+                'div',
+                {},
+                el('div', { className: 'list-title' }, routine.title),
+                el('div', { className: 'list-subtitle' }, `${routine.exercises.length}개 운동`)
+            ),
+            el('div', { className: 'list-actions' }, el('span', { className: 'badge' }, '추가'))
+        );
+        list.appendChild(item);
+    });
+
+    list.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('[data-action]');
+        if (!actionEl) return;
+        if (actionEl.dataset.action !== 'routine.select') return;
+        const key = actionEl.dataset.key;
+        const routine = ROUTINE_TEMPLATES[key];
+        if (!routine) return;
+        const logs = routine.exercises.map((name) =>
+            createWorkoutLog({ name, sets: 3, reps: 10, weight: 0, unit: 'kg' })
+        );
+        appendWorkoutLogs(store, logs);
+        closeModal();
+    });
+
+    openModal({
+        title: '루틴 가져오기',
+        body: el('div', { className: 'stack-form' }, list),
+        submitLabel: '닫기',
+        onSubmit: () => true
+    });
+};
+
+const openWorkoutAddMenuModal = (store) => {
+    const body = el(
+        'div',
+        { className: 'stack-form' },
+        el('button', { type: 'button', className: 'btn', dataset: { action: 'workout.add' } }, '운동 추가'),
+        el('button', { type: 'button', className: 'btn btn-secondary', dataset: { action: 'workout.routine' } }, '루틴 가져오기')
+    );
+
+    body.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('[data-action]');
+        if (!actionEl) return;
+        const action = actionEl.dataset.action;
+        if (action === 'workout.add') {
+            closeModal();
+            openWorkoutAddModal(store);
+        }
+        if (action === 'workout.routine') {
+            closeModal();
+            openWorkoutRoutineModal(store);
+        }
+    });
+
+    openModal({
+        title: '추가',
+        body,
+        submitLabel: '닫기',
+        onSubmit: () => true
+    });
+};
+
+const openWorkoutEditModal = (store, { log, dateKey, id }) => {
+    const setsDetail = Array.isArray(log.setsDetail) && log.setsDetail.length > 0
+        ? log.setsDetail.map((set) => ({ reps: Number(set.reps || 0), weight: Number(set.weight || 0) }))
+        : buildDefaultSets(log);
+
+    const setsContainer = el('div', { className: 'stack-form', dataset: { role: 'sets-container' } });
+    const renderSets = () => {
+        setsContainer.textContent = '';
+        setsDetail.forEach((set, index) => {
+            const row = el(
+                'div',
+                { className: 'row row-gap', dataset: { setRow: String(index) } },
+                el('input', {
+                    name: 'setReps',
+                    type: 'number',
+                    min: '0',
+                    value: set.reps,
+                    placeholder: `횟수 (세트 ${index + 1})`
+                }),
+                el('input', {
+                    name: 'setWeight',
+                    type: 'number',
+                    min: '0',
+                    value: set.weight,
+                    placeholder: `중량 (세트 ${index + 1})`
+                }),
+                el(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'btn btn-secondary btn-sm',
+                        dataset: { action: 'set.remove', index: String(index) }
+                    },
+                    '삭제'
+                )
+            );
+            setsContainer.appendChild(row);
+        });
+    };
+
+    const addSetButton = el(
+        'button',
+        { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'set.add' } },
+        '세트 추가'
+    );
+
+    const body = el(
+        'div',
+        { className: 'stack-form', dataset: { role: 'workout-edit' } },
+        el('input', { name: 'exerciseName', type: 'text', value: log.name }),
+        el(
+            'div',
+            { className: 'row row-gap' },
+            el('input', { name: 'sets', type: 'number', min: '1', value: log.sets }),
+            el('input', { name: 'reps', type: 'number', min: '1', value: log.reps })
+        ),
+        el(
+            'div',
+            { className: 'row row-gap' },
+            el('input', { name: 'weight', type: 'number', min: '0', value: log.weight || 0 }),
+            el(
+                'select',
+                { name: 'unit' },
+                el('option', { value: 'kg', selected: log.unit === 'kg' }, 'kg'),
+                el('option', { value: 'lb', selected: log.unit === 'lb' }, 'lb')
+            )
+        ),
+        el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '세트 상세')),
+        setsContainer,
+        addSetButton
+    );
+
+    body.addEventListener('click', (event) => {
+        const actionEl = event.target.closest
+            ? event.target.closest('[data-action]')
+            : event.target.parentElement?.closest('[data-action]');
+        if (!actionEl) return;
+        const action = actionEl.dataset.action;
+        if (action === 'set.add') {
+            setsDetail.push({ reps: 0, weight: 0 });
+            renderSets();
+        }
+        if (action === 'set.remove') {
+            const index = Number(actionEl.dataset.index || -1);
+            if (index < 0) return;
+            setsDetail.splice(index, 1);
+            if (setsDetail.length === 0) {
+                setsDetail.push({ reps: 0, weight: 0 });
+            }
+            renderSets();
+        }
+    });
+
+    renderSets();
+
+    openModal({
+        title: '운동 수정',
+        body,
+        onSubmit: (form) => {
+            const name = form.querySelector('[name="exerciseName"]')?.value.trim() || '';
+            const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
+            const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
+            const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
+            const unit = form.querySelector('[name="unit"]')?.value || log.unit;
+            if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
+            const nextSets = Array.from(form.querySelectorAll('[data-set-row]')).map((row) => ({
+                reps: Number(row.querySelector('[name="setReps"]')?.value || 0),
+                weight: Number(row.querySelector('[name="setWeight"]')?.value || 0)
+            }));
+            updateUserDb(store, (nextDb) => {
+                const nextEntry = nextDb.workout[dateKey] || { logs: [] };
+                const nextTarget = nextEntry.logs.find((item) => item.id === id);
+                if (!nextTarget) return;
+                nextTarget.name = name;
+                nextTarget.sets = sets;
+                nextTarget.reps = reps;
+                nextTarget.weight = Number.isNaN(weight) ? 0 : weight;
+                nextTarget.unit = unit;
+                nextTarget.setsDetail = nextSets;
+                nextDb.workout[dateKey] = nextEntry;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+            return true;
+        },
+        submitLabel: '저장',
+        dangerLabel: '삭제',
+        onDanger: () => {
+            if (!window.confirm('운동 내역을 삭제하시겠습니까?')) {
+                return false;
+            }
+            updateUserDb(store, (nextDb) => {
+                const nextEntry = nextDb.workout[dateKey] || { logs: [] };
+                nextEntry.logs = nextEntry.logs.filter((item) => item.id !== id);
+                nextDb.workout[dateKey] = nextEntry;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+        }
+    });
+};
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -24,17 +305,6 @@ const handleActionClick = (store, event) => {
         if (route) {
             window.location.hash = route;
         }
-    }
-    if (action === 'diet.remove') {
-        const id = actionEl.dataset.id;
-        if (!id) return;
-        updateUserDb(store, (userdb) => {
-            const dateKey = userdb.meta.selectedDate.diet;
-            const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-            entry.meals = entry.meals.filter((meal) => meal.id !== id);
-            userdb.diet[dateKey] = entry;
-            userdb.updatedAt = new Date().toISOString();
-        });
     }
     if (action === 'diet.edit') {
         const id = actionEl.dataset.id;
@@ -73,19 +343,29 @@ const handleActionClick = (store, event) => {
                     nextDb.updatedAt = new Date().toISOString();
                 });
                 return true;
+            },
+            dangerLabel: '삭제',
+            onDanger: () => {
+                if (!window.confirm('식단 내역을 삭제하시겠습니까?')) {
+                    return false;
+                }
+                updateUserDb(store, (nextDb) => {
+                    const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
+                    nextEntry.meals = nextEntry.meals.filter((meal) => meal.id !== id);
+                    nextDb.diet[dateKey] = nextEntry;
+                    nextDb.updatedAt = new Date().toISOString();
+                });
             }
         });
     }
-    if (action === 'workout.remove') {
-        const id = actionEl.dataset.id;
-        if (!id) return;
-        updateUserDb(store, (userdb) => {
-            const dateKey = userdb.meta.selectedDate.workout;
-            const entry = userdb.workout[dateKey] || { logs: [] };
-            entry.logs = entry.logs.filter((log) => log.id !== id);
-            userdb.workout[dateKey] = entry;
-            userdb.updatedAt = new Date().toISOString();
-        });
+    if (action === 'workout.addMenu') {
+        openWorkoutAddMenuModal(store);
+    }
+    if (action === 'workout.add') {
+        openWorkoutAddModal(store);
+    }
+    if (action === 'workout.routine') {
+        openWorkoutRoutineModal(store);
     }
     if (action === 'workout.edit') {
         const id = actionEl.dataset.id;
@@ -95,52 +375,7 @@ const handleActionClick = (store, event) => {
         const entry = userdb.workout[dateKey] || { logs: [] };
         const target = entry.logs.find((log) => log.id === id);
         if (!target) return;
-        openModal({
-            title: '운동 수정',
-            body: el(
-                'div',
-                { className: 'stack-form' },
-                el('input', { name: 'exerciseName', type: 'text', value: target.name }),
-                el(
-                    'div',
-                    { className: 'row row-gap' },
-                    el('input', { name: 'sets', type: 'number', min: '1', value: target.sets }),
-                    el('input', { name: 'reps', type: 'number', min: '1', value: target.reps })
-                ),
-                el(
-                    'div',
-                    { className: 'row row-gap' },
-                    el('input', { name: 'weight', type: 'number', min: '0', value: target.weight || 0 }),
-                    el(
-                        'select',
-                        { name: 'unit' },
-                        el('option', { value: 'kg', selected: target.unit === 'kg' }, 'kg'),
-                        el('option', { value: 'lb', selected: target.unit === 'lb' }, 'lb')
-                    )
-                )
-            ),
-            onSubmit: (form) => {
-                const name = form.querySelector('[name="exerciseName"]')?.value.trim() || '';
-                const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
-                const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
-                const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
-                const unit = form.querySelector('[name="unit"]')?.value || target.unit;
-                if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
-                updateUserDb(store, (nextDb) => {
-                    const nextEntry = nextDb.workout[dateKey] || { logs: [] };
-                    const nextTarget = nextEntry.logs.find((log) => log.id === id);
-                    if (!nextTarget) return;
-                    nextTarget.name = name;
-                    nextTarget.sets = sets;
-                    nextTarget.reps = reps;
-                    nextTarget.weight = Number.isNaN(weight) ? 0 : weight;
-                    nextTarget.unit = unit;
-                    nextDb.workout[dateKey] = nextEntry;
-                    nextDb.updatedAt = new Date().toISOString();
-                });
-                return true;
-            }
-        });
+        openWorkoutEditModal(store, { log: target, dateKey, id });
     }
     if (action === 'backup.export') {
         const payload = buildExportPayload(store.getState());
@@ -262,14 +497,16 @@ const handleWorkoutSubmit = (store, event, form) => {
     updateUserDb(store, (userdb) => {
         const dateKey = userdb.meta.selectedDate.workout;
         const entry = userdb.workout[dateKey] || { logs: [] };
-        entry.logs = entry.logs.concat({
+        const nextLog = {
             id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
             name,
             sets,
             reps,
             weight: Number.isNaN(weight) ? 0 : weight,
             unit
-        });
+        };
+        nextLog.setsDetail = buildDefaultSets(nextLog);
+        entry.logs = entry.logs.concat(nextLog);
         userdb.workout[dateKey] = entry;
         userdb.updatedAt = new Date().toISOString();
     });
@@ -310,19 +547,54 @@ const handleSettingsSubmit = (store, event, form) => {
     const dateSync = Boolean(form.querySelector('[name="dateSync"]')?.checked);
     const weightUnit = form.querySelector('[name="weightUnit"]')?.value || 'kg';
     const waterUnit = form.querySelector('[name="waterUnit"]')?.value || 'ml';
+    const heightUnit = form.querySelector('[name="heightUnit"]')?.value || 'cm';
+    const foodUnit = form.querySelector('[name="foodUnit"]')?.value || 'g';
+    const workoutUnit = form.querySelector('[name="workoutUnit"]')?.value || 'kg';
+    const soundVolumeRaw = Number(form.querySelector('[name="soundVolume"]')?.value || 100);
+    const soundVolume = Number.isNaN(soundVolumeRaw)
+        ? store.getState().settings.sound.volume
+        : Math.min(100, Math.max(0, soundVolumeRaw));
+    const nextTimerSound = soundVolume > 0;
+    const profileSex = form.querySelector('[name="profileSex"]')?.value || 'M';
+    const profileBirthRaw = form.querySelector('[name="profileBirth"]')?.value || '';
+    const profileHeight = form.querySelector('[name="profileHeight"]')?.value || '';
+    const profileWeight = form.querySelector('[name="profileWeight"]')?.value || '';
+    const profileActivity = form.querySelector('[name="profileActivity"]')?.value || 'light';
+    const lang = form.querySelector('[name="lang"]')?.value || 'ko';
+    const profileBirth = parseDateInput(profileBirthRaw, dateFormat) || '';
 
     const nextSettings = {
         ...store.getState().settings,
         dateFormat,
         dateSync,
+        lang,
         units: {
             ...store.getState().settings.units,
             weight: weightUnit,
-            water: waterUnit
+            water: waterUnit,
+            height: heightUnit,
+            food: foodUnit,
+            workout: workoutUnit
+        },
+        sound: {
+            ...store.getState().settings.sound,
+            timerEnabled: nextTimerSound,
+            volume: soundVolume
         }
     };
 
     store.dispatch({ type: 'UPDATE_SETTINGS', payload: nextSettings });
+    updateUserDb(store, (nextDb) => {
+        nextDb.profile = {
+            ...nextDb.profile,
+            sex: profileSex,
+            birth: profileBirth,
+            height_cm: profileHeight,
+            weight_kg: profileWeight,
+            activity: profileActivity
+        };
+        nextDb.updatedAt = new Date().toISOString();
+    });
 };
 
 const render = (store) => {
@@ -353,7 +625,14 @@ export const initApp = (store) => {
             handleSettingsSubmit(store, event, form);
         }
     });
-    document.addEventListener('change', (event) => handleActionChange(store, event));
+    document.addEventListener('change', (event) => {
+        const slider = event.target.closest('[name="soundVolume"]');
+        if (slider) {
+            const sectionTitle = slider.closest('.settings-section')?.querySelector('.section-title');
+            if (sectionTitle) sectionTitle.textContent = `사운드 볼륨 (${slider.value})`;
+        }
+        handleActionChange(store, event);
+    });
     document.addEventListener('change', (event) => handleActionChange(store, event));
     store.subscribe(() => render(store));
     render(store);

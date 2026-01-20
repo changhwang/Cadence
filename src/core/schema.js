@@ -8,6 +8,13 @@ export const createDefaultUserDb = () => ({
     diet: {},
     body: {},
     goals: {},
+    profile: {
+        sex: 'M',
+        birth: '',
+        height_cm: '',
+        weight_kg: '',
+        activity: 'light'
+    },
     meta: {
         selectedDate: {
             workout: nowIso().slice(0, 10),
@@ -19,9 +26,10 @@ export const createDefaultUserDb = () => ({
 
 export const createDefaultSettings = () => ({
     schemaVersion: 1,
-    dateFormat: 'KO_DOTS',
+    dateFormat: 'YMD',
     dateSync: true,
-    units: { weight: 'kg', water: 'ml' },
-    sound: { timerEnabled: true, volume: 1.0 },
+    lang: 'ko',
+    units: { height: 'cm', weight: 'kg', water: 'ml', food: 'g', workout: 'kg' },
+    sound: { timerEnabled: true, volume: 100 },
     dev: { debugToolEnabled: false }
 });

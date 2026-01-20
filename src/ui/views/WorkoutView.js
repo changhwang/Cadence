@@ -11,15 +11,14 @@ const renderWorkoutList = (logs) => {
     }
     const list = el('div', { className: 'list-group' });
     logs.forEach((log) => {
-        const removeButton = el(
-            'button',
-            {
-                className: 'btn btn-secondary btn-sm',
-                dataset: { action: 'workout.remove', id: log.id },
-                type: 'button'
-            },
-            '삭제'
-        );
+        const setsDetail = Array.isArray(log.setsDetail) ? log.setsDetail : [];
+        const totalSets = setsDetail.length || Number(log.sets || 0);
+        const totalReps = setsDetail.reduce((sum, set) => sum + Number(set.reps || 0), 0);
+        const avgWeight = setsDetail.length
+            ? Math.round(
+                setsDetail.reduce((sum, set) => sum + Number(set.weight || 0), 0) / setsDetail.length
+            )
+            : Number(log.weight || 0);
         const editButton = el(
             'button',
             {
@@ -27,10 +26,10 @@ const renderWorkoutList = (logs) => {
                 dataset: { action: 'workout.edit', id: log.id },
                 type: 'button'
             },
-            '수정'
+            '수정/삭제'
         );
-        const meta = `${log.sets}세트 x ${log.reps}회`;
-        const weightText = log.weight ? ` / ${log.weight}${log.unit}` : '';
+        const meta = totalReps > 0 ? `${totalSets}세트 · 총 ${totalReps}회` : `${totalSets}세트`;
+        const weightText = avgWeight > 0 ? `평균 ${avgWeight}${log.unit}` : '중량 없음';
         const item = el(
             'div',
             { className: 'list-item' },
@@ -43,9 +42,9 @@ const renderWorkoutList = (logs) => {
                     el('div', { className: 'list-title' }, log.name),
                     el('span', { className: 'badge' }, meta)
                 ),
-                el('div', { className: 'list-subtitle' }, weightText ? `중량 ${weightText.trim()}` : '중량 없음')
+                el('div', { className: 'list-subtitle' }, weightText)
             ),
-            el('div', { className: 'list-actions' }, editButton, removeButton)
+            el('div', { className: 'list-actions' }, editButton)
         );
         list.appendChild(item);
     });
@@ -68,40 +67,14 @@ export const renderWorkoutView = (container, store) => {
     );
     const headerWrap = el('div', { className: 'page-header-row' }, header, dateLabel, todayButton);
 
-    const form = el(
-        'form',
-        { className: 'stack-form', dataset: { action: 'workout.add' } },
-        el('input', { name: 'exerciseName', type: 'text', placeholder: '운동명' }),
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el('input', { name: 'sets', type: 'number', min: '1', placeholder: '세트' }),
-            el('input', { name: 'reps', type: 'number', min: '1', placeholder: '횟수' })
-        ),
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el('input', { name: 'weight', type: 'number', min: '0', placeholder: '중량(옵션)' }),
-            el(
-                'select',
-                { name: 'unit' },
-                el('option', { value: 'kg' }, 'kg'),
-                el('option', { value: 'lb' }, 'lb')
-            ),
-            el('button', { type: 'submit', className: 'btn btn-sm btn-inline' }, '추가')
-        )
-    );
 
     const list = renderWorkoutList(entry.logs);
 
     container.appendChild(headerWrap);
-    container.appendChild(
-        el(
-            'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '입력')),
-            form
-        )
+    const addButton = el(
+        'button',
+        { type: 'button', className: 'btn', dataset: { action: 'workout.addMenu' } },
+        '추가'
     );
     container.appendChild(
         el(
@@ -111,4 +84,5 @@ export const renderWorkoutView = (container, store) => {
             list
         )
     );
+    container.appendChild(addButton);
 };
