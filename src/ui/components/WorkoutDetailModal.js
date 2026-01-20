@@ -67,8 +67,8 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
                 const weight = Number(set.weight || 0);
                 return el(
                     'div',
-                    { className: 'row row-gap' },
-                    el('div', {}, `세트 ${index + 1}`),
+                    { className: 'set-row' },
+                    el('div', { className: 'set-label' }, `세트 ${index + 1}`),
                     el('div', { className: 'badge' }, `${weight}${log.unit || ''} · ${reps}회`)
                 );
             })
@@ -120,8 +120,8 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         notifyUpdate();
     });
 
-    const logList = el('div', { className: 'stack-form' });
-    const editPanel = el('div', { className: 'stack-form' });
+    const logList = el('div', { className: 'stack-form set-list' });
+    const editPanel = el('div', { className: 'stack-form set-edit' });
     let editingIndex = null;
     const renderLogList = () => {
         logList.textContent = '';
@@ -131,12 +131,12 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
             const duration = Number(set.duration || 0);
             const editButton = el(
                 'button',
-                { type: 'button', className: 'btn btn-secondary btn-sm' },
+                { type: 'button', className: 'btn btn-text btn-sm' },
                 '수정'
             );
             const deleteButton = el(
                 'button',
-                { type: 'button', className: 'btn btn-secondary btn-sm' },
+                { type: 'button', className: 'btn btn-text btn-sm btn-danger-text' },
                 '삭제'
             );
             editButton.addEventListener('click', () => {
@@ -161,8 +161,8 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
             logList.appendChild(
                 el(
                     'div',
-                    { className: 'row row-gap' },
-                    el('div', {}, `세트 ${index + 1}`),
+                    { className: 'set-row' },
+                    el('div', { className: 'set-label' }, `세트 ${index + 1}`),
                     el(
                         'div',
                         { className: 'badge' },
@@ -170,7 +170,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
                             ? `${weight}${log.unit || ''} · ${reps}회${duration ? ` · ${duration}s` : ''}`
                             : '미기록'
                     ),
-                    el('div', { className: 'row row-gap' }, editButton, deleteButton)
+                    el('div', { className: 'set-actions' }, editButton, deleteButton)
                 )
             );
         });
@@ -185,7 +185,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         const weightInput = el('input', { type: 'number', min: '0', value: current.weight || defaultWeight });
         const completedInput = el('input', { type: 'checkbox', checked: Boolean(current.completed) });
         const saveButton = el('button', { type: 'button', className: 'btn' }, '저장');
-        const cancelButton = el('button', { type: 'button', className: 'btn btn-secondary' }, '닫기');
+        const cancelButton = el('button', { type: 'button', className: 'btn btn-text' }, '닫기');
         saveButton.addEventListener('click', () => {
             const reps = Number(repsInput.value || 0);
             const weight = Number(weightInput.value || 0);
@@ -203,18 +203,18 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
             editingIndex = null;
             renderEditPanel();
         });
-        editPanel.appendChild(el('div', { className: 'list-subtitle' }, `세트 ${editingIndex + 1} 수정`));
+        editPanel.appendChild(el('div', { className: 'section-title' }, `세트 ${editingIndex + 1} 수정`));
         editPanel.appendChild(el('label', { className: 'input-label' }, '횟수', repsInput));
         editPanel.appendChild(el('label', { className: 'input-label' }, `중량(${log.unit || 'kg'})`, weightInput));
         editPanel.appendChild(el('label', { className: 'input-label' }, '완료', completedInput));
         editPanel.appendChild(el('div', { className: 'row row-gap' }, saveButton, cancelButton));
     };
 
-    const timerDisplay = el('div', { className: 'badge' }, '00:00');
-    const timerStatus = el('div', { className: 'list-subtitle' }, '대기 중');
-    const controls = el('div', { className: 'row row-gap' });
-    const logArea = el('div', { className: 'stack-form' });
-    const addSetButton = el('button', { type: 'button', className: 'btn btn-secondary btn-sm' }, '세트 추가');
+    const timerDisplay = el('div', { className: 'timer-display' }, '00:00');
+    const timerStatus = el('div', { className: 'timer-status' }, '대기 중');
+    const controls = el('div', { className: 'timer-controls' });
+    const logArea = el('div', { className: 'stack-form timer-log' });
+    const addSetButton = el('button', { type: 'button', className: 'btn btn-text' }, '세트 추가');
 
     const playSound = () => {
         const audio = document.getElementById('timer-sound');
@@ -381,37 +381,50 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         title: log.name || '운동 상세',
         body: el(
             'div',
-            { className: 'stack-form' },
-            historyList,
+            { className: 'stack-form workout-detail' },
             el(
                 'div',
-                { className: 'row row-gap' },
-                setsBadge,
-                repsBadge,
-                restBadge
+                { className: 'section' },
+                el('div', { className: 'section-title' }, '최근 기록'),
+                historyList
             ),
             el(
                 'div',
-                { className: 'stack-form' },
-                el('div', { className: 'list-subtitle' }, '세트 목표'),
+                { className: 'section' },
+                el('div', { className: 'section-title' }, '목표'),
+                el('div', { className: 'badge-row' }, setsBadge, repsBadge, restBadge),
                 el(
                     'div',
-                    { className: 'row row-gap' },
-                    el('label', { className: 'input-label' }, '세트', targetSetsInput),
-                    el('label', { className: 'input-label' }, '횟수', targetRepsInput)
-                ),
-                el('label', { className: 'input-label' }, '휴식(초)', targetRestInput),
-                el('div', { className: 'row row-gap' }, applyTargetButton)
+                    { className: 'stack-form' },
+                    el(
+                        'div',
+                        { className: 'row row-gap' },
+                        el('label', { className: 'input-label' }, '세트', targetSetsInput),
+                        el('label', { className: 'input-label' }, '횟수', targetRepsInput)
+                    ),
+                    el('label', { className: 'input-label' }, '휴식(초)', targetRestInput),
+                    el('div', { className: 'row row-gap' }, applyTargetButton)
+                )
             ),
-            statusText,
-            progressText,
-            logList,
-            editPanel,
+            el(
+                'div',
+                { className: 'section' },
+                el('div', { className: 'section-title' }, '진행 상태'),
+                el('div', { className: 'row row-gap' }, statusText, progressText)
+            ),
+            el(
+                'div',
+                { className: 'section' },
+                el('div', { className: 'section-title' }, '세트 기록'),
+                logList,
+                editPanel,
+                isToday ? el('div', { className: 'row row-gap set-add-row' }, addSetButton) : null
+            ),
             isToday
                 ? el(
                     'div',
-                    { className: 'stack-form' },
-                    el('div', { className: 'row row-gap' }, addSetButton),
+                    { className: 'section timer-section' },
+                    el('div', { className: 'section-title' }, '타이머'),
                     timerDisplay,
                     timerStatus,
                     controls,

@@ -1,3 +1,4 @@
+import { CARDIO_DB } from '../../data/cardio.js';
 import { EXERCISE_DB } from '../../data/exercises.js';
 import { el } from '../../utils/dom.js';
 import { getLabelByLang } from '../utils/labels.js';
@@ -5,7 +6,15 @@ import { getLabelByLang } from '../utils/labels.js';
 export const buildRoutineForm = (store, routine) => {
     const state = store.getState();
     const lang = state.settings.lang || 'ko';
-    const defaults = routine?.defaults || { sets: 3, reps: 10, weight: 0, unit: 'kg' };
+    const defaultUnit = state.settings.units?.workout || 'kg';
+    const routineDefaults = routine?.defaults || {};
+    const defaults = {
+        sets: routineDefaults.sets ?? 3,
+        reps: routineDefaults.reps ?? 10,
+        weight: routineDefaults.weight ?? 0,
+        unit: routineDefaults.unit || defaultUnit
+    };
+    const defaultsById = routine?.defaultsById ? { ...routine.defaultsById } : {};
     const titleInput = el('input', { type: 'text', placeholder: '루틴 이름', value: routine?.title || '' });
     const categorySelect = el(
         'select',
@@ -35,6 +44,32 @@ export const buildRoutineForm = (store, routine) => {
         el('option', { value: 'lb', selected: defaults.unit === 'lb' }, 'lb')
     );
 
+    const isCardioExercise = (exercise) => {
+        if (!exercise) return false;
+        if (CARDIO_DB.some((item) => item.id === exercise.id)) return true;
+        if (exercise.classification === 'cardio') return true;
+        if (exercise.pattern === 'cardio') return true;
+        if (Array.isArray(exercise.equipment) && exercise.equipment.includes('cardio')) return true;
+        return false;
+    };
+
+    const getStrengthDefaults = (id) => {
+        const saved = defaultsById[id] || {};
+        return {
+            sets: Number(saved.sets ?? defaults.sets ?? 3),
+            reps: Number(saved.reps ?? defaults.reps ?? 10),
+            weight: Number(saved.weight ?? defaults.weight ?? 0),
+            unit: saved.unit || defaults.unit || 'kg'
+        };
+    };
+
+    const getCardioDefaults = (id) => {
+        const saved = defaultsById[id] || {};
+        return {
+            minutes: Number(saved.minutes ?? 10)
+        };
+    };
+
     const renderSelectedList = () => {
         selectedList.textContent = '';
         if (selectedOrder.length === 0) {
@@ -44,35 +79,82 @@ export const buildRoutineForm = (store, routine) => {
         selectedOrder.forEach((id, index) => {
             const exercise = EXERCISE_DB.find((item) => item.id === id);
             const label = exercise ? getLabelByLang(exercise.labels, lang) : id;
+            const isCardio = isCardioExercise(exercise);
+            const strengthDefaults = getStrengthDefaults(id);
+            const cardioDefaults = getCardioDefaults(id);
+            const actionButtons = el(
+                'div',
+                { className: 'list-actions' },
+                el(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'btn btn-secondary btn-sm',
+                        disabled: index === 0,
+                        dataset: { action: 'routine.move', dir: 'up', id }
+                    },
+                    '위'
+                ),
+                el(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'btn btn-secondary btn-sm',
+                        disabled: index === selectedOrder.length - 1,
+                        dataset: { action: 'routine.move', dir: 'down', id }
+                    },
+                    '아래'
+                )
+            );
+            const defaultsRow = isCardio
+                ? el(
+                    'div',
+                    { className: 'routine-defaults' },
+                    el(
+                        'label',
+                        { className: 'input-label' },
+                        '시간(분)',
+                        el('input', {
+                            type: 'number',
+                            min: '1',
+                            value: cardioDefaults.minutes,
+                            dataset: { role: 'defaults-minutes', id }
+                        })
+                    )
+                )
+                : el(
+                    'div',
+                    { className: 'routine-defaults' },
+                    el(
+                        'div',
+                        { className: 'row row-gap routine-defaults-row' },
+                        el('label', { className: 'input-label' }, '세트', el('input', { type: 'number', min: '1', value: strengthDefaults.sets, dataset: { role: 'defaults-sets', id } })),
+                        el('label', { className: 'input-label' }, '횟수', el('input', { type: 'number', min: '1', value: strengthDefaults.reps, dataset: { role: 'defaults-reps', id } })),
+                        el('label', { className: 'input-label' }, '중량', el('input', { type: 'number', min: '0', value: strengthDefaults.weight, dataset: { role: 'defaults-weight', id } })),
+                        el(
+                            'label',
+                            { className: 'input-label' },
+                            '단위',
+                            el(
+                                'select',
+                                { dataset: { role: 'defaults-unit', id } },
+                                el('option', { value: 'kg', selected: strengthDefaults.unit === 'kg' }, 'kg'),
+                                el('option', { value: 'lb', selected: strengthDefaults.unit === 'lb' }, 'lb')
+                            )
+                        )
+                    )
+                );
             selectedList.appendChild(
                 el(
                     'div',
-                    { className: 'list-item', dataset: { id } },
-                    el('div', { className: 'list-title' }, label),
+                    { className: 'list-item routine-item', dataset: { id } },
                     el(
                         'div',
-                        { className: 'list-actions' },
-                        el(
-                            'button',
-                            {
-                                type: 'button',
-                                className: 'btn btn-secondary btn-sm',
-                                disabled: index === 0,
-                                dataset: { action: 'routine.move', dir: 'up', id }
-                            },
-                            '위'
-                        ),
-                        el(
-                            'button',
-                            {
-                                type: 'button',
-                                className: 'btn btn-secondary btn-sm',
-                                disabled: index === selectedOrder.length - 1,
-                                dataset: { action: 'routine.move', dir: 'down', id }
-                            },
-                            '아래'
-                        )
-                    )
+                        { className: 'routine-item-head' },
+                        el('div', { className: 'list-title' }, label),
+                        actionButtons
+                    ),
+                    defaultsRow
                 )
             );
         });
@@ -134,6 +216,24 @@ export const buildRoutineForm = (store, routine) => {
         }
         renderSelectedList();
     });
+    selectedList.addEventListener('input', (event) => {
+        const input = event.target.closest('input, select');
+        if (!input) return;
+        const id = input.dataset.id;
+        if (!id) return;
+        const role = input.dataset.role || '';
+        if (role === 'defaults-minutes') {
+            const minutes = Math.max(1, Number(input.value || 1));
+            defaultsById[id] = { minutes };
+            return;
+        }
+        const next = getStrengthDefaults(id);
+        if (role === 'defaults-sets') next.sets = Math.max(1, Number(input.value || next.sets));
+        if (role === 'defaults-reps') next.reps = Math.max(1, Number(input.value || next.reps));
+        if (role === 'defaults-weight') next.weight = Math.max(0, Number(input.value || next.weight));
+        if (role === 'defaults-unit') next.unit = input.value || next.unit;
+        defaultsById[id] = next;
+    });
 
     const getValues = (form) => {
         const title = titleInput.value.trim();
@@ -153,7 +253,11 @@ export const buildRoutineForm = (store, routine) => {
             weight: Number.isNaN(weight) ? 0 : weight,
             unit
         };
-        return { title, selected, defaults, category, tags };
+        const nextDefaultsById = selected.reduce((acc, id) => {
+            if (defaultsById[id]) acc[id] = defaultsById[id];
+            return acc;
+        }, {});
+        return { title, selected, defaults, defaultsById: nextDefaultsById, category, tags };
     };
 
     const body = el(
@@ -167,7 +271,7 @@ export const buildRoutineForm = (store, routine) => {
         list,
         el('div', { className: 'list-meta' }, '선택 순서'),
         selectedList,
-        el('div', { className: 'list-meta' }, '기본 세트/횟수/중량'),
+        el('div', { className: 'list-meta' }, '루틴 기본값(미설정 운동에 적용)'),
         el('div', { className: 'row row-gap' }, setsInput, repsInput),
         el('div', { className: 'row row-gap' }, weightInput, unitSelect)
     );

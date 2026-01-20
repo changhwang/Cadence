@@ -1,3 +1,4 @@
+import { CARDIO_DB } from '../../data/cardio.js';
 import { EXERCISE_DB } from '../../data/exercises.js';
 import { ROUTINE_TEMPLATES } from '../../data/routines.js';
 import { el } from '../../utils/dom.js';
@@ -8,9 +9,102 @@ import { getLabelByLang } from '../utils/labels.js';
 import { buildRoutineForm } from '../workout/routineForm.js';
 import { appendWorkoutLogs, buildDefaultSets, createWorkoutLog } from '../workout/workoutLogUtils.js';
 
+export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
+    if (!log) return;
+    const meta = CARDIO_DB.find((item) => item.id === log.type);
+    const title = meta ? getLabelByLang(meta.labels, store.getState().settings.lang || 'ko') : log.type || '유산소';
+    const minutesInput = el('input', { type: 'number', min: '1', value: log.minutes || 10 });
+    const kcalInput = el('input', { type: 'number', min: '0', value: log.kcal ?? '' });
+    const safeIndex = Number.isInteger(index) && index >= 0 ? index : null;
+    const getCurrentLogs = (entry) => {
+        if (Array.isArray(entry.cardio?.logs)) return entry.cardio.logs;
+        if (Array.isArray(entry.cardioLogs)) return entry.cardioLogs;
+        if (Array.isArray(entry.cardio)) return entry.cardio;
+        return [];
+    };
+    const resolveTarget = (entry) => {
+        const current = getCurrentLogs(entry);
+        if (id) return current.find((item) => item.id === id);
+        if (safeIndex !== null) return current[safeIndex];
+        return null;
+    };
+
+    openModal({
+        title,
+        body: el(
+            'div',
+            { className: 'stack-form' },
+            el('label', { className: 'input-label' }, '시간(분)', minutesInput),
+            el('label', { className: 'input-label' }, 'kcal(선택)', kcalInput)
+        ),
+        submitLabel: '저장',
+        onSubmit: () => {
+            const minutes = Number(minutesInput.value || 0);
+            const kcalRaw = kcalInput.value;
+            const kcal = kcalRaw === '' ? null : Number(kcalRaw);
+            if (!minutes || Number.isNaN(minutes) || minutes <= 0) {
+                window.alert('시간(분)을 입력해 주세요.');
+                return false;
+            }
+            if (kcal !== null && (Number.isNaN(kcal) || kcal < 0)) {
+                window.alert('kcal은 0 이상으로 입력해 주세요.');
+                return false;
+            }
+            updateUserDb(store, (nextDb) => {
+                const entry = nextDb.workout[dateKey] || { logs: [] };
+                const current = getCurrentLogs(entry);
+                const target = resolveTarget(entry);
+                if (!target) return;
+                if (!target.id) {
+                    target.id = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+                }
+                target.minutes = minutes;
+                if (kcal === null) {
+                    delete target.kcal;
+                } else {
+                    target.kcal = kcal;
+                }
+                entry.cardio = { ...(entry.cardio || {}), logs: current };
+                nextDb.workout[dateKey] = entry;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+            return true;
+        },
+        dangerLabel: '삭제',
+        onDanger: () => {
+            if (!window.confirm('이 유산소 기록을 삭제할까요?')) return false;
+            updateUserDb(store, (nextDb) => {
+                const entry = nextDb.workout[dateKey] || { logs: [] };
+                const current = getCurrentLogs(entry);
+                const nextLogs = id
+                    ? current.filter((item) => item.id !== id)
+                    : safeIndex === null
+                        ? current
+                        : current.filter((_, itemIndex) => itemIndex !== safeIndex);
+                entry.cardio = { ...(entry.cardio || {}), logs: nextLogs };
+                nextDb.workout[dateKey] = entry;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+        }
+    });
+};
+
 export const openWorkoutAddModal = (store, options = {}) => {
     const settings = store.getState().settings;
     const preferredUnit = settings.units?.workout || 'kg';
+    const exerciseMeta = options.exerciseId
+        ? EXERCISE_DB.find((item) => item.id === options.exerciseId)
+        : null;
+    const cardioMeta = options.exerciseId
+        ? CARDIO_DB.find((item) => item.id === options.exerciseId)
+        : null;
+    const isCardioExercise = Boolean(
+        cardioMeta
+            || exerciseMeta?.classification === 'cardio'
+            || exerciseMeta?.pattern === 'cardio'
+            || (Array.isArray(exerciseMeta?.equipment) && exerciseMeta.equipment.includes('cardio'))
+    );
+    const minutesInput = el('input', { name: 'minutes', type: 'number', min: '1', value: 10 });
     const body = el(
         'div',
         { className: 'stack-form' },
@@ -26,43 +120,52 @@ export const openWorkoutAddModal = (store, options = {}) => {
             })
         ),
         el('input', { name: 'exerciseId', type: 'hidden', value: options.exerciseId || '' }),
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el(
+        isCardioExercise
+            ? el(
                 'label',
                 { className: 'input-label' },
-                '세트 수',
-                el('input', { name: 'sets', type: 'number', min: '1', value: 3 })
-            ),
-            el(
-                'label',
-                { className: 'input-label' },
-                '횟수(1세트)',
-                el('input', { name: 'reps', type: 'number', min: '1', value: 10 })
+                '시간(분)',
+                minutesInput
             )
-        ),
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el(
-                'label',
-                { className: 'input-label' },
-                '중량',
-                el('input', { name: 'weight', type: 'number', min: '0', value: 0 })
-            ),
-            el(
-                'label',
-                { className: 'input-label' },
-                '단위',
+            : el(
+                'div',
+                { className: 'row row-gap' },
                 el(
-                    'select',
-                    { name: 'unit' },
-                    el('option', { value: 'kg', selected: preferredUnit === 'kg' }, 'kg'),
-                    el('option', { value: 'lb', selected: preferredUnit === 'lb' }, 'lb')
+                    'label',
+                    { className: 'input-label' },
+                    '세트 수',
+                    el('input', { name: 'sets', type: 'number', min: '1', value: 3 })
+                ),
+                el(
+                    'label',
+                    { className: 'input-label' },
+                    '횟수(1세트)',
+                    el('input', { name: 'reps', type: 'number', min: '1', value: 10 })
+                )
+            ),
+        isCardioExercise
+            ? null
+            : el(
+                'div',
+                { className: 'row row-gap' },
+                el(
+                    'label',
+                    { className: 'input-label' },
+                    '중량',
+                    el('input', { name: 'weight', type: 'number', min: '0', value: 0 })
+                ),
+                el(
+                    'label',
+                    { className: 'input-label' },
+                    '단위',
+                    el(
+                        'select',
+                        { name: 'unit' },
+                        el('option', { value: 'kg', selected: preferredUnit === 'kg' }, 'kg'),
+                        el('option', { value: 'lb', selected: preferredUnit === 'lb' }, 'lb')
+                    )
                 )
             )
-        )
     );
 
     openModal({
@@ -70,12 +173,43 @@ export const openWorkoutAddModal = (store, options = {}) => {
         body,
         onSubmit: (form) => {
             const name = form.querySelector('[name="exerciseName"]')?.value.trim() || '';
+            const exerciseId = form.querySelector('[name="exerciseId"]')?.value || '';
+            if (!name) {
+                window.alert('운동 이름을 입력해 주세요.');
+                return false;
+            }
+            if (isCardioExercise) {
+                const minutes = Number(form.querySelector('[name="minutes"]')?.value || 0);
+                if (!minutes || Number.isNaN(minutes) || minutes <= 0) {
+                    window.alert('시간(분)을 입력해 주세요.');
+                    return false;
+                }
+                updateUserDb(store, (nextDb) => {
+                    const dateKey = nextDb.meta.selectedDate.workout;
+                    const entry = nextDb.workout[dateKey] || { logs: [] };
+                    const currentCardio = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : [];
+                    entry.cardio = {
+                        ...(entry.cardio || {}),
+                        logs: currentCardio.concat({
+                            id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                            type: exerciseId || name,
+                            minutes,
+                            met: cardioMeta?.met
+                        })
+                    };
+                    nextDb.workout[dateKey] = entry;
+                    nextDb.updatedAt = new Date().toISOString();
+                });
+                return true;
+            }
             const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
             const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
             const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
             const unit = form.querySelector('[name="unit"]')?.value || 'kg';
-            const exerciseId = form.querySelector('[name="exerciseId"]')?.value || '';
-            if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
+            if (Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) {
+                window.alert('세트 수와 횟수를 입력해 주세요.');
+                return false;
+            }
             const log = createWorkoutLog({ name, sets, reps, weight, unit, exerciseId });
             appendWorkoutLogs(store, [log]);
             return true;
@@ -90,7 +224,7 @@ export const openRoutineCreateModal = (store) => {
         body,
         submitLabel: '저장',
         onSubmit: (form) => {
-            const { title, selected, defaults, category, tags } = getValues(form);
+            const { title, selected, defaults, defaultsById, category, tags } = getValues(form);
             if (!title || selected.length === 0) {
                 window.alert('루틴 이름과 운동을 선택해 주세요.');
                 return false;
@@ -102,6 +236,7 @@ export const openRoutineCreateModal = (store) => {
                     title,
                     exerciseIds: selected,
                     defaults,
+                    defaultsById,
                     category,
                     tags,
                     createdAt: Date.now()
@@ -121,7 +256,7 @@ export const openRoutineEditModal = (store, routine) => {
         body,
         submitLabel: '저장',
         onSubmit: (form) => {
-            const { title, selected, defaults, category, tags } = getValues(form);
+            const { title, selected, defaults, defaultsById, category, tags } = getValues(form);
             if (!title || selected.length === 0) {
                 window.alert('루틴 이름과 운동을 선택해 주세요.');
                 return false;
@@ -133,6 +268,7 @@ export const openRoutineEditModal = (store, routine) => {
                 target.title = title;
                 target.exerciseIds = selected;
                 target.defaults = defaults;
+                target.defaultsById = defaultsById;
                 target.category = category;
                 target.tags = tags;
                 nextDb.routines = routines;
@@ -286,19 +422,54 @@ export const openWorkoutRoutineModal = (store) => {
         if (action !== 'routine.select') return;
         const exerciseIds = routine.exerciseIds || routine.exercises || [];
         const defaults = routine.defaults || { sets: 3, reps: 10, weight: 0, unit: 'kg' };
-        const logs = exerciseIds.map((exerciseId) => {
+        const defaultsById = routine.defaultsById || {};
+        const isCardioExercise = (exercise) => {
+            if (!exercise) return false;
+            if (exercise.classification === 'cardio') return true;
+            if (exercise.pattern === 'cardio') return true;
+            if (Array.isArray(exercise.equipment) && exercise.equipment.includes('cardio')) return true;
+            return false;
+        };
+        const strengthLogs = [];
+        const cardioLogs = [];
+        exerciseIds.forEach((exerciseId) => {
             const exercise = EXERCISE_DB.find((item) => item.id === exerciseId);
             const name = exercise ? getLabelByLang(exercise.labels, lang) : exerciseId;
-            return createWorkoutLog({
-                name,
-                sets: defaults.sets || 3,
-                reps: defaults.reps || 10,
-                weight: defaults.weight || 0,
-                unit: defaults.unit || 'kg',
-                exerciseId
-            });
+            if (isCardioExercise(exercise)) {
+                const minutes = Math.max(1, Number(defaultsById[exerciseId]?.minutes || 10));
+                const cardioMeta = CARDIO_DB.find((item) => item.id === exerciseId);
+                cardioLogs.push({
+                    id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                    type: exerciseId,
+                    minutes,
+                    met: cardioMeta?.met
+                });
+                return;
+            }
+            const perDefaults = defaultsById[exerciseId] || defaults;
+            strengthLogs.push(
+                createWorkoutLog({
+                    name,
+                    sets: perDefaults.sets || 3,
+                    reps: perDefaults.reps || 10,
+                    weight: perDefaults.weight || 0,
+                    unit: perDefaults.unit || 'kg',
+                    exerciseId
+                })
+            );
         });
-        appendWorkoutLogs(store, logs);
+        if (strengthLogs.length === 0 && cardioLogs.length === 0) return;
+        updateUserDb(store, (nextDb) => {
+            const dateKey = nextDb.meta.selectedDate.workout;
+            const entry = nextDb.workout[dateKey] || { logs: [] };
+            entry.logs = entry.logs.concat(strengthLogs);
+            if (cardioLogs.length > 0) {
+                const currentCardio = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : [];
+                entry.cardio = { ...(entry.cardio || {}), logs: currentCardio.concat(cardioLogs) };
+            }
+            nextDb.workout[dateKey] = entry;
+            nextDb.updatedAt = new Date().toISOString();
+        });
         closeModal();
     });
 
@@ -515,7 +686,7 @@ export const openExerciseSearchModal = (store) => {
 
 export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
     const settings = store.getState().settings;
-    const preferredUnit = settings.units?.workout || log.unit || 'kg';
+    const preferredUnit = log.unit || settings.units?.workout || 'kg';
     const setsDetail = Array.isArray(log.setsDetail) && log.setsDetail.length > 0
         ? log.setsDetail.map((set) => ({
             reps: Number(set.reps || 0),

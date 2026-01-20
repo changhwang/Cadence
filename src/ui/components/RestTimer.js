@@ -6,15 +6,21 @@ let restTimerInterval = null;
 export const openRestTimerModal = (store, defaultSeconds = 60) => {
     const state = store.getState();
     const durationInput = el('input', { type: 'number', min: '10', value: defaultSeconds });
-    const statusText = el('div', { className: 'list-subtitle' }, '대기 중');
-    const startButton = el('button', { type: 'button', className: 'btn btn-secondary' }, '시작');
-    const resetButton = el('button', { type: 'button', className: 'btn btn-secondary' }, '리셋');
-    const timerValue = el('div', { className: 'badge' }, `${defaultSeconds}s`);
+    const statusText = el('div', { className: 'timer-status' }, '대기');
+    const startButton = el('button', { type: 'button', className: 'btn' }, '시작');
+    const resetButton = el('button', { type: 'button', className: 'btn' }, '리셋');
+    const timerValue = el('div', { className: 'timer-display' }, '00:00');
     let remaining = Number(durationInput.value || defaultSeconds);
     let running = false;
 
+    const formatTime = (seconds) => {
+        const safe = Math.max(0, Math.floor(seconds || 0));
+        const mins = String(Math.floor(safe / 60)).padStart(2, '0');
+        const secs = String(safe % 60).padStart(2, '0');
+        return `${mins}:${secs}`;
+    };
     const updateLabel = () => {
-        timerValue.textContent = `${remaining}s`;
+        timerValue.textContent = formatTime(remaining);
     };
     const stopTimer = () => {
         if (restTimerInterval) {
@@ -64,7 +70,7 @@ export const openRestTimerModal = (store, defaultSeconds = 60) => {
     resetButton.addEventListener('click', () => {
         stopTimer();
         remaining = Number(durationInput.value || defaultSeconds);
-        statusText.textContent = '대기 중';
+        statusText.textContent = '대기';
         updateLabel();
     });
 
@@ -72,11 +78,11 @@ export const openRestTimerModal = (store, defaultSeconds = 60) => {
         title: '휴식 타이머',
         body: el(
             'div',
-            { className: 'stack-form' },
+            { className: 'stack-form rest-timer' },
             el('label', { className: 'input-label' }, '시간(초)', durationInput),
-            el('div', { className: 'row row-gap' }, startButton, resetButton),
-            el('div', { className: 'row row-gap' }, el('div', {}, '남은 시간'), timerValue),
-            statusText
+            timerValue,
+            statusText,
+            el('div', { className: 'timer-controls' }, startButton, resetButton)
         ),
         submitLabel: '닫기',
         onSubmit: () => {

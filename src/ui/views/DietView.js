@@ -1,17 +1,12 @@
-import { el, text } from '../../utils/dom.js';
+import { el } from '../../utils/dom.js';
 import { renderDateBar } from '../components/DateBar.js';
 import { FOOD_DB } from '../../data/foods.js';
 import { getDietTotalsForDate } from '../../services/nutrition/intake.js';
 import { selectGoalForDate } from '../../selectors/goalSelectors.js';
+import { getLabelByLang } from '../utils/labels.js';
 
 const getDietEntry = (userdb, dateKey) => {
     return userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-};
-
-const getLabelByLang = (labels, lang) => {
-    if (!labels) return '';
-    if (labels[lang]) return labels[lang];
-    return labels.ko || labels.en || Object.values(labels)[0] || '';
 };
 
 const formatAmount = (meal) => {

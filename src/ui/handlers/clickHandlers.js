@@ -4,6 +4,7 @@ import {
     openExerciseSearchModal,
     openRoutineCreateModal,
     openWorkoutAddModal,
+    openCardioEditModal,
     openWorkoutEditModal,
     openWorkoutRoutineModal
 } from '../modals/workoutModals.js';
@@ -41,9 +42,14 @@ export const handleWorkoutClickAction = (store, actionEl, action) => {
         return true;
     }
     if (action === 'workout.delete.selected') {
-        const checked = Array.from(document.querySelectorAll('[data-role="workout-select"]:checked'));
-        const ids = checked.map((item) => item.dataset.id).filter(Boolean);
-        if (ids.length === 0) {
+        const strengthChecked = Array.from(document.querySelectorAll('[data-role="workout-select"]:checked'));
+        const cardioChecked = Array.from(document.querySelectorAll('[data-role="cardio-select"]:checked'));
+        const strengthIds = strengthChecked.map((item) => item.dataset.id).filter(Boolean);
+        const cardioIds = cardioChecked.map((item) => item.dataset.id).filter(Boolean);
+        const cardioIndexes = cardioChecked
+            .map((item) => Number(item.dataset.index))
+            .filter((index) => Number.isInteger(index) && index >= 0);
+        if (strengthIds.length === 0 && cardioIds.length === 0 && cardioIndexes.length === 0) {
             window.alert('삭제할 항목을 선택해 주세요.');
             return true;
         }
@@ -51,7 +57,21 @@ export const handleWorkoutClickAction = (store, actionEl, action) => {
         updateUserDb(store, (nextDb) => {
             const dateKey = nextDb.meta.selectedDate.workout;
             const entry = nextDb.workout[dateKey] || { logs: [] };
-            entry.logs = entry.logs.filter((log) => !ids.includes(log.id));
+            entry.logs = entry.logs.filter((log) => !strengthIds.includes(log.id));
+            if (cardioIds.length > 0 || cardioIndexes.length > 0) {
+                const current = Array.isArray(entry.cardio?.logs)
+                    ? entry.cardio.logs
+                    : Array.isArray(entry.cardioLogs)
+                        ? entry.cardioLogs
+                        : Array.isArray(entry.cardio)
+                            ? entry.cardio
+                            : [];
+                const indexSet = new Set(cardioIndexes);
+                entry.cardio = {
+                    ...(entry.cardio || {}),
+                    logs: current.filter((log, index) => !cardioIds.includes(log.id) && !indexSet.has(index))
+                };
+            }
             nextDb.workout[dateKey] = entry;
             nextDb.updatedAt = new Date().toISOString();
         });
@@ -113,6 +133,20 @@ export const handleWorkoutClickAction = (store, actionEl, action) => {
                 });
             }
         });
+        return true;
+    }
+    if (action === 'cardio.edit') {
+        const id = actionEl.dataset.id;
+        const index = Number(actionEl.dataset.index);
+        const { userdb } = store.getState();
+        const dateKey = userdb.meta.selectedDate.workout;
+        const entry = userdb.workout[dateKey] || { logs: [] };
+        const current = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : [];
+        const target = id
+            ? current.find((log) => log.id === id)
+            : current[Number.isInteger(index) ? index : -1];
+        if (!target) return true;
+        openCardioEditModal(store, { log: target, dateKey, id, index });
         return true;
     }
     return false;

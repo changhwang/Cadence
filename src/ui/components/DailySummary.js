@@ -15,15 +15,16 @@ const summarizeStrength = (logs) => {
     return logs.reduce(
         (acc, log) => {
             const setsDetail = Array.isArray(log.setsDetail) && log.setsDetail.length > 0 ? log.setsDetail : null;
-            const setsCount = setsDetail ? setsDetail.length : toNumber(log.sets);
-            acc.sets += setsCount;
             if (setsDetail) {
-                acc.volume += setsDetail.reduce(
-                    (sum, set) => sum + toNumber(set.weight) * toNumber(set.reps),
-                    0
-                );
+                setsDetail.forEach((set) => {
+                    if (!set.completed) return;
+                    acc.sets += 1;
+                    acc.volume += toNumber(set.weight) * toNumber(set.reps);
+                });
             } else {
-                acc.volume += toNumber(log.weight) * toNumber(log.reps) * setsCount;
+                // 기록된 세트가 없으면 0으로 처리
+                acc.sets += 0;
+                acc.volume += 0;
             }
             return acc;
         },
@@ -54,18 +55,17 @@ export const renderDailySummary = ({ userdb, settings, dateKey }) => {
     const summaryItem = (label, value) =>
         el(
             'div',
-            {},
-            el('div', { className: 'list-subtitle' }, label),
-            el('div', { className: 'badge' }, value)
+            { className: 'summary-item' },
+            el('div', { className: 'summary-label' }, label),
+            el('div', { className: 'summary-value' }, value)
         );
 
     return el(
         'div',
-        { className: 'card' },
-        el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '요약')),
+        { className: 'card daily-summary' },
         el(
             'div',
-            { className: 'row row-gap' },
+            { className: 'summary-grid' },
             summaryItem('세트', String(Math.round(strength.sets))),
             summaryItem('볼륨', volumeLabel),
             summaryItem('유산소(m)', cardioLabel),

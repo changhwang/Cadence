@@ -29,10 +29,10 @@ export const openModal = ({
     }
 
     const actions = el('div', { className: 'modal-actions' });
-    const cancelButton = el('button', { type: 'button', className: 'btn btn-secondary' }, '취소');
+    const cancelButton = el('button', { type: 'button', className: 'btn btn-text' }, '취소');
     actions.appendChild(cancelButton);
     if (dangerLabel && typeof onDanger === 'function') {
-        const dangerButton = el('button', { type: 'button', className: 'btn btn-secondary' }, dangerLabel);
+        const dangerButton = el('button', { type: 'button', className: 'btn btn-text btn-danger-text' }, dangerLabel);
         dangerButton.addEventListener('click', () => {
             const result = onDanger();
             if (result === false) return;
@@ -40,7 +40,8 @@ export const openModal = ({
         });
         actions.appendChild(dangerButton);
     }
-    actions.appendChild(el('button', { type: 'submit', className: 'btn' }, submitLabel));
+    const submitClass = submitLabel.trim() === '닫기' ? 'btn btn-text' : 'btn';
+    actions.appendChild(el('button', { type: 'submit', className: submitClass }, submitLabel));
 
     cancelButton.addEventListener('click', () => closeModal());
 
