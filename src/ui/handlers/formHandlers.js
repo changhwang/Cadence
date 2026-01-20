@@ -1,0 +1,227 @@
+import { parseImportPayload } from '../../services/backupService.js';
+import { addGoalTimelineEntry } from '../../services/goals/goalService.js';
+import { computeBaseTargets } from '../../services/nutrition/targetEngine.js';
+import { calcAge, parseDateInput, todayIso } from '../../utils/date.js';
+import { updateUserDb } from '../store/userDb.js';
+import { createWorkoutLog } from '../workout/workoutLogUtils.js';
+import { buildGoalModeSpec } from '../goals/goalUtils.js';
+
+export const handleDietAddSubmit = (store, event, form) => {
+    event.preventDefault();
+    const nameInput = form.querySelector('[name="mealName"]');
+    const typeSelect = form.querySelector('[name="mealType"]');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const type = typeSelect ? typeSelect.value : '기타';
+
+    if (!name) return;
+
+    updateUserDb(store, (userdb) => {
+        const dateKey = userdb.meta.selectedDate.diet;
+        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
+        entry.meals = entry.meals.concat({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+            type,
+            name
+        });
+        userdb.diet[dateKey] = entry;
+        userdb.updatedAt = new Date().toISOString();
+    });
+
+    if (nameInput) nameInput.value = '';
+};
+
+export const handleWorkoutSubmit = (store, event, form) => {
+    event.preventDefault();
+    const nameInput = form.querySelector('[name="exerciseName"]');
+    const setsInput = form.querySelector('[name="sets"]');
+    const repsInput = form.querySelector('[name="reps"]');
+    const weightInput = form.querySelector('[name="weight"]');
+    const unitSelect = form.querySelector('[name="unit"]');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const sets = Number(setsInput ? setsInput.value : 0);
+    const reps = Number(repsInput ? repsInput.value : 0);
+    const weight = Number(weightInput ? weightInput.value : 0);
+    const unit = unitSelect ? unitSelect.value : 'kg';
+
+    if (!name || sets <= 0 || reps <= 0) return;
+
+    updateUserDb(store, (userdb) => {
+        const dateKey = userdb.meta.selectedDate.workout;
+        const entry = userdb.workout[dateKey] || { logs: [] };
+        const nextLog = createWorkoutLog({ name, sets, reps, weight, unit });
+        entry.logs = entry.logs.concat(nextLog);
+        userdb.workout[dateKey] = entry;
+        userdb.updatedAt = new Date().toISOString();
+    });
+
+    if (nameInput) nameInput.value = '';
+    if (setsInput) setsInput.value = '';
+    if (repsInput) repsInput.value = '';
+    if (weightInput) weightInput.value = '';
+};
+
+export const handleBodySubmit = (store, event, form) => {
+    event.preventDefault();
+    const weightInput = form.querySelector('[name="weight"]');
+    const waistInput = form.querySelector('[name="waist"]');
+    const muscleInput = form.querySelector('[name="muscle"]');
+    const fatInput = form.querySelector('[name="fat"]');
+
+    const weight = weightInput ? weightInput.value : '';
+    const waist = waistInput ? waistInput.value : '';
+    const muscle = muscleInput ? muscleInput.value : '';
+    const fat = fatInput ? fatInput.value : '';
+
+    updateUserDb(store, (userdb) => {
+        const dateKey = userdb.meta.selectedDate.body;
+        userdb.body[dateKey] = {
+            weight,
+            waist,
+            muscle,
+            fat
+        };
+        userdb.updatedAt = new Date().toISOString();
+    });
+};
+
+export const handleSettingsSubmit = (store, event, form) => {
+    event.preventDefault();
+    const dateFormat = form.querySelector('[name="dateFormat"]')?.value || 'YMD';
+    const dateSync = Boolean(form.querySelector('[name="dateSync"]')?.checked);
+    const weightUnit = form.querySelector('[name="weightUnit"]')?.value || 'kg';
+    const waterUnit = form.querySelector('[name="waterUnit"]')?.value || 'ml';
+    const heightUnit = form.querySelector('[name="heightUnit"]')?.value || 'cm';
+    const foodUnit = form.querySelector('[name="foodUnit"]')?.value || 'g';
+    const workoutUnit = form.querySelector('[name="workoutUnit"]')?.value || 'kg';
+    const soundVolumeRaw = Number(form.querySelector('[name="soundVolume"]')?.value || 100);
+    const soundVolume = Number.isNaN(soundVolumeRaw)
+        ? store.getState().settings.sound.volume
+        : Math.min(100, Math.max(0, soundVolumeRaw));
+    const nextTimerSound = soundVolume > 0;
+    const profileSex = form.querySelector('[name="profileSex"]')?.value || 'M';
+    const profileBirthRaw = form.querySelector('[name="profileBirth"]')?.value || '';
+    const profileHeight = form.querySelector('[name="profileHeight"]')?.value || '';
+    const profileWeight = form.querySelector('[name="profileWeight"]')?.value || '';
+    const profileActivity = form.querySelector('[name="profileActivity"]')?.value || 'light';
+    const lang = form.querySelector('[name="lang"]')?.value || 'ko';
+    const profileBirth = parseDateInput(profileBirthRaw, dateFormat) || '';
+    const nutritionGoal = form.querySelector('[name="nutritionGoal"]')?.value || 'maintain';
+    const nutritionFramework = form.querySelector('[name="nutritionFramework"]')?.value || 'dga_2025';
+    const exerciseCreditEnabled = Boolean(form.querySelector('[name="exerciseCreditEnabled"]')?.checked);
+    const exerciseCreditFactorRaw = Number(form.querySelector('[name="exerciseCreditFactor"]')?.value || 0);
+    const exerciseCreditFactor = Math.min(1, Math.max(0, exerciseCreditFactorRaw / 100));
+    const exerciseCreditCapRaw = Number(form.querySelector('[name="exerciseCreditCap"]')?.value || 0);
+    const exerciseCreditCap = Number.isNaN(exerciseCreditCapRaw) ? 0 : exerciseCreditCapRaw;
+    const exerciseCreditDistribution =
+        form.querySelector('[name="exerciseCreditDistribution"]')?.value || 'CARB_BIASED';
+    const prevSettings = store.getState().settings;
+
+    const nextSettings = {
+        ...prevSettings,
+        dateFormat,
+        dateSync,
+        lang,
+        units: {
+            ...store.getState().settings.units,
+            weight: weightUnit,
+            water: waterUnit,
+            height: heightUnit,
+            food: foodUnit,
+            workout: workoutUnit
+        },
+        sound: {
+            ...store.getState().settings.sound,
+            timerEnabled: nextTimerSound,
+            volume: soundVolume
+        },
+        nutrition: {
+            ...prevSettings.nutrition,
+            goal: nutritionGoal,
+            framework: nutritionFramework,
+            exerciseCredit: {
+                ...prevSettings.nutrition.exerciseCredit,
+                enabled: exerciseCreditEnabled,
+                factor: exerciseCreditFactor,
+                capKcal: exerciseCreditCap,
+                distribution: exerciseCreditDistribution
+            }
+        }
+    };
+
+    store.dispatch({ type: 'UPDATE_SETTINGS', payload: nextSettings });
+    updateUserDb(store, (nextDb) => {
+        nextDb.profile = {
+            ...nextDb.profile,
+            sex: profileSex,
+            birth: profileBirth,
+            height_cm: profileHeight,
+            weight_kg: profileWeight,
+            activity: profileActivity
+        };
+        const timeline = nextDb.goals?.timeline || [];
+        const shouldAddGoal = timeline.length === 0
+            || prevSettings.nutrition.goal !== nutritionGoal
+            || prevSettings.nutrition.framework !== nutritionFramework;
+        if (shouldAddGoal) {
+            const age = calcAge(profileBirth);
+            const heightCm = Number(profileHeight);
+            const weightKg = Number(profileWeight);
+            if (age && heightCm && weightKg) {
+                const spec = {
+                    frameworkId: nutritionFramework,
+                    goalMode: buildGoalModeSpec(nutritionGoal)
+                };
+                const computed = computeBaseTargets({
+                    profile: {
+                        sex: profileSex,
+                        age,
+                        heightCm,
+                        weightKg,
+                        activityFactor: profileActivity
+                    },
+                    spec,
+                    settings: { energyModel: { cutPct: 0.15, bulkPct: 0.1 } }
+                });
+                if (computed.targets) {
+                    const { timeline: nextTimeline } = addGoalTimelineEntry({
+                        goals: nextDb.goals,
+                        effectiveDate: todayIso(),
+                        spec,
+                        computed,
+                        note: '',
+                        nowMs: Date.now()
+                    });
+                    nextDb.goals.timeline = nextTimeline;
+                }
+            }
+        }
+        nextDb.updatedAt = new Date().toISOString();
+    });
+};
+
+export const handleDietWaterChange = (store, actionEl) => {
+    const value = Number(actionEl.value || 0);
+    updateUserDb(store, (userdb) => {
+        const dateKey = userdb.meta.selectedDate.diet;
+        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
+        entry.waterMl = Number.isNaN(value) ? 0 : value;
+        userdb.diet[dateKey] = entry;
+        userdb.updatedAt = new Date().toISOString();
+    });
+};
+
+export const handleBackupImportChange = async (store, input) => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+        const payload = await parseImportPayload(file);
+        store.dispatch({ type: 'UPDATE_USERDB', payload: payload.userdb });
+        store.dispatch({ type: 'UPDATE_SETTINGS', payload: payload.settings });
+        alert('복원이 완료되었습니다.');
+    } catch (error) {
+        alert(error.message || '백업 파일을 불러오지 못했습니다.');
+    } finally {
+        input.value = '';
+    }
+};
