@@ -37,7 +37,13 @@ export const createDefaultSettings = () => ({
     nutrition: {
         goal: 'maintain',
         framework: 'dga_2025',
-        overrides: {}
+        overrides: {},
+        exerciseCredit: {
+            enabled: true,
+            factor: 0.5,
+            capKcal: 500,
+            distribution: 'CARB_BIASED'
+        }
     },
     dev: { debugToolEnabled: false }
 });

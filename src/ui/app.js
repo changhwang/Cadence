@@ -2,10 +2,13 @@ import { renderTabBar } from './components/TabBar.js';
 import { renderView } from './views/index.js';
 import { buildExportPayload, downloadJson, parseImportPayload } from '../services/backupService.js';
 import { shiftDate } from './components/DateBar.js';
-import { parseDateInput, todayIso } from '../utils/date.js';
+import { calcAge, parseDateInput, todayIso } from '../utils/date.js';
 import { closeModal, openModal } from './components/Modal.js';
 import { el } from '../utils/dom.js';
 import { ROUTINE_TEMPLATES } from '../data/routines.js';
+import { computeBaseTargets } from '../services/nutrition/targetEngine.js';
+import { addGoalTimelineEntry, clearGoalOverride, setGoalOverride } from '../services/goals/goalService.js';
+import { selectGoalForDate, selectSelectedDate } from '../selectors/goalSelectors.js';
 
 const buildDefaultSets = (log) => {
     const count = Math.max(Number(log.sets || 0), 1);
@@ -25,6 +28,15 @@ const createWorkoutLog = ({ name, sets, reps, weight, unit }) => {
     };
     nextLog.setsDetail = buildDefaultSets(nextLog);
     return nextLog;
+};
+
+const buildGoalModeSpec = (goal) => {
+    if (goal === 'cut') return { mode: 'CUT', cutPct: 0.15 };
+    if (goal === 'minicut') return { mode: 'CUT', cutPct: 0.25 };
+    if (goal === 'bulk') return { mode: 'BULK', bulkPct: 0.1 };
+    if (goal === 'leanbulk') return { mode: 'LEAN_BULK', bulkPct: 0.05 };
+    if (goal === 'recomp') return { mode: 'RECOMP', cutPct: 0.05 };
+    return { mode: 'MAINTAIN' };
 };
 
 const appendWorkoutLogs = (store, logs) => {
@@ -144,6 +156,165 @@ const openWorkoutAddMenuModal = (store) => {
         body,
         submitLabel: '닫기',
         onSubmit: () => true
+    });
+};
+
+const openGoalOverrideModal = (store, { dateISO }) => {
+    const state = store.getState();
+    const goal = selectGoalForDate(state, dateISO);
+    if (!goal.base || !goal.base.kcal) {
+        window.alert('목표가 없습니다. 먼저 목표를 저장하세요.');
+        return;
+    }
+
+    const override = state.userdb?.goals?.overrideByDate?.[dateISO] || null;
+    const baseTargets = goal.base || {};
+    const currentTargets = override?.targets || baseTargets;
+
+    const body = el(
+        'div',
+        { className: 'stack-form' },
+        el('input', { name: 'kcal', type: 'number', min: '0', value: currentTargets.kcal ?? baseTargets.kcal, placeholder: 'kcal' }),
+        el('input', { name: 'proteinG', type: 'number', min: '0', value: currentTargets.proteinG ?? baseTargets.proteinG, placeholder: '단백질(g)' }),
+        el('input', { name: 'carbG', type: 'number', min: '0', value: currentTargets.carbG ?? baseTargets.carbG, placeholder: '탄수(g)' }),
+        el('input', { name: 'fatG', type: 'number', min: '0', value: currentTargets.fatG ?? baseTargets.fatG, placeholder: '지방(g)' })
+    );
+
+    openModal({
+        title: '이 날짜만 목표 수정',
+        body,
+        onSubmit: (form) => {
+            const getValue = (name, fallback) => {
+                const raw = form.querySelector(`[name="${name}"]`)?.value ?? '';
+                if (raw === '') return fallback;
+                const value = Number(raw);
+                if (Number.isNaN(value)) return fallback;
+                return Math.max(0, value);
+            };
+            const kcal = getValue('kcal', currentTargets.kcal ?? baseTargets.kcal ?? 0);
+            const proteinG = getValue('proteinG', currentTargets.proteinG ?? baseTargets.proteinG ?? 0);
+            const carbG = getValue('carbG', currentTargets.carbG ?? baseTargets.carbG ?? 0);
+            const fatG = getValue('fatG', currentTargets.fatG ?? baseTargets.fatG ?? 0);
+            updateUserDb(store, (nextDb) => {
+                const { overrideByDate } = setGoalOverride({
+                    goals: nextDb.goals,
+                    dateISO,
+                    override: {
+                        targets: { kcal, proteinG, carbG, fatG },
+                        locked: true
+                    },
+                    nowMs: Date.now()
+                });
+                nextDb.goals.overrideByDate = overrideByDate;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+            return true;
+        },
+        submitLabel: '저장'
+    });
+};
+
+const openGoalChangeDefaultModal = (store, { dateISO }) => {
+    const state = store.getState();
+    const settings = state.settings;
+
+    const body = el(
+        'div',
+        { className: 'stack-form' },
+        el(
+            'label',
+            { className: 'input-label' },
+            '목표',
+            el(
+                'select',
+                { name: 'goalMode' },
+                el('option', { value: 'maintain', selected: settings.nutrition.goal === 'maintain' }, '유지'),
+                el('option', { value: 'cut', selected: settings.nutrition.goal === 'cut' }, '감량'),
+                el('option', { value: 'minicut', selected: settings.nutrition.goal === 'minicut' }, '미니컷'),
+                el('option', { value: 'bulk', selected: settings.nutrition.goal === 'bulk' }, '증량'),
+                el('option', { value: 'leanbulk', selected: settings.nutrition.goal === 'leanbulk' }, '린 벌크'),
+                el('option', { value: 'recomp', selected: settings.nutrition.goal === 'recomp' }, '리컴프'),
+                el('option', { value: 'performance', selected: settings.nutrition.goal === 'performance' }, '퍼포먼스')
+            )
+        ),
+        el(
+            'label',
+            { className: 'input-label' },
+            '프레임워크',
+            el(
+                'select',
+                { name: 'framework' },
+                el('option', { value: 'dga_2025', selected: settings.nutrition.framework === 'dga_2025' }, 'DGA 2025–2030'),
+                el('option', { value: 'amdr', selected: settings.nutrition.framework === 'amdr' }, 'AMDR Balanced'),
+                el('option', { value: 'issn_strength', selected: settings.nutrition.framework === 'issn_strength' }, 'ISSN Strength'),
+                el('option', { value: 'acsm_endurance', selected: settings.nutrition.framework === 'acsm_endurance' }, 'ACSM Endurance')
+            )
+        )
+    );
+
+    openModal({
+        title: '오늘부터 목표 변경',
+        body,
+        onSubmit: (form) => {
+            const goal = form.querySelector('[name="goalMode"]')?.value || settings.nutrition.goal;
+            const framework = form.querySelector('[name="framework"]')?.value || settings.nutrition.framework;
+
+            const { userdb } = store.getState();
+            const birth = userdb.profile.birth;
+            const height = userdb.profile.height_cm;
+            const weight = userdb.profile.weight_kg;
+            const age = calcAge(birth);
+            const heightCm = Number(height);
+            const weightKg = Number(weight);
+
+            if (!age || !heightCm || !weightKg) {
+                window.alert('프로필 정보를 먼저 입력하세요.');
+                return false;
+            }
+
+            const spec = { frameworkId: framework, goalMode: buildGoalModeSpec(goal) };
+            const computed = computeBaseTargets({
+                profile: {
+                    sex: userdb.profile.sex,
+                    age,
+                    heightCm,
+                    weightKg,
+                    activityFactor: userdb.profile.activity
+                },
+                spec,
+                settings: { energyModel: { cutPct: 0.15, bulkPct: 0.1 } }
+            });
+
+            if (!computed.targets) return false;
+
+            updateUserDb(store, (nextDb) => {
+                const { timeline } = addGoalTimelineEntry({
+                    goals: nextDb.goals,
+                    effectiveDate: dateISO || todayIso(),
+                    spec,
+                    computed,
+                    note: '',
+                    nowMs: Date.now()
+                });
+                nextDb.goals.timeline = timeline;
+                nextDb.updatedAt = new Date().toISOString();
+            });
+
+            store.dispatch({
+                type: 'UPDATE_SETTINGS',
+                payload: {
+                    ...settings,
+                    nutrition: {
+                        ...settings.nutrition,
+                        goal,
+                        framework
+                    }
+                }
+            });
+
+            return true;
+        },
+        submitLabel: '저장'
     });
 };
 
@@ -382,6 +553,85 @@ const handleActionClick = (store, event) => {
         const filename = `cadence_backup_${new Date().toISOString().slice(0, 10)}.json`;
         downloadJson(payload, filename);
     }
+    if (action === 'goal.override') {
+        const state = store.getState();
+        let dateISO = actionEl.dataset.date || selectSelectedDate(state, actionEl.dataset.domain);
+        const input = actionEl.closest('.goal-history')?.querySelector('[name="goalOverrideDate"]');
+        if (!dateISO) {
+            const parsed = input ? parseDateInput(input.value, state.settings.dateFormat) : '';
+            if (parsed) dateISO = parsed;
+        }
+        if (!dateISO) {
+            if (input) input.focus();
+            window.alert('날짜를 입력해 주세요.');
+            return;
+        }
+        openGoalOverrideModal(store, { dateISO });
+    }
+    if (action === 'goal.clear') {
+        const state = store.getState();
+        const dateISO = actionEl.dataset.date || selectSelectedDate(state, actionEl.dataset.domain);
+        if (!dateISO) return;
+        if (!window.confirm('이 날짜의 오버라이드를 해제할까요?')) return;
+        updateUserDb(store, (nextDb) => {
+            const { overrideByDate } = clearGoalOverride({ goals: nextDb.goals, dateISO });
+            nextDb.goals.overrideByDate = overrideByDate;
+            nextDb.updatedAt = new Date().toISOString();
+        });
+    }
+    if (action === 'goal.history.toggle') {
+        const targetId = actionEl.dataset.target;
+        if (!targetId) return;
+        const list = document.getElementById(targetId);
+        if (!list) return;
+        const expanded = actionEl.dataset.expanded === 'true';
+        const nextExpanded = !expanded;
+        list.querySelectorAll('.list-item.is-hidden').forEach((item) => {
+            item.classList.toggle('is-hidden', !nextExpanded);
+        });
+        actionEl.dataset.expanded = nextExpanded ? 'true' : 'false';
+        actionEl.textContent = nextExpanded ? '접기' : '더보기';
+    }
+    if (action === 'goal.changeDefault') {
+        const state = store.getState();
+        const dateISO = actionEl.dataset.date || selectSelectedDate(state, actionEl.dataset.domain) || todayIso();
+        openGoalChangeDefaultModal(store, { dateISO });
+    }
+    if (action === 'goal.credit.toggle') {
+        const settings = store.getState().settings;
+        const enabled = Boolean(actionEl.checked ?? actionEl.dataset.checked);
+        store.dispatch({
+            type: 'UPDATE_SETTINGS',
+            payload: {
+                ...settings,
+                nutrition: {
+                    ...settings.nutrition,
+                    exerciseCredit: {
+                        ...settings.nutrition.exerciseCredit,
+                        enabled
+                    }
+                }
+            }
+        });
+    }
+    if (action === 'goal.credit.factor') {
+        const raw = Number(actionEl.value || actionEl.dataset.value || 0);
+        const value = Math.min(1, Math.max(0, raw / 100));
+        const settings = store.getState().settings;
+        store.dispatch({
+            type: 'UPDATE_SETTINGS',
+            payload: {
+                ...settings,
+                nutrition: {
+                    ...settings.nutrition,
+                    exerciseCredit: {
+                        ...settings.nutrition.exerciseCredit,
+                        factor: value
+                    }
+                }
+            }
+        });
+    }
     if (action === 'date.shift') {
         const offset = Number(actionEl.dataset.offset || 0);
         if (!offset) return;
@@ -543,7 +793,7 @@ const handleBodySubmit = (store, event, form) => {
 
 const handleSettingsSubmit = (store, event, form) => {
     event.preventDefault();
-    const dateFormat = form.querySelector('[name="dateFormat"]')?.value || 'KO_DOTS';
+    const dateFormat = form.querySelector('[name="dateFormat"]')?.value || 'YMD';
     const dateSync = Boolean(form.querySelector('[name="dateSync"]')?.checked);
     const weightUnit = form.querySelector('[name="weightUnit"]')?.value || 'kg';
     const waterUnit = form.querySelector('[name="waterUnit"]')?.value || 'ml';
@@ -564,9 +814,17 @@ const handleSettingsSubmit = (store, event, form) => {
     const profileBirth = parseDateInput(profileBirthRaw, dateFormat) || '';
     const nutritionGoal = form.querySelector('[name="nutritionGoal"]')?.value || 'maintain';
     const nutritionFramework = form.querySelector('[name="nutritionFramework"]')?.value || 'dga_2025';
+    const exerciseCreditEnabled = Boolean(form.querySelector('[name="exerciseCreditEnabled"]')?.checked);
+    const exerciseCreditFactorRaw = Number(form.querySelector('[name="exerciseCreditFactor"]')?.value || 0);
+    const exerciseCreditFactor = Math.min(1, Math.max(0, exerciseCreditFactorRaw / 100));
+    const exerciseCreditCapRaw = Number(form.querySelector('[name="exerciseCreditCap"]')?.value || 0);
+    const exerciseCreditCap = Number.isNaN(exerciseCreditCapRaw) ? 0 : exerciseCreditCapRaw;
+    const exerciseCreditDistribution =
+        form.querySelector('[name="exerciseCreditDistribution"]')?.value || 'CARB_BIASED';
+    const prevSettings = store.getState().settings;
 
     const nextSettings = {
-        ...store.getState().settings,
+        ...prevSettings,
         dateFormat,
         dateSync,
         lang,
@@ -584,9 +842,16 @@ const handleSettingsSubmit = (store, event, form) => {
             volume: soundVolume
         },
         nutrition: {
-            ...store.getState().settings.nutrition,
+            ...prevSettings.nutrition,
             goal: nutritionGoal,
-            framework: nutritionFramework
+            framework: nutritionFramework,
+            exerciseCredit: {
+                ...prevSettings.nutrition.exerciseCredit,
+                enabled: exerciseCreditEnabled,
+                factor: exerciseCreditFactor,
+                capKcal: exerciseCreditCap,
+                distribution: exerciseCreditDistribution
+            }
         }
     };
 
@@ -600,6 +865,43 @@ const handleSettingsSubmit = (store, event, form) => {
             weight_kg: profileWeight,
             activity: profileActivity
         };
+        const timeline = nextDb.goals?.timeline || [];
+        const shouldAddGoal = timeline.length === 0
+            || prevSettings.nutrition.goal !== nutritionGoal
+            || prevSettings.nutrition.framework !== nutritionFramework;
+        if (shouldAddGoal) {
+            const age = calcAge(profileBirth);
+            const heightCm = Number(profileHeight);
+            const weightKg = Number(profileWeight);
+            if (age && heightCm && weightKg) {
+                const spec = {
+                    frameworkId: nutritionFramework,
+                    goalMode: buildGoalModeSpec(nutritionGoal)
+                };
+                const computed = computeBaseTargets({
+                    profile: {
+                        sex: profileSex,
+                        age,
+                        heightCm,
+                        weightKg,
+                        activityFactor: profileActivity
+                    },
+                    spec,
+                    settings: { energyModel: { cutPct: 0.15, bulkPct: 0.1 } }
+                });
+                if (computed.targets) {
+                    const { timeline: nextTimeline } = addGoalTimelineEntry({
+                        goals: nextDb.goals,
+                        effectiveDate: todayIso(),
+                        spec,
+                        computed,
+                        note: '',
+                        nowMs: Date.now()
+                    });
+                    nextDb.goals.timeline = nextTimeline;
+                }
+            }
+        }
         nextDb.updatedAt = new Date().toISOString();
     });
 };
@@ -638,9 +940,74 @@ export const initApp = (store) => {
             const sectionTitle = slider.closest('.settings-section')?.querySelector('.section-title');
             if (sectionTitle) sectionTitle.textContent = `사운드 볼륨 (${slider.value})`;
         }
+        const creditToggle = event.target.closest('[name="exerciseCreditEnabled"]');
+        if (creditToggle) {
+            const enabled = Boolean(creditToggle.checked);
+            const section = creditToggle.closest('.settings-section');
+            const factorInput = section?.querySelector('[name="exerciseCreditFactor"]');
+            const capInput = section?.querySelector('[name="exerciseCreditCap"]');
+            const distSelect = section?.querySelector('[name="exerciseCreditDistribution"]');
+            const toggleLabel = (input) => {
+                const label = input?.closest('label');
+                if (label) label.classList.toggle('is-disabled', !enabled);
+            };
+            if (factorInput) factorInput.disabled = !enabled;
+            if (capInput) capInput.disabled = !enabled;
+            if (distSelect) distSelect.disabled = !enabled;
+            toggleLabel(factorInput);
+            toggleLabel(capInput);
+            toggleLabel(distSelect);
+        }
+        const creditFactorSlider = event.target.closest('[name="exerciseCreditFactor"]');
+        if (creditFactorSlider) {
+            const label = creditFactorSlider.closest('label');
+            if (label) label.firstChild.textContent = `운동 보정 비율 (${creditFactorSlider.value}%)`;
+        }
+        const creditCapSlider = event.target.closest('[name="exerciseCreditCap"]');
+        if (creditCapSlider) {
+            const label = creditCapSlider.closest('label');
+            if (label) label.firstChild.textContent = `운동 보정 상한 (${creditCapSlider.value} kcal)`;
+        }
+        const capSlider = event.target.closest('[data-action="goal.credit.cap"]');
+        if (capSlider) {
+            const label = capSlider.closest('label');
+            if (label) label.firstChild.textContent = `상한 (${capSlider.value} kcal)`;
+            const settings = store.getState().settings;
+            store.dispatch({
+                type: 'UPDATE_SETTINGS',
+                payload: {
+                    ...settings,
+                    nutrition: {
+                        ...settings.nutrition,
+                        exerciseCredit: {
+                            ...settings.nutrition.exerciseCredit,
+                            capKcal: Number(capSlider.value || 0)
+                        }
+                    }
+                }
+            });
+        }
+        const factorSlider = event.target.closest('[data-action="goal.credit.factor"]');
+        if (factorSlider) {
+            const label = factorSlider.closest('label');
+            if (label) label.firstChild.textContent = `비율 (${factorSlider.value}%)`;
+            const settings = store.getState().settings;
+            store.dispatch({
+                type: 'UPDATE_SETTINGS',
+                payload: {
+                    ...settings,
+                    nutrition: {
+                        ...settings.nutrition,
+                        exerciseCredit: {
+                            ...settings.nutrition.exerciseCredit,
+                            factor: Math.min(1, Math.max(0, Number(factorSlider.value || 0) / 100))
+                        }
+                    }
+                }
+            });
+        }
         handleActionChange(store, event);
     });
-    document.addEventListener('change', (event) => handleActionChange(store, event));
     store.subscribe(() => render(store));
     render(store);
 };

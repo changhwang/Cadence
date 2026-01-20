@@ -48,9 +48,10 @@ export const addGoalTimelineEntry = ({
         createdAt: nowMs,
         note: note || ''
     };
-    timeline.push(entry);
-    timeline.sort((a, b) => compareIso(a.effectiveDate, b.effectiveDate));
-    return { timeline };
+    const deduped = timeline.filter((item) => item.effectiveDate !== effectiveDate);
+    deduped.push(entry);
+    deduped.sort((a, b) => compareIso(a.effectiveDate, b.effectiveDate));
+    return { timeline: deduped };
 };
 
 export const setGoalOverride = ({ goals, dateISO, override, nowMs }) => {

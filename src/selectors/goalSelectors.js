@@ -10,21 +10,9 @@ const emptyTargets = () => ({
     fiberG: 0
 });
 
-const compareIso = (a, b) => a.localeCompare(b);
-
-const findTimelineEntry = (timeline, dateISO) => {
-    if (!Array.isArray(timeline) || timeline.length === 0) return null;
-    const sorted = [...timeline].sort((a, b) => compareIso(a.effectiveDate, b.effectiveDate));
-    let latest = null;
-    for (const entry of sorted) {
-        if (compareIso(entry.effectiveDate, dateISO) <= 0) {
-            latest = entry;
-        } else {
-            break;
-        }
-    }
-    return latest;
-};
+import { getEffectiveGoal } from '../services/goals/goalService.js';
+import { applyExerciseCredit, distributeCredit } from '../services/nutrition/targetEngine.js';
+import { getExerciseKcalForDate } from '../services/workout/energy.js';
 
 const mergeTargets = (base, patch) => ({
     ...base,
@@ -36,21 +24,38 @@ const mergeTargets = (base, patch) => ({
 
 export const selectGoalForDate = (state, dateISO) => {
     const goals = state?.userdb?.goals || {};
-    const timeline = goals.timeline || [];
-    const overrideByDate = goals.overrideByDate || {};
-    const override = overrideByDate[dateISO] || null;
-
-    const entry = findTimelineEntry(timeline, dateISO);
-    const entryTargets = entry?.targets || emptyTargets();
-    const baseTargets = override?.targets ? mergeTargets(entryTargets, override.targets) : entryTargets;
+    const workoutDay = state?.userdb?.workout?.[dateISO];
+    const profile = state?.userdb?.profile || {};
+    const { source, effectiveDate, entry, override, baseTargets } = getEffectiveGoal({
+        dateISO,
+        goals
+    });
+    const entryTargets = baseTargets || emptyTargets();
+    const mergedTargets = override?.targets ? mergeTargets(entryTargets, override.targets) : entryTargets;
+    const creditPolicy = state?.settings?.nutrition?.exerciseCredit || {};
+    const exerciseKcal = getExerciseKcalForDate({ day: workoutDay, profile });
+    const credit = applyExerciseCredit({
+        base: mergedTargets,
+        exerciseKcal,
+        policy: creditPolicy
+    });
+    const distributed = distributeCredit({
+        creditedKcal: credit.creditedKcal,
+        base: mergedTargets,
+        distribution: creditPolicy.distribution
+    });
+    const finalTargets = {
+        ...credit.final,
+        ...distributed
+    };
 
     return {
-        base: baseTargets,
-        final: baseTargets,
+        base: mergedTargets,
+        final: finalTargets,
         meta: {
-            source: override ? 'override' : 'timeline',
-            effectiveDate: override ? dateISO : (entry?.effectiveDate || dateISO),
-            creditedKcal: 0
+            source,
+            effectiveDate: effectiveDate || (entry?.effectiveDate || dateISO),
+            creditedKcal: credit.creditedKcal
         }
     };
 };

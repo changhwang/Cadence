@@ -1,10 +1,12 @@
 import { el } from '../../utils/dom.js';
-import { formatDisplay } from '../../utils/date.js';
+import { renderGoalCard } from '../components/GoalCard.js';
+import { formatDisplay, todayIso } from '../../utils/date.js';
 
 export const renderSettingsView = (container, store) => {
     container.textContent = '';
 
     const { settings, userdb } = store.getState();
+    const goals = userdb.goals || { timeline: [], overrideByDate: {} };
 
     const header = el('h1', {}, '설정');
     const headerWrap = el('div', { className: 'page-header' }, header);
@@ -211,6 +213,10 @@ export const renderSettingsView = (container, store) => {
         )
     );
 
+    const creditPolicy = settings.nutrition?.exerciseCredit || {};
+    const creditEnabled = creditPolicy.enabled !== false;
+    const creditFactorPct = Math.round(Number(creditPolicy.factor ?? 0.5) * 100);
+
     const nutritionSection = el(
         'div',
         { className: 'settings-section' },
@@ -243,7 +249,235 @@ export const renderSettingsView = (container, store) => {
                 el('option', { value: 'issn_strength', selected: settings.nutrition.framework === 'issn_strength' }, 'ISSN Strength'),
                 el('option', { value: 'acsm_endurance', selected: settings.nutrition.framework === 'acsm_endurance' }, 'ACSM Endurance')
             )
+        ),
+        el(
+            'label',
+            { className: 'input-label inline-toggle' },
+            el('span', { className: 'toggle-label' }, '운동 보정'),
+            el('input', {
+                type: 'checkbox',
+                name: 'exerciseCreditEnabled',
+                checked: creditEnabled
+            })
+        ),
+        el(
+            'label',
+            { className: `input-label ${creditEnabled ? '' : 'is-disabled'}` },
+            `운동 보정 비율 (${creditFactorPct}%)`,
+            el('input', {
+                type: 'range',
+                className: 'range-full',
+                name: 'exerciseCreditFactor',
+                min: '0',
+                max: '100',
+                step: '5',
+                value: String(creditFactorPct),
+                disabled: !creditEnabled
+            })
+        ),
+        el(
+            'label',
+            { className: `input-label ${creditEnabled ? '' : 'is-disabled'}` },
+            `운동 보정 상한 (${creditPolicy.capKcal ?? 0} kcal)`,
+            el('input', {
+                type: 'range',
+                className: 'range-full',
+                name: 'exerciseCreditCap',
+                min: '0',
+                max: '1000',
+                step: '25',
+                value: String(creditPolicy.capKcal ?? 0),
+                disabled: !creditEnabled
+            })
+        ),
+        el(
+            'label',
+            { className: `input-label ${creditEnabled ? '' : 'is-disabled'}` },
+            '보정 분배',
+            el(
+                'select',
+                { name: 'exerciseCreditDistribution', disabled: !creditEnabled },
+                el('option', { value: 'CARB_BIASED', selected: creditPolicy.distribution === 'CARB_BIASED' }, '탄수 위주'),
+                el('option', { value: 'SAME_RATIO', selected: creditPolicy.distribution === 'SAME_RATIO' }, '기존 비율'),
+                el('option', { value: 'FAT_BIASED', selected: creditPolicy.distribution === 'FAT_BIASED' }, '지방 위주')
+            )
         )
+    );
+
+    const goalModeLabel = (mode) => {
+        if (mode === 'CUT') return '감량';
+        if (mode === 'LEAN_BULK') return '린 벌크';
+        if (mode === 'BULK') return '증량';
+        if (mode === 'RECOMP') return '리컴프';
+        if (mode === 'MAINTAIN') return '유지';
+        return mode || '-';
+    };
+
+    const frameworkLabel = (id) => {
+        if (id === 'dga_2025') return 'DGA 2025–2030';
+        if (id === 'amdr') return 'AMDR Balanced';
+        if (id === 'issn_strength') return 'ISSN Strength';
+        if (id === 'acsm_endurance') return 'ACSM Endurance';
+        return id || '-';
+    };
+
+    const buildHistoryList = ({ items, renderItem, listId }) => {
+        const limit = 5;
+        const list = el('div', { className: 'list-group', id: listId });
+        items.forEach((item, index) => {
+            const row = renderItem(item);
+            if (index >= limit) {
+                row.classList.add('is-hidden');
+            }
+            list.appendChild(row);
+        });
+        if (items.length <= limit) {
+            return { list, toggle: null };
+        }
+        const toggle = el(
+            'button',
+            {
+                type: 'button',
+                className: 'btn btn-secondary btn-sm btn-inline',
+                dataset: { action: 'goal.history.toggle', target: listId, expanded: 'false' }
+            },
+            '더보기'
+        );
+        return { list, toggle };
+    };
+
+    const timelineList = (() => {
+        const timeline = Array.isArray(goals.timeline) ? goals.timeline.slice() : [];
+        if (timeline.length === 0) {
+            return el('p', { className: 'empty-state' }, '목표 변경 이력이 없습니다.');
+        }
+        const grouped = timeline.reduce((acc, entry) => {
+            const date = entry?.effectiveDate || '';
+            if (!date) return acc;
+            if (!acc[date] || (entry.createdAt || 0) >= (acc[date].createdAt || 0)) {
+                acc[date] = entry;
+            }
+            return acc;
+        }, {});
+        const items = Object.values(grouped)
+            .sort((a, b) => (a.effectiveDate || '').localeCompare(b.effectiveDate || '') * -1)
+        const { list, toggle } = buildHistoryList({
+            items,
+            listId: 'goal-history-timeline',
+            renderItem: (entry) => {
+                const dateLabel = formatDisplay(entry.effectiveDate, settings.dateFormat);
+                const mode = goalModeLabel(entry?.spec?.goalMode?.mode);
+                const framework = frameworkLabel(entry?.spec?.frameworkId);
+                return el(
+                    'div',
+                    { className: 'list-item' },
+                    el(
+                        'div',
+                        {},
+                        el(
+                            'div',
+                            { className: 'list-title-row' },
+                            el('div', { className: 'list-title' }, dateLabel),
+                            el('span', { className: 'badge' }, mode)
+                        ),
+                        el('div', { className: 'list-subtitle' }, `프레임워크: ${framework}`)
+                    )
+                );
+            }
+        });
+        return el('div', { className: 'history-list' }, list, toggle || null);
+    })();
+
+    const overrideList = (() => {
+        const overrides = goals.overrideByDate || {};
+        const entries = Object.keys(overrides);
+        if (entries.length === 0) {
+            return el('p', { className: 'empty-state' }, '오버라이드가 없습니다.');
+        }
+        const items = entries
+            .sort((a, b) => a.localeCompare(b) * -1)
+        const { list, toggle } = buildHistoryList({
+            items,
+            listId: 'goal-history-override',
+            renderItem: (dateISO) => {
+                const override = overrides[dateISO] || {};
+                const dateLabel = formatDisplay(dateISO, settings.dateFormat);
+                const kcal = override.targets?.kcal ?? '-';
+                const protein = override.targets?.proteinG ?? '-';
+                const carb = override.targets?.carbG ?? '-';
+                const fat = override.targets?.fatG ?? '-';
+                const meta = `${kcal} / ${protein} / ${carb} / ${fat}`;
+                const actions = el(
+                    'div',
+                    { className: 'list-actions' },
+                    el(
+                        'button',
+                        {
+                            type: 'button',
+                            className: 'btn btn-secondary btn-sm btn-inline',
+                            dataset: { action: 'goal.override', date: dateISO }
+                        },
+                        '수정'
+                    ),
+                    el(
+                        'button',
+                        {
+                            type: 'button',
+                            className: 'btn btn-secondary btn-sm btn-inline',
+                            dataset: { action: 'goal.clear', date: dateISO }
+                        },
+                        '해제'
+                    )
+                );
+                return el(
+                    'div',
+                    { className: 'list-item' },
+                    el(
+                        'div',
+                        {},
+                        el(
+                            'div',
+                            { className: 'list-title-row' },
+                            el('div', { className: 'list-title' }, dateLabel),
+                            el('span', { className: 'badge' }, '오버라이드')
+                        ),
+                        el('div', { className: 'list-subtitle' }, meta)
+                    ),
+                    actions
+                );
+            }
+        });
+        return el('div', { className: 'history-list' }, list, toggle || null);
+    })();
+
+    const goalHistorySection = el(
+        'div',
+        { className: 'settings-section goal-history' },
+        el('div', { className: 'list-subtitle' }, '같은 날짜 변경은 최종값만 표시됩니다.'),
+        el(
+            'div',
+            { className: 'row row-gap' },
+            el(
+                'label',
+                { className: 'input-label' },
+                '이 날짜만 오버라이드',
+                el('input', {
+                    name: 'goalOverrideDate',
+                    type: 'text',
+                    inputMode: 'numeric',
+                    placeholder: settings.dateFormat === 'MDY' ? 'MM/DD/YYYY' : 'YYYY.MM.DD'
+                })
+            ),
+            el(
+                'button',
+                { type: 'button', className: 'btn btn-sm btn-inline', dataset: { action: 'goal.override' } },
+                '오버라이드 추가'
+            )
+        ),
+        el('div', { className: 'list-subtitle' }, '타임라인'),
+        timelineList,
+        el('div', { className: 'list-subtitle' }, '오버라이드 (kcal/단백질/탄수화물/지방)'),
+        overrideList
     );
 
     const form = el(
@@ -260,6 +494,18 @@ export const renderSettingsView = (container, store) => {
             { className: 'card' },
             el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '목표')),
             nutritionSection
+        ),
+        renderGoalCard(store, {
+            title: '목표 미리보기',
+            dateISO: todayIso(),
+            showControls: false,
+            showActions: false
+        }),
+        el(
+            'div',
+            { className: 'card' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, 'Goal History')),
+            goalHistorySection
         ),
         el(
             'div',

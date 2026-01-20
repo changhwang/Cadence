@@ -1,4 +1,4 @@
-# Cadence vNext — Master Doc (Plan + API Spec + Mid-check)
+﻿# Cadence vNext — Master Doc (Plan + API Spec + Mid-check)
 **작성일:** 2026-01-20  
 **구성:**  
 1) 구현 계획/체크리스트(최적화 버전)  
@@ -157,23 +157,31 @@
 
 ---
 
-## 5) UI/UX(최소 변경으로 최강 효용)
-### 5-1) Diet/Workout 상단 “Goal Card”
-- Base Target(효력일 표시): `base 2100kcal (since 2026-01-20)`
-- Exercise Credit: `+210kcal (50%, cap 500)`
-- Final Target: `2310kcal`
-- 버튼:
-  1) “오늘부터 목표 변경” → timeline add
-  2) “이 날짜만 목표 조정” → override set/lock
-  3) “오버라이드 해제” → override remove
+## 5) UI/UX(ìµœì†Œ ë³€ê²½ìœ¼ë¡œ ìµœê°• íš¨ìš©)
+### 5-1) Settings ì¤‘ì‹¬ ëª©í‘œ ê´€ë¦¬(ê¶Œìž¥)
+- Settingsì—ì„œë§Œ ëª©í‘œ/í”„ë ˆìž„ì›Œí¬/í™œë™ëŸ‰/ìš´ë™ ë³´ì • ì •ì±…ì„ ìˆ˜ì •
+- ì €ìž¥ ì‹œ `goals.timeline`ì— **ì˜¤ëŠ˜ ë‚ ì§œë¡œ ì—”íŠ¸ë¦¬ ì¶”ê°€**
+- Settings í•˜ë‹¨ì—ëŠ” **ì½ê¸° ì „ìš© Goal Preview ì¹´ë“œ**(ì‹¤ì‹œê°„ ë°˜ì˜)
 
-### 5-2) Settings → Goal/Nutrition
+### 5-2) Settings â†’ Goal History (ì‹ ê·œ ì„¹ì…˜)
+- íƒ€ìž„ë¼ì¸ ë¦¬ìŠ¤íŠ¸(ì–¸ì œ ë¬´ì—‡ì´ ë°”ë€Œì—ˆëŠ”ì§€)
+- ë‚ ì§œ ì„ íƒ í›„:
+  1) â€œì´ ë‚ ì§œë§Œ ëª©í‘œ ì˜¤ë²„ë¼ì´ë“œ ì¶”ê°€/ìˆ˜ì •â€
+  2) â€œì˜¤ë²„ë¼ì´ë“œ í•´ì œâ€
+  3) (ì„ íƒ) â€œlockâ€ í† ê¸€
+- ì´ ì„¹ì…˜ì´ `overrideByDate` UIë¥¼ ë‹´ë‹¹
+
+### 5-3) ëŒ€ì‹œë³´ë“œ(í˜¹ì€ ìš”ì•½ ì¹´ë“œ)ì—ì„œ ëª©í‘œ vs ì‹¤ì œ
+- ë„ë„› ì°¨íŠ¸(ì„­ì·¨/ìš´ë™/ìž”ì—¬) + ë‹¬ì„±ë¥  í‘œì‹œ
+- â€œëª©í‘œ ê¸°ì¤€ì¼/ì¶œì²˜(override/timeline)â€ëŠ” ìž‘ì€ ì •ë³´ë¡œë§Œ í‘œì‹œ
+- Workout/Diet ìƒë‹¨ì—ëŠ” **Goal Card ëŒ€ì‹  ìš”ì•½(ì„¸íŠ¸/ë³¼ë¥¨/ìœ ì‚°ì†Œ/ì¹¼ë¡œë¦¬)** ë˜ëŠ”
+  **ì˜ì–‘ í•©ì‚° ìš”ì•½**ìœ¼ë¡œ ë¶„ë¦¬
+
+### 5-4) Settings â†’ Goal/Nutrition(ì„¸ë¶€ í•­ëª©)
 - Default Goal Mode / Default Framework
-- Exercise Credit: enabled, factor(0/0.5/1.0), capKcal, distribution
-- Date format(표시만): YMD/MDY/KO_DOTS(표시용)
-
----
-
+- Activity Factor(í™œë™ ë ˆë²¨)
+- Exercise Credit: enabled, factor(0~1), capKcal, distribution
+- Date format(í‘œì‹œë§Œ): YMD/MDY
 ## 6) 구현 순서(체크리스트 + 완료 기준)
 ### Phase 1 — Goal 데이터 구조 & selector
 - [ ] `userdb.goals.timeline` 스키마 추가(없으면 baseline 1개 생성)
@@ -562,3 +570,31 @@ export function selectSelectedDate(state:any, domain:'diet'|'workout'|'body'|'da
 
 이렇게만 고정하면, 이후 기능 확장(새 프레임워크/새 보정 방식/새 규칙)이 UI에 누수되지 않습니다.
 
+---
+
+# (추가) 리라이트/영양 문서 통합 요약
+> 아래 내용은 `cadence_rewrite_plan_final.md`와 `cadence_nutrition_upgrade_plan.md`에서 필요한 핵심만 흡수한 요약입니다.
+
+## A) 리라이트 기본 원칙(요약)
+- 데이터는 `cadence.userdb` 단일 키 + DateKey는 ISO(`YYYY-MM-DD`) 고정
+- UI는 storage 직접 접근 금지, store/actions 경유
+- 이벤트 위임은 `data-action` 기반, `innerHTML` 금지
+- 저장은 persist 레이어에서 debounce 처리, 실패 시 배너 + 백업 유도
+- 정적 DB(`/src/data/*`)는 백업 대상이 아님
+
+## B) 권장 디렉토리 구조(요약)
+- `/core`: schema/storage/store/persist/logger
+- `/utils`: date/dom/helpers
+- `/data`: exercise/food/cardio
+- `/services`: workout/diet/body/backup + nutrition/goal 관련 로직
+- `/ui`: components/views/app
+
+## C) 영양 업그레이드 핵심(요약)
+- Goal(칼로리 델타) × Framework(영양 기준) 분리
+- DGA/AMDR/ISSN/Endurance 프리셋을 정책 파일로 고정
+- satFat/fiber/addedSugar는 “있을 때만 표시”로 단계적 도입
+- profile에 `trainingLoad`(endurance 탄수 g/kg 계산용) 확장 고려
+
+## D) DGA 팩트 체크(요약)
+- DGA는 USDA + HHS 공동 가이드라인
+- 2025–2030 DGA 반영을 프리셋 기준으로 사용

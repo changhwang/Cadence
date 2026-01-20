@@ -33,7 +33,15 @@ export const loadSettings = () => {
         ...parsed,
         units: { ...defaults.units, ...(parsed.units || {}) },
         sound: { ...defaults.sound, ...(parsed.sound || {}) },
-        nutrition: { ...defaults.nutrition, ...(parsed.nutrition || {}) },
+        nutrition: {
+            ...defaults.nutrition,
+            ...(parsed.nutrition || {}),
+            overrides: { ...defaults.nutrition.overrides, ...((parsed.nutrition || {}).overrides || {}) },
+            exerciseCredit: {
+                ...defaults.nutrition.exerciseCredit,
+                ...((parsed.nutrition || {}).exerciseCredit || {})
+            }
+        },
         dev: { ...defaults.dev, ...(parsed.dev || {}) }
     };
     if (merged.dateFormat === 'YMD_DOTS' || merged.dateFormat === 'YMD_DASH') {

@@ -1,5 +1,6 @@
 import { el, text } from '../../utils/dom.js';
 import { renderDateBar } from '../components/DateBar.js';
+import { renderDailySummary } from '../components/DailySummary.js';
 
 const getWorkoutEntry = (userdb, dateKey) => {
     return userdb.workout[dateKey] || { logs: [] };
@@ -71,6 +72,7 @@ export const renderWorkoutView = (container, store) => {
     const list = renderWorkoutList(entry.logs);
 
     container.appendChild(headerWrap);
+    container.appendChild(renderDailySummary({ userdb, settings, dateKey }));
     const addButton = el(
         'button',
         { type: 'button', className: 'btn', dataset: { action: 'workout.addMenu' } },
