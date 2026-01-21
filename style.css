@@ -864,6 +864,14 @@ input::placeholder {
     margin-bottom: 0;
 }
 
+.stack-form input[type="time"] {
+    height: 44px;
+}
+
+.stack-form .btn:not(.btn-sm) {
+    height: 44px;
+}
+
 .input-label {
     display: flex;
     flex-direction: column;
