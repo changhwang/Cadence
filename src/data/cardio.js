@@ -11,6 +11,17 @@ export const CARDIO_DB = [
         intervalFriendly: true
     },
     {
+        id: 'incline_run',
+        labels: { ko: '인클라인 러닝', en: 'Incline Running' },
+        met: 11.0,
+        intensity: 'hard',
+        kind: 'cardio',
+        paceCategory: 'hard',
+        terrain: 'indoor',
+        modality: 'run',
+        intervalFriendly: true
+    },
+    {
         id: 'walk',
         labels: { ko: '걷기', en: 'Walking' },
         met: 3.3,

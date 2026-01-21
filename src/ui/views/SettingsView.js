@@ -1,6 +1,6 @@
 import { el } from '../../utils/dom.js';
 import { renderGoalCard } from '../components/GoalCard.js';
-import { formatDisplay, todayIso } from '../../utils/date.js';
+import { addDays, formatDisplay, todayIso } from '../../utils/date.js';
 
 export const renderSettingsView = (container, store) => {
     container.textContent = '';
@@ -366,20 +366,22 @@ export const renderSettingsView = (container, store) => {
         return { list, toggle };
     };
 
+    const timeline = Array.isArray(goals.timeline) ? goals.timeline.slice() : [];
+    const timelineGrouped = timeline.reduce((acc, entry) => {
+        const date = entry?.effectiveDate || '';
+        if (!date) return acc;
+        if (!acc[date] || (entry.createdAt || 0) >= (acc[date].createdAt || 0)) {
+            acc[date] = entry;
+        }
+        return acc;
+    }, {});
+    const overrides = goals.overrideByDate || {};
+
     const timelineList = (() => {
-        const timeline = Array.isArray(goals.timeline) ? goals.timeline.slice() : [];
         if (timeline.length === 0) {
             return el('p', { className: 'empty-state' }, '목표 변경 이력이 없습니다.');
         }
-        const grouped = timeline.reduce((acc, entry) => {
-            const date = entry?.effectiveDate || '';
-            if (!date) return acc;
-            if (!acc[date] || (entry.createdAt || 0) >= (acc[date].createdAt || 0)) {
-                acc[date] = entry;
-            }
-            return acc;
-        }, {});
-        const items = Object.values(grouped)
+        const items = Object.values(timelineGrouped)
             .sort((a, b) => (a.effectiveDate || '').localeCompare(b.effectiveDate || '') * -1)
         const { list, toggle } = buildHistoryList({
             items,
@@ -409,7 +411,6 @@ export const renderSettingsView = (container, store) => {
     })();
 
     const overrideList = (() => {
-        const overrides = goals.overrideByDate || {};
         const entries = Object.keys(overrides);
         if (entries.length === 0) {
             return el('p', { className: 'empty-state' }, '오버라이드가 없습니다.');
@@ -470,6 +471,86 @@ export const renderSettingsView = (container, store) => {
         return el('div', { className: 'history-list' }, list, toggle || null);
     })();
 
+    const goalCalendar = (() => {
+        const pad2 = (value) => String(value).padStart(2, '0');
+        let baseISO = todayIso();
+        const timelineDates = new Set(Object.keys(timelineGrouped));
+        const overrideDates = new Set(Object.keys(overrides));
+
+        const calendar = el('div', { className: 'goal-calendar' });
+        const title = el('div', { className: 'goal-calendar-title' });
+        const prevButton = el('button', { type: 'button', className: 'btn btn-secondary btn-sm' }, '이전');
+        const nextButton = el('button', { type: 'button', className: 'btn btn-secondary btn-sm' }, '다음');
+        const header = el('div', { className: 'goal-calendar-header' }, prevButton, title, nextButton);
+        const grid = el('div', { className: 'goal-calendar-grid' });
+
+        const renderWeekdays = () => {
+            const labels = ['일', '월', '화', '수', '목', '금', '토'];
+            labels.forEach((label) => {
+                grid.appendChild(el('div', { className: 'goal-calendar-weekday' }, label));
+            });
+        };
+
+        const renderGrid = () => {
+            grid.textContent = '';
+            renderWeekdays();
+            const [year, month] = baseISO.split('-').map(Number);
+            title.textContent = `${year}.${pad2(month)}`;
+            const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
+            const startOffset = firstOfMonth.getUTCDay();
+            const firstISO = `${year}-${pad2(month)}-01`;
+            const startISO = addDays(firstISO, -startOffset);
+
+            for (let i = 0; i < 42; i += 1) {
+                const cellISO = addDays(startISO, i);
+                const [cYear, cMonth, cDay] = cellISO.split('-');
+                const isOutside = Number(cMonth) !== month;
+                const isToday = cellISO === todayIso();
+                const hasTimeline = timelineDates.has(cellISO);
+                const hasOverride = overrideDates.has(cellISO);
+
+                const cell = el(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'goal-calendar-cell',
+                        dataset: { action: 'goal.override', date: cellISO }
+                    },
+                    el('span', { className: 'goal-calendar-date' }, String(Number(cDay)))
+                );
+                if (isOutside) cell.classList.add('is-outside');
+                if (isToday) cell.classList.add('is-today');
+                if (hasTimeline || hasOverride) {
+                    const dots = el('div', { className: 'goal-calendar-dots' });
+                    if (hasTimeline) dots.appendChild(el('span', { className: 'goal-calendar-dot timeline' }, '•'));
+                    if (hasOverride) dots.appendChild(el('span', { className: 'goal-calendar-dot override' }, '•'));
+                    cell.appendChild(dots);
+                }
+                grid.appendChild(cell);
+            }
+        };
+
+        prevButton.addEventListener('click', () => {
+            const [year, month] = baseISO.split('-').map(Number);
+            const prevMonth = month === 1 ? 12 : month - 1;
+            const prevYear = month === 1 ? year - 1 : year;
+            baseISO = `${prevYear}-${pad2(prevMonth)}-01`;
+            renderGrid();
+        });
+        nextButton.addEventListener('click', () => {
+            const [year, month] = baseISO.split('-').map(Number);
+            const nextMonth = month === 12 ? 1 : month + 1;
+            const nextYear = month === 12 ? year + 1 : year;
+            baseISO = `${nextYear}-${pad2(nextMonth)}-01`;
+            renderGrid();
+        });
+
+        renderGrid();
+        calendar.appendChild(header);
+        calendar.appendChild(grid);
+        return calendar;
+    })();
+
     const goalHistorySection = el(
         'div',
         { className: 'settings-section goal-history' },
@@ -494,6 +575,8 @@ export const renderSettingsView = (container, store) => {
                 '오버라이드 추가'
             )
         ),
+        el('div', { className: 'list-subtitle' }, '달력'),
+        goalCalendar,
         el('div', { className: 'list-subtitle' }, '타임라인'),
         timelineList,
         el('div', { className: 'list-subtitle' }, '오버라이드 (kcal/단백질/탄수화물/지방)'),

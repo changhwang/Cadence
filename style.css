@@ -919,6 +919,7 @@ label.input-label input[type="checkbox"] {
 .list-actions .btn {
     padding: 5px 8px;
     font-size: 12px;
+    white-space: nowrap;
 }
 
 .routine-defaults {
@@ -962,6 +963,7 @@ label.input-label input[type="checkbox"] {
 .list-actions .badge {
     font-size: 11px;
     padding: 4px 8px;
+    white-space: nowrap;
 }
 
 .btn-danger-text {
@@ -1086,6 +1088,80 @@ input[type="range"].range-full {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.goal-calendar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.goal-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.goal-calendar-title {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.goal-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.goal-calendar-weekday {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.goal-calendar-cell {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 0;
+    text-align: center;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    position: relative;
+}
+
+.goal-calendar-cell.is-outside {
+    opacity: 0.45;
+}
+
+.goal-calendar-cell.is-today {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+.goal-calendar-date {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.goal-calendar-dots {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.goal-calendar-dot {
+    font-size: 10px;
+    line-height: 10px;
+}
+
+.goal-calendar-dot.timeline {
+    color: var(--text-secondary);
+}
+
+.goal-calendar-dot.override {
+    color: var(--danger);
 }
 
 .list-item.is-hidden {

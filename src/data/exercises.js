@@ -135,6 +135,21 @@ export const EXERCISE_DB = [
         cues: ['팔꿈치 고정', '반동 제거']
     },
     {
+        id: 'barbell_curl',
+        labels: { ko: '바벨 컬', en: 'Barbell Curl' },
+        muscle: { primary: ['biceps'], secondary: [] },
+        muscles: { detail: ['biceps'] },
+        equipment: ['barbell'],
+        pattern: 'pull_horizontal',
+        classification: 'isolation',
+        unilateral: false,
+        grip: 'supinated',
+        range: 'full',
+        plane: 'sagittal',
+        difficulty: 'beginner',
+        cues: ['팔꿈치 고정', '반동 제거']
+    },
+    {
         id: 'tricep_pushdown',
         labels: { ko: '트라이셉스 푸시다운', en: 'Triceps Pushdown' },
         muscle: { primary: ['triceps'], secondary: [] },
@@ -208,6 +223,21 @@ export const EXERCISE_DB = [
         plane: 'frontal',
         difficulty: 'beginner',
         cues: ['팔꿈치 살짝 굽힘', '어깨 높이']
+    },
+    {
+        id: 'cable_lateral_raise',
+        labels: { ko: '케이블 레터럴 레이즈', en: 'Cable Lateral Raise' },
+        muscle: { primary: ['shoulders'], secondary: [] },
+        muscles: { detail: ['lateral_delts'] },
+        equipment: ['cable'],
+        pattern: 'push_vertical',
+        classification: 'isolation',
+        unilateral: true,
+        grip: 'neutral',
+        range: 'full',
+        plane: 'frontal',
+        difficulty: 'beginner',
+        cues: ['팔꿈치 고정', '어깨 높이']
     },
     {
         id: 'incline_bench_press',
@@ -345,6 +375,21 @@ export const EXERCISE_DB = [
         cues: ['반동 최소', '복부 당기기']
     },
     {
+        id: 'hanging_leg_raise',
+        labels: { ko: '행잉 레그 레이즈', en: 'Hanging Leg Raise' },
+        muscle: { primary: ['core'], secondary: ['hip_flexors'] },
+        muscles: { detail: ['core', 'hip_flexors'] },
+        equipment: ['bar'],
+        pattern: 'core',
+        classification: 'isolation',
+        unilateral: false,
+        grip: 'overhand',
+        range: 'full',
+        plane: 'sagittal',
+        difficulty: 'intermediate',
+        cues: ['반동 최소', '다리 들기']
+    },
+    {
         id: 'push_up',
         labels: { ko: '푸시업', en: 'Push-up' },
         muscle: { primary: ['chest'], secondary: ['triceps', 'front_delts'] },
@@ -373,6 +418,21 @@ export const EXERCISE_DB = [
         plane: 'frontal',
         difficulty: 'beginner',
         cues: ['가슴 당기기', '팔꿈치 내리기']
+    },
+    {
+        id: 'assist_dip',
+        labels: { ko: '어시스트 딥스', en: 'Assisted Dip' },
+        muscle: { primary: ['chest'], secondary: ['triceps', 'front_delts'] },
+        muscles: { detail: ['lower_chest', 'triceps', 'front_delts'] },
+        equipment: ['machine'],
+        pattern: 'push_vertical',
+        classification: 'compound',
+        unilateral: false,
+        grip: 'neutral',
+        range: 'full',
+        plane: 'sagittal',
+        difficulty: 'beginner',
+        cues: ['상체 살짝 전방', '팔꿈치 경로 고정']
     },
     {
         id: 'smith_bench_press',
@@ -478,5 +538,20 @@ export const EXERCISE_DB = [
         plane: 'sagittal',
         difficulty: 'beginner',
         cues: ['호흡 유지', '페이스 유지']
+    },
+    {
+        id: 'incline_run',
+        labels: { ko: '인클라인 러닝', en: 'Incline Running' },
+        muscle: { primary: ['cardio'], secondary: ['glutes', 'hamstrings'] },
+        muscles: { detail: ['cardio', 'glutes', 'hamstrings'] },
+        equipment: ['cardio'],
+        pattern: 'cardio',
+        classification: 'cardio',
+        unilateral: false,
+        grip: 'neutral',
+        range: 'full',
+        plane: 'sagittal',
+        difficulty: 'beginner',
+        cues: ['경사 유지', '보폭 안정']
     }
 ];

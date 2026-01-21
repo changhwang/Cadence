@@ -346,7 +346,7 @@ export const openWorkoutRoutineModal = (store) => {
                             el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.edit', id } }, '수정'),
                             el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.delete', id } }, '삭제')
                         )
-                        : el('span', { className: 'badge' }, '추가')
+                        : el('button', { type: 'button', className: 'btn btn-secondary btn-sm' }, '추가')
                 )
             )
         );
@@ -447,16 +447,20 @@ export const openWorkoutRoutineModal = (store) => {
                 return;
             }
             const perDefaults = defaultsById[exerciseId] || defaults;
-            strengthLogs.push(
-                createWorkoutLog({
-                    name,
-                    sets: perDefaults.sets || 3,
-                    reps: perDefaults.reps || 10,
-                    weight: perDefaults.weight || 0,
-                    unit: perDefaults.unit || 'kg',
-                    exerciseId
-                })
-            );
+            const log = createWorkoutLog({
+                name,
+                sets: perDefaults.sets || 3,
+                reps: perDefaults.reps || 10,
+                weight: perDefaults.weight || 0,
+                unit: perDefaults.unit || 'kg',
+                exerciseId
+            });
+            log.target = {
+                sets: perDefaults.sets || log.sets || 1,
+                reps: perDefaults.reps || log.reps || 0,
+                restSec: Number(perDefaults.restSec || 60)
+            };
+            strengthLogs.push(log);
         });
         if (strengthLogs.length === 0 && cardioLogs.length === 0) return;
         updateUserDb(store, (nextDb) => {

@@ -56,6 +56,7 @@
 - [x] 세트 시작/완료 UX (세트별 기록 흐름)
 - [x] 운동 상세 통계(볼륨/히스토리) 최소 복원
 - [x] 상단 요약 표시(세트/볼륨/유산소/칼로리) 최종 UI 확정
+- [x] 루틴 defaultsById로 휴식/시간 지원
 
 ### 식단
 - [x] 음식 검색/선택 모달 (FOOD_DB 연동)
@@ -83,7 +84,7 @@
 - [ ] 백업/복원 UX 마감
 - [x] Goal/Nutrition 저장 시 timeline append(오늘부터 적용)
 - [x] Goal History 섹션(타임라인/오버라이드 관리 UI)
-- [ ] Goal History 달력 뷰(변경일 마커 표시)
+- [x] Goal History 달력 뷰(변경일 마커 표시)
 
 ## 공통/백엔드/유틸
 - [ ] storage/schema 마이그레이션 정책 정리(현재 1 고정)
