@@ -1664,5 +1664,4 @@ export const EXERCISE_DB = [
         difficulty: 'intermediate',
         cues: ['리듬 유지', '어깨 고정']
     }
-    }
 ];
