@@ -1,4 +1,5 @@
 import { renderTabBar } from './components/TabBar.js';
+import { renderSaveBanner } from './components/StatusBanner.js';
 import { renderView } from './views/index.js';
 import { handleBackupAction, handleDateAction, handleGoalAction } from './handlers/actionHandlers.js';
 import { handleDietClickAction, handleRouteAction, handleWorkoutClickAction } from './handlers/clickHandlers.js';
@@ -28,6 +29,7 @@ const handleActionClick = (store, event) => {
 
 const render = (store) => {
     const state = store.getState();
+    renderSaveBanner(store);
     renderTabBar({ route: state.ui.route });
     renderView({ route: state.ui.route, store });
 };

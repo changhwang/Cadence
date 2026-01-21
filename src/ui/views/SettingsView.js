@@ -1,6 +1,7 @@
 import { el } from '../../utils/dom.js';
 import { renderGoalCard } from '../components/GoalCard.js';
 import { addDays, formatDisplay, todayIso } from '../../utils/date.js';
+import { roundWeight, toDisplayHeight, toDisplayWeight } from '../../utils/units.js';
 
 export const renderSettingsView = (container, store) => {
     container.textContent = '';
@@ -11,6 +12,10 @@ export const renderSettingsView = (container, store) => {
     const header = el('h1', {}, '설정');
     const headerWrap = el('div', { className: 'page-header' }, header);
 
+    const heightUnit = settings.units?.height || 'cm';
+    const weightUnit = settings.units?.weight || 'kg';
+    const displayHeight = roundWeight(toDisplayHeight(userdb.profile.height_cm, heightUnit), 1);
+    const displayWeight = roundWeight(toDisplayWeight(userdb.profile.weight_kg, weightUnit), 1);
     const dateSection = el(
         'div',
         { className: 'settings-section' },
@@ -92,13 +97,13 @@ export const renderSettingsView = (container, store) => {
                 'label',
                 { className: 'input-label' },
                 `키 (${settings.units.height})`,
-                el('input', { name: 'profileHeight', type: 'number', min: '0', value: userdb.profile.height_cm })
+                el('input', { name: 'profileHeight', type: 'number', min: '0', value: displayHeight || '' })
             ),
             el(
                 'label',
                 { className: 'input-label' },
-                `체중 (${settings.units.weight})`,
-                el('input', { name: 'profileWeight', type: 'number', min: '0', step: '0.1', value: userdb.profile.weight_kg })
+                `체중 (${weightUnit})`,
+                el('input', { name: 'profileWeight', type: 'number', min: '0', step: '0.1', value: displayWeight || '' })
             )
         ),
         el(
@@ -207,7 +212,7 @@ export const renderSettingsView = (container, store) => {
     const languageSection = el(
         'div',
         { className: 'settings-section' },
-        el('h3', { className: 'section-title' }, 'Language'),
+        el('h3', { className: 'section-title' }, '언어'),
         el(
             'select',
             { name: 'lang' },
@@ -218,8 +223,8 @@ export const renderSettingsView = (container, store) => {
 
     const backupSection = el(
         'div',
-        { className: 'stack-form' },
-        el('h2', {}, '백업/복원'),
+        { className: 'settings-section' },
+        el('h3', { className: 'section-title' }, '백업/복원'),
         el(
             'button',
             { type: 'button', className: 'btn', dataset: { action: 'backup.export' } },

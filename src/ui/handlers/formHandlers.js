@@ -4,8 +4,9 @@ import { computeBaseTargets } from '../../services/nutrition/targetEngine.js';
 import { calcAge, parseDateInput, todayIso } from '../../utils/date.js';
 import { updateUserDb } from '../store/userDb.js';
 import { createWorkoutLog } from '../workout/workoutLogUtils.js';
-import { fromDisplayWeight } from '../../utils/units.js';
+import { fromDisplayHeight, fromDisplayWeight } from '../../utils/units.js';
 import { buildGoalModeSpec } from '../goals/goalUtils.js';
+import { showStatusBanner } from '../components/StatusBanner.js';
 
 export const handleDietAddSubmit = (store, event, form) => {
     event.preventDefault();
@@ -70,10 +71,16 @@ export const handleBodySubmit = (store, event, form) => {
     const muscleInput = form.querySelector('[name="muscle"]');
     const fatInput = form.querySelector('[name="fat"]');
 
-    const weight = weightInput ? weightInput.value : '';
-    const waist = waistInput ? waistInput.value : '';
-    const muscle = muscleInput ? muscleInput.value : '';
+    const settings = store.getState().settings;
+    const weightUnit = settings.units?.weight || 'kg';
+    const heightUnit = settings.units?.height || 'cm';
+    const weightRaw = weightInput ? weightInput.value : '';
+    const waistRaw = waistInput ? waistInput.value : '';
+    const muscleRaw = muscleInput ? muscleInput.value : '';
     const fat = fatInput ? fatInput.value : '';
+    const weight = weightRaw === '' ? '' : fromDisplayWeight(Number(weightRaw || 0), weightUnit);
+    const waist = waistRaw === '' ? '' : fromDisplayHeight(Number(waistRaw || 0), heightUnit);
+    const muscle = muscleRaw === '' ? '' : fromDisplayWeight(Number(muscleRaw || 0), weightUnit);
 
     updateUserDb(store, (userdb) => {
         const dateKey = userdb.meta.selectedDate.body;
@@ -104,11 +111,17 @@ export const handleSettingsSubmit = (store, event, form) => {
     const nextTimerSound = soundVolume > 0;
     const profileSex = form.querySelector('[name="profileSex"]')?.value || 'M';
     const profileBirthRaw = form.querySelector('[name="profileBirth"]')?.value || '';
-    const profileHeight = form.querySelector('[name="profileHeight"]')?.value || '';
-    const profileWeight = form.querySelector('[name="profileWeight"]')?.value || '';
+    const profileHeightRaw = form.querySelector('[name="profileHeight"]')?.value || '';
+    const profileWeightRaw = form.querySelector('[name="profileWeight"]')?.value || '';
     const profileActivity = form.querySelector('[name="profileActivity"]')?.value || 'light';
     const lang = form.querySelector('[name="lang"]')?.value || 'ko';
     const profileBirth = parseDateInput(profileBirthRaw, dateFormat) || '';
+    const profileHeight = profileHeightRaw === ''
+        ? ''
+        : fromDisplayHeight(Number(profileHeightRaw || 0), heightUnit);
+    const profileWeight = profileWeightRaw === ''
+        ? ''
+        : fromDisplayWeight(Number(profileWeightRaw || 0), weightUnit);
     const nutritionGoal = form.querySelector('[name="nutritionGoal"]')?.value || 'maintain';
     const nutritionFramework = form.querySelector('[name="nutritionFramework"]')?.value || 'dga_2025';
     const exerciseCreditEnabled = Boolean(form.querySelector('[name="exerciseCreditEnabled"]')?.checked);
@@ -202,7 +215,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         }
         nextDb.updatedAt = new Date().toISOString();
     });
-    window.alert('설정이 저장되었습니다.');
+    showStatusBanner({ message: '설정이 저장되었습니다.', tone: 'success' });
 };
 
 export const handleDietWaterChange = (store, actionEl) => {
@@ -223,9 +236,13 @@ export const handleBackupImportChange = async (store, input) => {
         const payload = await parseImportPayload(file);
         store.dispatch({ type: 'UPDATE_USERDB', payload: payload.userdb });
         store.dispatch({ type: 'UPDATE_SETTINGS', payload: payload.settings });
-        alert('복원이 완료되었습니다.');
+        showStatusBanner({ message: '복원이 완료되었습니다.', tone: 'success' });
     } catch (error) {
-        alert(error.message || '백업 파일을 불러오지 못했습니다.');
+        showStatusBanner({
+            message: error.message || '백업 파일을 불러오지 못했습니다.',
+            tone: 'error',
+            timeoutMs: 3200
+        });
     } finally {
         input.value = '';
     }

@@ -4,12 +4,15 @@ import { updateUserDb } from '../store/userDb.js';
 import { openFoodSearchModal } from './foodModals.js';
 import { FOOD_DB } from '../../data/foods.js';
 import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime } from '../../utils/time.js';
+import { fromDisplayFoodAmount, ozToG, roundWeight, toDisplayFoodAmount } from '../../utils/units.js';
 
-const formatAmount = (meal) => {
+const formatAmount = (meal, foodUnit = 'g') => {
     if (!meal?.amount) return '';
-    if (meal.amountUnit === 'g') return `${meal.amount}g`;
     if (meal.amountUnit === 'serving') return `${meal.amount}서빙`;
-    return `${meal.amount}`;
+    const amountG = meal.amountUnit === 'oz' ? ozToG(meal.amount) : Number(meal.amount || 0);
+    const display = toDisplayFoodAmount(amountG, foodUnit);
+    const rounded = roundWeight(display, foodUnit === 'oz' ? 1 : 0);
+    return `${rounded}${foodUnit}`;
 };
 
 const getNowHHMM = () => timeHHMMFromDate(Date.now()) || '12:00';
@@ -147,7 +150,8 @@ export const openDietAddMenuModal = (store) => {
 
 const buildMealPayload = ({ food, type, name, amount, amountUnit, overrides = {}, servingSize }) => {
     const per = food?.nutrition || {};
-    const multiplier = amountUnit === 'g' ? amount / servingSize : amount;
+    const amountG = amountUnit === 'oz' ? ozToG(amount) : amount;
+    const multiplier = amountUnit === 'g' || amountUnit === 'oz' ? amountG / servingSize : amount;
     const scaledBase = {
         kcal: (per.kcal || 0) * multiplier,
         proteinG: (per.proteinG || 0) * multiplier,
@@ -168,8 +172,8 @@ const buildMealPayload = ({ food, type, name, amount, amountUnit, overrides = {}
         foodId: food?.id || '',
         serving: food?.serving,
         nutrition: food?.nutrition,
-        amount,
-        amountUnit,
+        amount: amountUnit === 'oz' ? amountG : amount,
+        amountUnit: amountUnit === 'oz' ? 'g' : amountUnit,
         ...scaledBase,
         kcal: overrides.kcal ?? scaledBase.kcal,
         proteinG: overrides.proteinG ?? scaledBase.proteinG,
@@ -180,8 +184,12 @@ const buildMealPayload = ({ food, type, name, amount, amountUnit, overrides = {}
 
 export const openDietAddDetailModal = (store, selection, options = {}) => {
     if (!selection) return;
+    const foodUnit = store.getState().settings.units?.food || 'g';
     const { food, type, amount, unit, scaled, label } = selection;
     const servingSize = food?.serving?.size || 1;
+    const displayAmount = unit === 'serving'
+        ? amount ?? 1
+        : roundWeight(toDisplayFoodAmount(unit === 'oz' ? ozToG(amount) : amount, foodUnit), foodUnit === 'oz' ? 1 : 0);
     const nameInput = el('input', { name: 'mealName', type: 'text', value: label || '' });
     const typeSelect = el(
         'select',
@@ -189,7 +197,7 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
         el('option', { value: '식사', selected: type === '식사' }, '식사'),
         el('option', { value: '간식', selected: type === '간식' }, '간식')
     );
-    const amountInput = el('input', { name: 'amount', type: 'number', min: '0', value: amount ?? 1 });
+    const amountInput = el('input', { name: 'amount', type: 'number', min: '0', value: displayAmount });
     const timeInput = el('input', {
         name: 'timeHHMM',
         type: 'time',
@@ -199,7 +207,11 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
         'select',
         { name: 'amountUnit' },
         el('option', { value: 'serving', selected: unit === 'serving' }, '서빙'),
-        el('option', { value: 'g', selected: unit === 'g' }, '그램')
+        el(
+            'option',
+            { value: foodUnit, selected: unit !== 'serving' },
+            foodUnit === 'oz' ? '온스(oz)' : '그램(g)'
+        )
     );
     const kcalInput = el('input', { name: 'kcal', type: 'number', min: '0', value: Math.round(scaled?.kcal || 0) });
     const proteinInput = el('input', { name: 'proteinG', type: 'number', min: '0', value: Math.round(scaled?.proteinG || 0) });
@@ -207,12 +219,15 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
     const fatInput = el('input', { name: 'fatG', type: 'number', min: '0', value: Math.round(scaled?.fatG || 0) });
 
     const syncDefaults = (amountVal, unitVal) => {
+        const normalized = unitVal === 'serving'
+            ? { amount: amountVal, amountUnit: 'serving' }
+            : { amount: fromDisplayFoodAmount(amountVal, unitVal), amountUnit: 'g' };
         const mealPayload = buildMealPayload({
             food,
             type: typeSelect.value || type || '식사',
             name: nameInput.value || label || '',
-            amount: amountVal,
-            amountUnit: unitVal,
+            amount: normalized.amount,
+            amountUnit: normalized.amountUnit,
             servingSize
         });
         kcalInput.value = Math.round(mealPayload.kcal || 0);
@@ -223,7 +238,14 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
 
     amountUnit.addEventListener('change', () => {
         const nextUnit = amountUnit.value;
-        amountInput.value = nextUnit === 'g' ? servingSize : 1;
+        if (nextUnit === 'serving') {
+            amountInput.value = 1;
+        } else {
+            amountInput.value = roundWeight(
+                toDisplayFoodAmount(servingSize, foodUnit),
+                foodUnit === 'oz' ? 1 : 0
+            );
+        }
         syncDefaults(Number(amountInput.value || 0), nextUnit);
     });
     amountInput.addEventListener('input', () => {
@@ -275,6 +297,9 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
             const timeHHMM = coerceTimeHHMM(form.querySelector('[name="timeHHMM"]')?.value || '');
             if (!name) return false;
             const nextAmount = Number.isNaN(amountRaw) ? 0 : Math.max(0, amountRaw);
+            const normalized = amountUnitVal === 'serving'
+                ? { amount: nextAmount, amountUnit: 'serving' }
+                : { amount: fromDisplayFoodAmount(nextAmount, amountUnitVal), amountUnit: 'g' };
             const readNumber = (nameKey, fallback) => {
                 const value = Number(form.querySelector(`[name="${nameKey}"]`)?.value || 0);
                 return Number.isNaN(value) ? fallback : value;
@@ -283,8 +308,8 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
                 food,
                 type: nextType,
                 name,
-                amount: nextAmount,
-                amountUnit: amountUnitVal,
+                amount: normalized.amount,
+                amountUnit: normalized.amountUnit,
                 overrides: {
                     kcal: readNumber('kcal', undefined),
                     proteinG: readNumber('proteinG', undefined),
@@ -317,6 +342,7 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
 export const openMealBatchModal = (store, initialType = '식사', options = {}) => {
     const items = Array.isArray(options.items) ? options.items.map((item) => ({ ...item })) : [];
     const title = initialType === '간식' ? '간식 추가' : '식사 추가';
+    const foodUnit = store.getState().settings.units?.food || 'g';
     let timeHHMM = coerceTimeHHMM(
         options.timeHHMM || timeHHMMFromDate(options.groupCreatedAt || options.createdAt) || getNowHHMM()
     );
@@ -350,7 +376,7 @@ export const openMealBatchModal = (store, initialType = '식사', options = {}) 
             list.appendChild(el('p', { className: 'empty-state' }, '음식을 추가해 주세요.'));
         } else {
             items.forEach((item, index) => {
-                const amountText = formatAmount(item);
+                const amountText = formatAmount(item, foodUnit);
                 const kcalText = typeof item.kcal === 'number' ? `${Math.round(item.kcal)} kcal` : '';
                 const meta = [amountText, kcalText].filter(Boolean).join(' · ');
                 list.appendChild(

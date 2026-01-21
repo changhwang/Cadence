@@ -4,12 +4,14 @@ import { closeModal, openModal } from '../components/Modal.js';
 import { updateUserDb } from '../store/userDb.js';
 import { getLabelByLang } from '../utils/labels.js';
 import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime } from '../../utils/time.js';
+import { fromDisplayFoodAmount, ozToG, roundWeight, toDisplayFoodAmount } from '../../utils/units.js';
 
 const getNowHHMM = () => timeHHMMFromDate(Date.now()) || '12:00';
 
 export const openFoodSearchModal = (store, options = {}) => {
     const state = store.getState();
     const lang = state.settings.lang || 'ko';
+    const foodUnit = state.settings.units?.food || 'g';
     const list = el('div', { className: 'list-group' });
     const searchInput = el('input', { type: 'text', placeholder: '음식 검색' });
     const typeSelect = el(
@@ -21,12 +23,17 @@ export const openFoodSearchModal = (store, options = {}) => {
         el('option', { value: '점심' }, '점심'),
         el('option', { value: '저녁' }, '저녁')
     );
-    const amountInput = el('input', { type: 'number', min: '0', value: 1, placeholder: '수량' });
+    const amountInput = el('input', {
+        type: 'number',
+        min: '0',
+        value: 1,
+        placeholder: foodUnit === 'oz' ? '수량(oz)' : '수량(g)'
+    });
     const unitSelect = el(
         'select',
         { name: 'foodAmountUnit' },
         el('option', { value: 'serving' }, '서빙'),
-        el('option', { value: 'g' }, '그램(g)')
+        el('option', { value: foodUnit }, foodUnit === 'oz' ? '온스(oz)' : '그램(g)')
     );
     const categoryLabels = {
         protein: '단백질',
@@ -186,12 +193,17 @@ export const openFoodSearchModal = (store, options = {}) => {
         const food = FOOD_DB.find((item) => item.id === id);
         if (!food) return;
         const type = typeSelect.value || '기타';
-        const amount = Math.max(0, Number(amountInput.value || 1));
+        const amountDisplay = Math.max(0, Number(amountInput.value || 1));
         const unit = unitSelect.value || 'serving';
         const label = getLabelByLang(food.labels, lang);
         const per = food.nutrition || {};
         const servingSize = food.serving?.size || 1;
-        const multiplier = unit === 'g' ? amount / servingSize : amount;
+        const normalized = unit === 'serving'
+            ? { amount: amountDisplay, amountUnit: 'serving' }
+            : { amount: fromDisplayFoodAmount(amountDisplay, unit), amountUnit: 'g' };
+        const multiplier = normalized.amountUnit === 'g'
+            ? normalized.amount / servingSize
+            : normalized.amount;
         const scaled = {
             kcal: (per.kcal || 0) * multiplier,
             proteinG: (per.proteinG || 0) * multiplier,
@@ -208,7 +220,7 @@ export const openFoodSearchModal = (store, options = {}) => {
         };
         if (typeof options.onSelect === 'function') {
             closeModal();
-            options.onSelect({ food, type, amount, unit, scaled, label });
+            options.onSelect({ food, type, amount: normalized.amount, unit: normalized.amountUnit, scaled, label });
             return;
         }
         updateUserDb(store, (userdb) => {
@@ -224,8 +236,8 @@ export const openFoodSearchModal = (store, options = {}) => {
                 foodId: food.id,
                 serving: food.serving,
                 nutrition: food.nutrition,
-                amount,
-                amountUnit: unit,
+                amount: normalized.amount,
+                amountUnit: normalized.amountUnit,
                 kcal: scaled.kcal,
                 proteinG: scaled.proteinG,
                 carbG: scaled.carbG,
@@ -281,13 +293,18 @@ export const openFoodSearchModal = (store, options = {}) => {
 
 export const openDietEditModal = (store, { id }) => {
     if (!id) return;
-    const { userdb } = store.getState();
+    const { userdb, settings } = store.getState();
+    const foodUnit = settings.units?.food || 'g';
     const dateKey = userdb.meta.selectedDate.diet;
     const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
     const target = entry.meals.find((meal) => meal.id === id);
     if (!target) return;
     const food = target.foodId ? FOOD_DB.find((item) => item.id === target.foodId) : null;
     const servingSize = food?.serving?.size || 1;
+    const amountG = target.amountUnit === 'oz' ? ozToG(target.amount) : Number(target.amount || 0);
+    const displayAmount = target.amountUnit === 'serving'
+        ? target.amount ?? 1
+        : roundWeight(toDisplayFoodAmount(amountG, foodUnit), foodUnit === 'oz' ? 1 : 0);
     const timeInput = el('input', {
         name: 'timeHHMM',
         type: 'time',
@@ -316,13 +333,17 @@ export const openDietEditModal = (store, { id }) => {
                     name: 'amount',
                     type: 'number',
                     min: '0',
-                    value: target.amount ?? 1
+                    value: displayAmount
                 }),
                 el(
                     'select',
                     { name: 'amountUnit' },
                     el('option', { value: 'serving', selected: target.amountUnit === 'serving' }, '서빙'),
-                    el('option', { value: 'g', selected: target.amountUnit === 'g' }, '그램')
+                    el(
+                        'option',
+                        { value: foodUnit, selected: target.amountUnit !== 'serving' },
+                        foodUnit === 'oz' ? '온스(oz)' : '그램(g)'
+                    )
                 )
             ),
             el(
@@ -345,6 +366,9 @@ export const openDietEditModal = (store, { id }) => {
             const amountRaw = Number(form.querySelector('[name="amount"]')?.value || 0);
             const amount = Number.isNaN(amountRaw) ? target.amount ?? 1 : Math.max(0, amountRaw);
             const amountUnit = form.querySelector('[name="amountUnit"]')?.value || target.amountUnit || 'serving';
+            const normalized = amountUnit === 'serving'
+                ? { amount, amountUnit: 'serving' }
+                : { amount: fromDisplayFoodAmount(amount, amountUnit), amountUnit: 'g' };
             const readNumber = (key, fallback) => {
                 const value = Number(form.querySelector(`[name="${key}"]`)?.value || 0);
                 return Number.isNaN(value) ? fallback : value;
@@ -357,13 +381,15 @@ export const openDietEditModal = (store, { id }) => {
                 const createdAt = combineDateAndTime(dateKey, timeHHMM) || nextTarget.createdAt || new Date().toISOString();
                 nextTarget.name = name;
                 nextTarget.type = type;
-                nextTarget.amount = amount;
-                nextTarget.amountUnit = amountUnit;
+                nextTarget.amount = normalized.amount;
+                nextTarget.amountUnit = normalized.amountUnit;
                 nextTarget.timeHHMM = timeHHMM;
                 nextTarget.createdAt = createdAt;
                 if (food) {
                     const per = food.nutrition || {};
-                    const multiplier = amountUnit === 'g' ? amount / servingSize : amount;
+                    const multiplier = normalized.amountUnit === 'g'
+                        ? normalized.amount / servingSize
+                        : normalized.amount;
                     nextTarget.nutrition = food.nutrition;
                     nextTarget.serving = food.serving;
                     nextTarget.kcal = (per.kcal || 0) * multiplier;

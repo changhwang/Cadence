@@ -5,12 +5,14 @@ import { parseDateInput, todayIso } from '../../utils/date.js';
 import { shiftDate } from '../components/DateBar.js';
 import { openGoalChangeDefaultModal, openGoalOverrideModal } from '../modals/goalModals.js';
 import { updateUserDb } from '../store/userDb.js';
+import { showStatusBanner } from '../components/StatusBanner.js';
 
 export const handleBackupAction = (store, action) => {
     if (action !== 'backup.export') return false;
     const payload = buildExportPayload(store.getState());
     const filename = `cadence_backup_${new Date().toISOString().slice(0, 10)}.json`;
     downloadJson(payload, filename);
+    showStatusBanner({ message: '백업 파일을 저장했습니다.', tone: 'success' });
     return true;
 };
 
