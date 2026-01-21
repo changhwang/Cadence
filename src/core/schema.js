@@ -13,6 +13,7 @@ export const createDefaultUserDb = () => ({
         overrideByDate: {}
     },
     profile: {
+        name: '',
         sex: 'M',
         birth: '',
         height_cm: '',

@@ -3,7 +3,13 @@ let routeListener = () => {};
 
 const getRouteFromHash = () => {
     const raw = window.location.hash.replace('#', '').trim();
-    return VALID_ROUTES.has(raw) ? raw : 'workout';
+    if (!raw) return 'workout';
+    const [root, ...rest] = raw.split('/').filter(Boolean);
+    if (root === 'stats') {
+        const subpath = rest.join('/');
+        return subpath ? `stats/${subpath}` : 'stats/activity';
+    }
+    return VALID_ROUTES.has(root) ? root : 'workout';
 };
 
 const handleRouteChange = () => {

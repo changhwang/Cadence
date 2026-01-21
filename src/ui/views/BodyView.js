@@ -1,6 +1,9 @@
 import { el } from '../../utils/dom.js';
-import { renderDateBar } from '../components/DateBar.js';
+import { addDays, todayIso } from '../../utils/date.js';
+import { openBodyLogModal } from '../modals/bodyModals.js';
+import { updateUserDb } from '../store/userDb.js';
 import { roundWeight, toDisplayHeight, toDisplayWeight } from '../../utils/units.js';
+import { selectWorkoutHeatmap } from '../../selectors/stats/workoutStatsSelectors.js';
 
 const getBodyEntry = (userdb, dateKey) => {
     return userdb.body[dateKey] || { weight: '', waist: '', muscle: '', fat: '' };
@@ -58,39 +61,59 @@ const formatValue = (value, unit) => {
     return unit ? `${rounded} ${unit}` : String(rounded);
 };
 
-const renderTrendCard = ({ label, values, unit }) => {
-    if (!values || values.length === 0) {
-        return el(
-            'div',
-            { className: 'trend-card' },
-            el('div', { className: 'trend-header' }, el('div', { className: 'list-title' }, label)),
-            el('div', { className: 'empty-state' }, '기록이 없습니다.')
-        );
-    }
-    const trimmed = values.slice(-14);
-    const latest = trimmed[trimmed.length - 1];
-    const max = Math.max(...trimmed);
-    const avg = trimmed.reduce((sum, v) => sum + v, 0) / trimmed.length;
-    const stats = el(
-        'div',
-        { className: 'trend-stats' },
-        el('div', { className: 'trend-stat' }, el('div', { className: 'trend-stat-label' }, '최근'), el('div', { className: 'trend-stat-value' }, formatValue(latest, unit))),
-        el('div', { className: 'trend-stat' }, el('div', { className: 'trend-stat-label' }, '최고'), el('div', { className: 'trend-stat-value' }, formatValue(max, unit))),
-        el('div', { className: 'trend-stat' }, el('div', { className: 'trend-stat-label' }, '평균'), el('div', { className: 'trend-stat-value' }, formatValue(avg, unit)))
-    );
-    return el(
-        'div',
-        { className: 'trend-card' },
-        el(
-            'div',
-            { className: 'trend-header' },
-            el('div', { className: 'list-title' }, label),
-            el('div', { className: 'trend-current' }, formatValue(latest, unit))
-        ),
-        buildSparkline(trimmed),
-        stats
-    );
+const pad2 = (value) => String(value).padStart(2, '0');
+
+const getMonthLabel = (monthISO) => {
+    if (!monthISO) return '';
+    const [year, month] = monthISO.split('-');
+    return `${year}.${Number(month)}`;
 };
+
+const addMonths = (monthISO, offset) => {
+    if (!monthISO) return '';
+    const [yearRaw, monthRaw] = monthISO.split('-');
+    const year = Number(yearRaw);
+    const month = Number(monthRaw);
+    const next = new Date(year, month - 1 + offset, 1);
+    return `${next.getFullYear()}-${pad2(next.getMonth() + 1)}`;
+};
+
+const renderHeatmap = ({ monthISO, days, onSelectDate }) => {
+    const grid = el('div', { className: 'heatmap-grid' });
+    const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    weekdays.forEach((label) => grid.appendChild(el('div', { className: 'heatmap-weekday' }, label)));
+
+    const firstDate = `${monthISO}-01`;
+    const firstDay = new Date(firstDate).getDay();
+    for (let i = 0; i < firstDay; i += 1) {
+        grid.appendChild(el('div', { className: 'heatmap-cell is-empty' }, ''));
+    }
+
+    const today = todayIso();
+    days.forEach((item) => {
+        const dayLabel = Number(item.dateISO.slice(8));
+        const intensity = Math.max(0, Math.min(1, Number(item.norm01 || 0)));
+        const isEmpty = Number(item.value || 0) === 0;
+        const isToday = item.dateISO === today;
+        const cell = el(
+            'div',
+            {
+                className: `heatmap-cell${isEmpty ? ' is-empty' : ''}${isToday ? ' is-today' : ''}`,
+                style: isEmpty ? '' : `background: rgba(0, 122, 255, ${0.1 + intensity * 0.8});`
+            },
+            String(dayLabel)
+        );
+        if (typeof onSelectDate === 'function') {
+            cell.addEventListener('click', () => onSelectDate(item.dateISO));
+        }
+        grid.appendChild(cell);
+    });
+    return grid;
+};
+
+let heatmapMonthISO = '';
+let bodyTrendRangeDays = 30;
+let activeBodyMetric = 'weight';
 
 export const renderBodyView = (container, store) => {
     container.textContent = '';
@@ -100,6 +123,9 @@ export const renderBodyView = (container, store) => {
     const entry = getBodyEntry(userdb, dateKey);
     const weightUnit = settings.units?.weight || 'kg';
     const heightUnit = settings.units?.height || 'cm';
+    if (!heatmapMonthISO) {
+        heatmapMonthISO = dateKey.slice(0, 7);
+    }
     const displayWeightValue = (value) => {
         if (value === '' || value === null || value === undefined) return null;
         const num = Number(value);
@@ -120,142 +146,233 @@ export const renderBodyView = (container, store) => {
         const display = displayHeightValue(value);
         return display === null ? '' : display;
     };
-    const summarizeValues = (values) => {
-        if (!values || values.length === 0) {
-            return { count: 0, latest: null, max: null, avg: null };
-        }
-        const latest = values[values.length - 1];
-        const max = Math.max(...values);
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return { count: values.length, latest, max, avg };
-    };
-    const statRow = (label, stats, unit) => {
-        const text = stats.count
-            ? `최근 ${formatValue(stats.latest, unit)} · 최고 ${formatValue(stats.max, unit)} · 평균 ${formatValue(stats.avg, unit)}`
-            : '기록이 없습니다.';
-        return el(
-            'div',
-            { className: 'list-item' },
-            el('div', { className: 'list-title' }, label),
-            el('div', { className: 'list-subtitle' }, text)
-        );
-    };
+    const displayName = userdb.profile?.name || 'User';
+    const header = el('h1', {}, displayName);
+    const headerWrap = el('div', { className: 'page-header-row' }, header);
 
-    const header = el('h1', {}, '신체');
-    const dateLabel = renderDateBar({ dateKey, dateFormat: settings.dateFormat, className: 'compact' });
-    const todayButton = el(
-        'button',
-        { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'date.today' } },
-        '오늘'
-    );
-    const headerWrap = el('div', { className: 'page-header-row' }, header, dateLabel, todayButton);
-
-    const form = el(
-        'form',
-        { className: 'stack-form', dataset: { action: 'body.save' } },
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el('input', { name: 'weight', type: 'number', min: '0', step: '0.1', placeholder: '체중', value: displayWeightInput(entry.weight) }),
-            el('input', { name: 'waist', type: 'number', min: '0', step: '0.1', placeholder: '허리둘레', value: displayHeightInput(entry.waist) })
-        ),
-        el(
-            'div',
-            { className: 'row row-gap' },
-            el('input', { name: 'muscle', type: 'number', min: '0', step: '0.1', placeholder: '골격근량', value: displayWeightInput(entry.muscle) }),
-            el('input', { name: 'fat', type: 'number', min: '0', step: '0.1', placeholder: '체지방률', value: entry.fat })
-        ),
-        el('button', { type: 'submit', className: 'btn' }, '저장')
-    );
-
-    const summary = el(
+    const measurementGrid = el(
         'div',
-        { className: 'list-group' },
+        { className: 'body-summary-grid' },
         el(
-            'div',
-            { className: 'list-item' },
-            el('div', { className: 'list-title' }, '체중'),
-            el('div', { className: 'list-subtitle' }, formatValue(displayWeightValue(entry.weight), weightUnit))
+            'button',
+            { className: `body-stat-box ${activeBodyMetric === 'weight' ? 'is-active' : ''}`, type: 'button' },
+            el('div', { className: 'body-stat-title' }, '체중 (BMI)'),
+            el('div', { className: 'body-stat-value' }, formatValue(displayWeightValue(entry.weight), weightUnit)),
+            el('div', { className: 'body-stat-subvalue' }, (() => {
+                const weightKg = Number(entry.weight);
+                const heightCm = Number(userdb.profile?.height_cm || 0);
+                if (!weightKg || !heightCm) return '';
+                const hM = heightCm / 100;
+                const bmi = weightKg / (hM * hM);
+                return Number.isNaN(bmi) ? '' : `(${bmi.toFixed(1)})`;
+            })())
         ),
         el(
-            'div',
-            { className: 'list-item' },
-            el('div', { className: 'list-title' }, '허리'),
-            el('div', { className: 'list-subtitle' }, formatValue(displayHeightValue(entry.waist), heightUnit))
+            'button',
+            { className: `body-stat-box ${activeBodyMetric === 'waist' ? 'is-active' : ''}`, type: 'button' },
+            el('div', { className: 'body-stat-title' }, '허리둘레'),
+            el('div', { className: 'body-stat-value' }, formatValue(displayHeightValue(entry.waist), heightUnit))
         ),
         el(
-            'div',
-            { className: 'list-item' },
-            el('div', { className: 'list-title' }, '근량'),
-            el('div', { className: 'list-subtitle' }, formatValue(displayWeightValue(entry.muscle), weightUnit))
+            'button',
+            { className: `body-stat-box ${activeBodyMetric === 'muscle' ? 'is-active' : ''}`, type: 'button' },
+            el('div', { className: 'body-stat-title' }, '골격근량'),
+            el('div', { className: 'body-stat-value' }, formatValue(displayWeightValue(entry.muscle), weightUnit))
         ),
         el(
-            'div',
-            { className: 'list-item' },
-            el('div', { className: 'list-title' }, '체지방'),
-            el('div', { className: 'list-subtitle' }, `${entry.fat || '-'} %`)
+            'button',
+            { className: `body-stat-box ${activeBodyMetric === 'fat' ? 'is-active' : ''}`, type: 'button' },
+            el('div', { className: 'body-stat-title' }, '체지방률'),
+            el('div', { className: 'body-stat-value' }, `${entry.fat || '-'} %`)
         )
     );
+    const metricButtons = measurementGrid.querySelectorAll('.body-stat-box');
+    if (metricButtons[0]) metricButtons[0].addEventListener('click', () => { activeBodyMetric = 'weight'; renderBodyView(container, store); });
+    if (metricButtons[1]) metricButtons[1].addEventListener('click', () => { activeBodyMetric = 'waist'; renderBodyView(container, store); });
+    if (metricButtons[2]) metricButtons[2].addEventListener('click', () => { activeBodyMetric = 'muscle'; renderBodyView(container, store); });
+    if (metricButtons[3]) metricButtons[3].addEventListener('click', () => { activeBodyMetric = 'fat'; renderBodyView(container, store); });
 
     const bodyEntries = getBodyEntries(userdb);
-    const weightSeries = bodyEntries
-        .map((entry) => displayWeightValue(entry.weight))
+    const cutoff = addDays(todayIso(), -(bodyTrendRangeDays - 1));
+    const filteredEntries = bodyEntries.filter((entryItem) => entryItem.date >= cutoff);
+    const weightSeries = filteredEntries
+        .map((entryItem) => displayWeightValue(entryItem.weight))
         .filter((value) => value !== null);
-    const waistSeries = bodyEntries
-        .map((entry) => displayHeightValue(entry.waist))
+    const waistSeries = filteredEntries
+        .map((entryItem) => displayHeightValue(entryItem.waist))
         .filter((value) => value !== null);
-    const muscleSeries = bodyEntries
-        .map((entry) => displayWeightValue(entry.muscle))
+    const muscleSeries = filteredEntries
+        .map((entryItem) => displayWeightValue(entryItem.muscle))
         .filter((value) => value !== null);
-    const waistUnit = heightUnit;
-    const weightStats = summarizeValues(weightSeries);
-    const waistStats = summarizeValues(waistSeries);
-    const muscleStats = summarizeValues(muscleSeries);
-
-    const trends = el(
+    const fatSeries = filteredEntries
+        .map((entryItem) => {
+            const value = Number(entryItem.fat);
+            return Number.isNaN(value) ? null : value;
+        })
+        .filter((value) => value !== null);
+    const metricMap = {
+        weight: { label: '체중 (BMI)', unit: weightUnit, series: weightSeries },
+        waist: { label: '허리둘레', unit: heightUnit, series: waistSeries },
+        muscle: { label: '골격근량', unit: weightUnit, series: muscleSeries },
+        fat: { label: '체지방률', unit: '%', series: fatSeries }
+    };
+    const activeMetric = metricMap[activeBodyMetric] || metricMap.weight;
+    const trendControls = el(
         'div',
-        { className: 'trend-grid' },
-        renderTrendCard({ label: '체중', values: weightSeries, unit: weightUnit }),
-        renderTrendCard({ label: '허리', values: waistSeries, unit: waistUnit }),
-        renderTrendCard({ label: '근량', values: muscleSeries, unit: weightUnit })
+        { className: 'stats-range' },
+        el(
+            'button',
+            { type: 'button', className: `btn btn-secondary btn-sm ${bodyTrendRangeDays === 7 ? 'is-active' : ''}` },
+            '7D'
+        ),
+        el(
+            'button',
+            { type: 'button', className: `btn btn-secondary btn-sm ${bodyTrendRangeDays === 30 ? 'is-active' : ''}` },
+            '30D'
+        ),
+        el(
+            'button',
+            { type: 'button', className: `btn btn-secondary btn-sm ${bodyTrendRangeDays === 90 ? 'is-active' : ''}` },
+            '90D'
+        )
     );
-    const statsCard = el(
+    trendControls.querySelectorAll('button')[0].addEventListener('click', () => {
+        bodyTrendRangeDays = 7;
+        renderBodyView(container, store);
+    });
+    trendControls.querySelectorAll('button')[1].addEventListener('click', () => {
+        bodyTrendRangeDays = 30;
+        renderBodyView(container, store);
+    });
+    trendControls.querySelectorAll('button')[2].addEventListener('click', () => {
+        bodyTrendRangeDays = 90;
+        renderBodyView(container, store);
+    });
+    const logButton = el(
+        'button',
+        { type: 'button', className: 'btn btn-secondary btn-sm' },
+        '데이터 기록'
+    );
+    logButton.addEventListener('click', () => openBodyLogModal(store));
+    const measurementCard = el(
         'div',
         { className: 'card' },
-        el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '통계')),
         el(
             'div',
-            { className: 'list-group' },
-            statRow('체중', weightStats, weightUnit),
-            statRow('허리', waistStats, waistUnit),
-            statRow('근량', muscleStats, weightUnit)
+            { className: 'card-header' },
+            el('h3', { className: 'card-title' }, '신체 측정'),
+            logButton
+        ),
+        measurementGrid,
+        el('div', { className: 'body-trend-title' }, activeMetric.label),
+        el('div', { className: 'body-trend-actions' }, trendControls),
+        el(
+            'div',
+            { className: 'body-trend-box' },
+            activeMetric.series.length < 2
+                ? el('div', { className: 'empty-state' }, `기간 내 데이터 없음 (${bodyTrendRangeDays}D)`)
+                : buildSparkline(activeMetric.series)
         )
+    );
+    const heatmapDays = selectWorkoutHeatmap(store.getState(), heatmapMonthISO, 'sets', true);
+    const heatmapCard = el(
+        'div',
+        { className: 'card' },
+        el(
+            'div',
+            { className: 'card-header' },
+            el('h3', { className: 'card-title' }, '월간 운동 현황'),
+            el(
+                'div',
+                { className: 'row row-gap heatmap-nav' },
+                el(
+                    'button',
+                    { type: 'button', className: 'btn btn-sm btn-ghost' },
+                    '◀'
+                ),
+                el('div', { className: 'heatmap-title' }, getMonthLabel(heatmapMonthISO)),
+                el(
+                    'button',
+                    { type: 'button', className: 'btn btn-sm btn-ghost' },
+                    '▶'
+                )
+            )
+        ),
+        renderHeatmap({
+            monthISO: heatmapMonthISO,
+            days: heatmapDays,
+            onSelectDate: (dateISO) => {
+                updateUserDb(store, (nextDb) => {
+                    nextDb.meta.selectedDate.workout = dateISO;
+                });
+                window.location.hash = 'workout';
+            }
+        })
     );
 
+    const statsGrid = el(
+        'div',
+        { className: 'stats-grid' },
+        el(
+            'button',
+            { className: 'stats-card', dataset: { action: 'route', route: 'stats/activity' } },
+            el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'bar-chart-2' } })),
+            el('div', { className: 'stats-label' }, 'Activity')
+        ),
+        el(
+            'button',
+            { className: 'stats-card', dataset: { action: 'route', route: 'stats/balance' } },
+            el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'scale' } })),
+            el('div', { className: 'stats-label' }, 'Balance')
+        ),
+        el(
+            'button',
+            { className: 'stats-card', dataset: { action: 'route', route: 'stats/distribution' } },
+            el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'layout-grid' } })),
+            el('div', { className: 'stats-label' }, 'Distribution')
+        ),
+        el(
+            'button',
+            { className: 'stats-card', dataset: { action: 'route', route: 'stats/exercises' } },
+            el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'dumbbell' } })),
+            el('div', { className: 'stats-label' }, 'Exercises')
+        ),
+        el(
+            'button',
+            { className: 'stats-card', dataset: { action: 'route', route: 'stats/nutrition/trend' } },
+            el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'apple' } })),
+            el('div', { className: 'stats-label' }, 'Nutrition')
+        ),
+        el(
+            'div',
+            { className: 'stats-card is-reserved' },
+            el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'beaker' } })),
+            el('div', { className: 'stats-label' }, 'Coming soon')
+        )
+    );
     container.appendChild(headerWrap);
+    container.appendChild(measurementCard);
+    container.appendChild(heatmapCard);
     container.appendChild(
         el(
             'div',
             { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '입력')),
-            form
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '통계 바로가기')),
+            statsGrid
         )
     );
-    container.appendChild(
-        el(
-            'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '요약')),
-            summary
-        )
-    );
-    container.appendChild(statsCard);
-    container.appendChild(
-        el(
-            'div',
-            { className: 'card' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '추이')),
-            trends
-        )
-    );
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+    const navButtons = heatmapCard.querySelectorAll('.heatmap-nav .btn');
+    if (navButtons.length === 2) {
+        navButtons[0].addEventListener('click', () => {
+            heatmapMonthISO = addMonths(heatmapMonthISO, -1);
+            renderBodyView(container, store);
+        });
+        navButtons[1].addEventListener('click', () => {
+            heatmapMonthISO = addMonths(heatmapMonthISO, 1);
+            renderBodyView(container, store);
+        });
+    }
 };

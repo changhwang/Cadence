@@ -69,6 +69,17 @@ export const renderSettingsView = (container, store) => {
             el(
                 'label',
                 { className: 'input-label' },
+                '이름',
+                el('input', {
+                    name: 'profileName',
+                    type: 'text',
+                    placeholder: '이름',
+                    value: userdb.profile.name || ''
+                })
+            ),
+            el(
+                'label',
+                { className: 'input-label' },
                 '성별',
                 el(
                     'select',

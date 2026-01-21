@@ -109,6 +109,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         ? store.getState().settings.sound.volume
         : Math.min(100, Math.max(0, soundVolumeRaw));
     const nextTimerSound = soundVolume > 0;
+    const profileName = form.querySelector('[name="profileName"]')?.value || '';
     const profileSex = form.querySelector('[name="profileSex"]')?.value || 'M';
     const profileBirthRaw = form.querySelector('[name="profileBirth"]')?.value || '';
     const profileHeightRaw = form.querySelector('[name="profileHeight"]')?.value || '';
@@ -170,6 +171,7 @@ export const handleSettingsSubmit = (store, event, form) => {
     updateUserDb(store, (nextDb) => {
         nextDb.profile = {
             ...nextDb.profile,
+            name: profileName.trim(),
             sex: profileSex,
             birth: profileBirth,
             height_cm: profileHeight,

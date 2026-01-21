@@ -27,9 +27,10 @@ export const renderTabBar = ({ route }) => {
     const container = document.getElementById('tab-bar');
     if (!container) return;
 
+    const activeRoute = route.startsWith('stats/') ? 'body' : route;
     container.innerHTML = '';
     TABS.forEach((tab) => {
-        container.appendChild(createTabButton(tab, tab.route === route));
+        container.appendChild(createTabButton(tab, tab.route === activeRoute));
     });
 
     if (window.lucide && typeof window.lucide.createIcons === 'function') {

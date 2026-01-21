@@ -56,6 +56,15 @@ export const getDietTotalsForDate = ({ day }) => {
         return { totals, hasData: hasAny(totals) };
     }
 
+    const logs = Array.isArray(day.logs) ? day.logs : [];
+    if (logs.length > 0) {
+        const totals = logs.reduce((acc, log) => {
+            if (log?.kind === 'water') return acc;
+            return sumTargets(acc, log || {});
+        }, emptyTotals());
+        return { totals, hasData: hasAny(totals) };
+    }
+
     const meals = Array.isArray(day.meals) ? day.meals : [];
     const totals = meals.reduce((acc, meal) => {
         if (meal.items && Array.isArray(meal.items)) {
