@@ -7,15 +7,88 @@ import { selectExerciseIndex } from '../../selectors/stats/exerciseStatsSelector
 import { selectNutritionTrend } from '../../selectors/stats/nutritionStatsSelectors.js';
 
 const STAT_TITLES = {
-    'stats/activity': 'Activity',
-    'stats/balance': 'Balance',
-    'stats/distribution': 'Distribution',
-    'stats/exercises': 'Exercises',
-    'stats/nutrition/trend': 'Nutrition Trend',
-    'stats/nutrition/quality': 'Nutrition Quality'
+    ko: {
+        'stats/activity': '운동 지표',
+        'stats/balance': '근육 밸런스',
+        'stats/distribution': '세부 자극',
+        'stats/exercises': '운동 기록',
+        'stats/nutrition/trend': '영양 트렌드',
+        'stats/nutrition/quality': '영양 품질'
+    },
+    en: {
+        'stats/activity': 'Activity',
+        'stats/balance': 'Balance',
+        'stats/distribution': 'Distribution',
+        'stats/exercises': 'Exercises',
+        'stats/nutrition/trend': 'Nutrition Trend',
+        'stats/nutrition/quality': 'Nutrition Quality'
+    }
 };
 
-const getTitle = (route) => STAT_TITLES[route] || 'Stats';
+const TEXT = {
+    ko: {
+        stats: '통계',
+        rolling: '롤링',
+        calendar: '달력',
+        history: '히스토리',
+        majorGroups: '대근육군(세트)',
+        distribution: '세부 자극',
+        exercises: '운동 기록',
+        trend: '추이',
+        list: '리스트',
+        bodyMap: '바디맵',
+        listLabel: '리스트',
+        mapLabel: '바디맵',
+        sets: '세트',
+        volume: '볼륨',
+        time: '시간',
+        current: '현재',
+        previous: '이전',
+        items: '항목',
+        baseline: '기준 p95',
+        total: '합계',
+        avg: '평균',
+        coverage: '커버리지',
+        qualityHold: '데이터가 더 쌓이면 활성화됩니다.',
+        qualityReady: '커버리지 기준을 충족했습니다.',
+        qualityNote: '식단 로그/수분 기록 기준 커버리지',
+        dataReady: '데이터 커버리지 확보 후 활성화 예정입니다.',
+        majorGroupsNote: '주요 근육군 기준 집계',
+        noData: '기록이 없습니다.',
+        searchPlaceholder: '운동 검색...'
+    },
+    en: {
+        stats: 'Stats',
+        rolling: 'Rolling',
+        calendar: 'Calendar',
+        history: 'History',
+        majorGroups: 'Major Groups (Sets)',
+        distribution: 'Distribution',
+        exercises: 'Exercises',
+        trend: 'Trend',
+        list: 'List',
+        bodyMap: 'Body Map',
+        sets: 'Sets',
+        volume: 'Volume',
+        time: 'Time',
+        current: 'Current',
+        previous: 'Previous',
+        items: 'Items',
+        baseline: 'Baseline p95',
+        total: 'Total',
+        avg: 'Avg',
+        coverage: 'Coverage',
+        qualityHold: 'Will be enabled after data coverage improves.',
+        qualityReady: 'Coverage threshold met.',
+        qualityNote: 'Coverage based on diet logs and water records',
+        dataReady: 'Will be enabled after data coverage improves.',
+        majorGroupsNote: 'Major groups based on current metric',
+        noData: 'No data.'
+    }
+};
+
+const getTitle = (route, lang) => (STAT_TITLES[lang] || STAT_TITLES.ko)[route] || TEXT[lang || 'ko'].stats;
+const t = (lang, key) => (TEXT[lang] || TEXT.ko)[key] || key;
 
 const DEFAULT_STATE = {
     mode: 'rolling',
@@ -35,6 +108,59 @@ const statsState = {
 };
 
 const groupOrder = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Other'];
+const GROUP_LABELS = {
+    ko: {
+        Chest: '가슴',
+        Back: '등',
+        Legs: '하체',
+        Shoulders: '어깨',
+        Arms: '팔',
+        Core: '코어',
+        Other: '기타'
+    },
+    en: {
+        Chest: 'Chest',
+        Back: 'Back',
+        Legs: 'Legs',
+        Shoulders: 'Shoulders',
+        Arms: 'Arms',
+        Core: 'Core',
+        Other: 'Other'
+    }
+};
+const MUSCLE_LABELS = {
+    ko: {
+        upper_chest: '윗가슴',
+        middle_chest: '중간가슴',
+        lower_chest: '아랫가슴',
+        chest: '가슴',
+        lats: '광배',
+        mid_back: '중부 등',
+        upper_back: '상부 등',
+        lower_traps: '하부 승모',
+        traps: '승모',
+        erectors: '척추기립근',
+        quads: '대퇴사두',
+        hamstrings: '햄스트링',
+        glutes: '둔근',
+        calves: '종아리',
+        adductors: '내전근',
+        abductors: '외전근',
+        front_delts: '전면 삼각근',
+        lateral_delts: '측면 삼각근',
+        rear_delts: '후면 삼각근',
+        delts: '삼각근',
+        biceps: '이두',
+        triceps: '삼두',
+        forearms: '전완',
+        grip: '전완',
+        core: '코어',
+        hip_flexors: '고관절 굴곡',
+        abs: '복근',
+        obliques: '복사근',
+        Other: '기타'
+    }
+};
 const DETAIL_TO_GROUP = {
     chest: 'Chest',
     upper_chest: 'Chest',
@@ -120,7 +246,7 @@ const renderPeriodControls = (state, onChange) => {
                 type: 'button',
                 className: `btn btn-secondary btn-sm ${state.mode === 'rolling' ? 'is-active' : ''}`
             },
-            'Rolling'
+            t(state.lang, 'rolling')
         ),
         el(
             'button',
@@ -128,7 +254,7 @@ const renderPeriodControls = (state, onChange) => {
                 type: 'button',
                 className: `btn btn-secondary btn-sm ${state.mode === 'calendar' ? 'is-active' : ''}`
             },
-            'Calendar'
+            t(state.lang, 'calendar')
         )
     );
     const rangeRow = el(
@@ -185,19 +311,19 @@ const renderActivityView = (container, store) => {
         el(
             'button',
             { className: `stats-metric ${state.metric === 'sets' ? 'is-active' : ''}` },
-            el('div', { className: 'stats-metric-label' }, 'Sets'),
+            el('div', { className: 'stats-metric-label' }, t(state.lang, 'sets')),
             el('div', { className: 'stats-metric-value' }, formatNumber(summary.totalSets))
         ),
         el(
             'button',
             { className: `stats-metric ${state.metric === 'volume' ? 'is-active' : ''}` },
-            el('div', { className: 'stats-metric-label' }, 'Volume'),
+            el('div', { className: 'stats-metric-label' }, t(state.lang, 'volume')),
             el('div', { className: 'stats-metric-value' }, formatNumber(summary.totalVol, 'k'))
         ),
         el(
             'button',
             { className: `stats-metric ${state.metric === 'time' ? 'is-active' : ''}` },
-            el('div', { className: 'stats-metric-label' }, 'Time'),
+            el('div', { className: 'stats-metric-label' }, t(state.lang, 'time')),
             el('div', { className: 'stats-metric-value' }, formatNumber(summary.totalTime, 'm'))
         )
     );
@@ -231,10 +357,14 @@ const renderActivityView = (container, store) => {
         el(
             'div',
             { className: 'card stats-section' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, 'History')),
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'history'))),
             renderBarChart({
                 items: data.timeseries,
-                metricLabel: state.metric === 'sets' ? 'Sets' : state.metric === 'time' ? 'Time' : 'Volume'
+                metricLabel: state.metric === 'sets'
+                    ? t(state.lang, 'sets')
+                    : state.metric === 'time'
+                        ? t(state.lang, 'time')
+                        : t(state.lang, 'volume')
             }),
             list
         )
@@ -251,9 +381,9 @@ const renderBalanceView = (container, store) => {
         'div',
         { className: 'stats-legend' },
         el('span', { className: 'legend-dot legend-current' }),
-        el('span', { className: 'legend-text' }, 'Current'),
+        el('span', { className: 'legend-text' }, t(state.lang, 'current')),
         el('span', { className: 'legend-dot legend-previous' }),
-        el('span', { className: 'legend-text' }, 'Previous')
+        el('span', { className: 'legend-text' }, t(state.lang, 'previous'))
     );
     const list = el('div', { className: 'list-group' });
     const maxValue = Math.max(
@@ -279,7 +409,11 @@ const renderBalanceView = (container, store) => {
                 el(
                     'div',
                     { className: 'balance-header' },
-                    el('div', { className: 'list-title' }, group),
+                    el(
+                        'div',
+                        { className: 'list-title' },
+                        (GROUP_LABELS[state.lang] || GROUP_LABELS.ko)[group] || group
+                    ),
                     el('div', { className: 'list-subtitle' }, `${cur} (vs ${prev})`)
                 ),
                 bar
@@ -290,7 +424,7 @@ const renderBalanceView = (container, store) => {
         el(
             'div',
             { className: 'card stats-section' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, 'Major Groups (Sets)')),
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'majorGroups'))),
             legend,
             list,
             el(
@@ -315,12 +449,12 @@ const renderDistributionView = (container, store) => {
         el(
             'button',
             { className: `stats-segment-btn ${state.viewMode === 'list' ? 'is-active' : ''}` },
-            'List'
+            t(state.lang, 'listLabel')
         ),
         el(
             'button',
             { className: `stats-segment-btn ${state.viewMode === 'map' ? 'is-active' : ''}` },
-            'Body Map'
+            t(state.lang, 'mapLabel')
         )
     );
     const metricToggle = el(
@@ -329,17 +463,17 @@ const renderDistributionView = (container, store) => {
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'sets' ? 'is-active' : ''}` },
-            'Sets'
+            t(state.lang, 'sets')
         ),
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'volume' ? 'is-active' : ''}` },
-            'Volume'
+            t(state.lang, 'volume')
         ),
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'time' ? 'is-active' : ''}` },
-            'Time'
+            t(state.lang, 'time')
         )
     );
     metricToggle.querySelectorAll('button')[0].addEventListener('click', () => {
@@ -365,7 +499,11 @@ const renderDistributionView = (container, store) => {
                 el(
                     'div',
                     { className: 'dist-head' },
-                    el('div', { className: 'list-title' }, muscle),
+                    el(
+                        'div',
+                        { className: 'list-title' },
+                        (MUSCLE_LABELS[state.lang] || MUSCLE_LABELS.ko)[muscle] || muscle
+                    ),
                     el('div', { className: 'stats-value' }, formatNumber(value))
                 ),
                 el(
@@ -413,7 +551,11 @@ const renderDistributionView = (container, store) => {
                     className: 'body-map-cell',
                     style: `background: rgba(0, 122, 255, ${0.15 + intensity * 0.7});`
                 },
-                el('div', { className: 'body-map-label' }, group),
+                el(
+                    'div',
+                    { className: 'body-map-label' },
+                    (GROUP_LABELS[state.lang] || GROUP_LABELS.ko)[group] || group
+                ),
                 el('div', { className: 'body-map-value' }, formatNumber(value))
             );
         })
@@ -430,11 +572,11 @@ const renderDistributionView = (container, store) => {
         el(
             'div',
             { className: 'card stats-section' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, 'Distribution')),
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'distribution'))),
             el(
                 'div',
                 { className: 'list-subtitle stats-meta' },
-                `Baseline p95: ${formatNumber(baseline)} · Items: ${sorted.length}`
+                `${t(state.lang, 'baseline')}: ${formatNumber(baseline)} · ${t(state.lang, 'items')}: ${sorted.length}`
             ),
             cardBody
         )
@@ -444,24 +586,24 @@ const renderDistributionView = (container, store) => {
 const renderExercisesView = (container, store) => {
     const state = statsState.exercises;
     const range = buildRange(state);
-    const queryInput = el('input', { type: 'text', placeholder: 'Search...', value: state.query || '' });
+    const queryInput = el('input', { type: 'text', placeholder: t(state.lang, 'searchPlaceholder'), value: state.query || '' });
     const metricToggle = el(
         'div',
         { className: 'stats-mode' },
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'sets' ? 'is-active' : ''}` },
-            'Sets'
+            t(state.lang, 'sets')
         ),
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'volume' ? 'is-active' : ''}` },
-            'Volume'
+            t(state.lang, 'volume')
         ),
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'time' ? 'is-active' : ''}` },
-            'Time'
+            t(state.lang, 'time')
         )
     );
     const list = el('div', { className: 'list-group' });
@@ -514,11 +656,11 @@ const renderExercisesView = (container, store) => {
         el(
             'div',
             { className: 'card stats-section' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, 'Exercises')),
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'exercises'))),
             el(
                 'div',
                 { className: 'list-subtitle stats-meta' },
-                `Items: ${selectExerciseIndex(store.getState(), range, state.metric, state.sortKey, state.query).length}`
+                `${t(state.lang, 'items')}: ${selectExerciseIndex(store.getState(), range, state.metric, state.sortKey, state.query).length}`
             ),
             list
         )
@@ -539,17 +681,17 @@ const renderNutritionTrendView = (container, store) => {
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'proteinG' ? 'is-active' : ''}` },
-            'Protein'
+            state.lang === 'ko' ? '단백질' : 'Protein'
         ),
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'carbG' ? 'is-active' : ''}` },
-            'Carb'
+            state.lang === 'ko' ? '탄수' : 'Carb'
         ),
         el(
             'button',
             { className: `btn btn-secondary btn-sm ${state.metric === 'fatG' ? 'is-active' : ''}` },
-            'Fat'
+            state.lang === 'ko' ? '지방' : 'Fat'
         )
     );
     const updateMetric = (metric) => {
@@ -568,13 +710,13 @@ const renderNutritionTrendView = (container, store) => {
         el(
             'div',
             { className: 'stats-mini-card' },
-            el('div', { className: 'stats-mini-label' }, 'Total'),
+            el('div', { className: 'stats-mini-label' }, t(state.lang, 'total')),
             el('div', { className: 'stats-mini-value' }, formatNumber(data.summary?.total || 0))
         ),
         el(
             'div',
             { className: 'stats-mini-card' },
-            el('div', { className: 'stats-mini-label' }, 'Avg'),
+            el('div', { className: 'stats-mini-label' }, t(state.lang, 'avg')),
             el('div', { className: 'stats-mini-value' }, formatNumber(data.summary?.avg || 0))
         )
     );
@@ -594,7 +736,7 @@ const renderNutritionTrendView = (container, store) => {
         el(
             'div',
             { className: 'card stats-section' },
-            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, 'Trend')),
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'trend'))),
             summaryRow,
             renderBarChart({
                 items: data.timeseries,
@@ -605,9 +747,92 @@ const renderNutritionTrendView = (container, store) => {
     );
 };
 
+const QUALITY_METRICS = [
+    { key: 'sodiumMg', labelKo: '나트륨', labelEn: 'Sodium' },
+    { key: 'sugarG', labelKo: '당류', labelEn: 'Sugar' },
+    { key: 'fiberG', labelKo: '식이섬유', labelEn: 'Fiber' },
+    { key: 'waterMl', labelKo: '수분', labelEn: 'Water' }
+];
+
+const computeQualityCoverage = ({ userdb, range }) => {
+    const dates = Array.isArray(range?.dates) ? range.dates : [];
+    const foodLogs = [];
+    const waterDays = new Set();
+    dates.forEach((dateISO) => {
+        const logs = Array.isArray(userdb?.diet?.[dateISO]?.logs)
+            ? userdb.diet[dateISO].logs
+            : [];
+        logs.forEach((log) => {
+            if (log?.kind === 'water') {
+                waterDays.add(dateISO);
+            } else {
+                foodLogs.push(log);
+            }
+        });
+    });
+    const totalFoodLogs = foodLogs.length;
+    const totalDays = dates.length;
+    const metrics = QUALITY_METRICS.map((metric) => {
+        if (metric.key === 'waterMl') {
+            const covered = totalDays > 0 ? waterDays.size : 0;
+            const ratio = totalDays > 0 ? covered / totalDays : 0;
+            return { ...metric, total: totalDays, covered, ratio };
+        }
+        const covered = totalFoodLogs > 0
+            ? foodLogs.filter((log) => log?.[metric.key] !== undefined && log?.[metric.key] !== null).length
+            : 0;
+        const ratio = totalFoodLogs > 0 ? covered / totalFoodLogs : 0;
+        return { ...metric, total: totalFoodLogs, covered, ratio };
+    });
+    const avgRatio = metrics.length > 0
+        ? metrics.reduce((sum, item) => sum + item.ratio, 0) / metrics.length
+        : 0;
+    return { metrics, totalFoodLogs, totalDays, avgRatio };
+};
+
+const renderNutritionQualityView = (container, store) => {
+    const state = statsState.nutrition;
+    const range = buildRange(state);
+    const { metrics, totalFoodLogs, totalDays, avgRatio } = computeQualityCoverage({
+        userdb: store.getState().userdb,
+        range
+    });
+    const threshold = 0.3;
+    const ready = metrics.every((metric) => metric.ratio >= threshold);
+    const list = el('div', { className: 'list' });
+    metrics.forEach((metric) => {
+        const label = state.lang === 'ko' ? metric.labelKo : metric.labelEn;
+        const ratioLabel = `${Math.round(metric.ratio * 100)}%`;
+        list.appendChild(
+            el(
+                'div',
+                { className: 'list-item stats-row' },
+                el('div', { className: 'list-title' }, label),
+                el('div', { className: 'stats-value' }, ratioLabel)
+            )
+        );
+    });
+    const note = `${t(state.lang, 'qualityNote')} · ${totalFoodLogs} logs / ${totalDays} days`;
+    container.appendChild(
+        el(
+            'div',
+            { className: 'card stats-section' },
+            el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'coverage'))),
+            el('div', { className: 'stats-range-label' }, `${Math.round(avgRatio * 100)}%`),
+            el('p', { className: 'empty-state' }, ready ? t(state.lang, 'qualityReady') : t(state.lang, 'qualityHold')),
+            list,
+            el('div', { className: 'stats-footnote' }, note)
+        )
+    );
+};
+
 export const renderStatsView = (container, store, route) => {
     container.textContent = '';
-    const title = getTitle(route);
+    const lang = store.getState().settings.lang || 'ko';
+    Object.values(statsState).forEach((state) => {
+        state.lang = lang;
+    });
+    const title = getTitle(route, lang);
     const backButton = el(
         'button',
         {
@@ -662,6 +887,11 @@ export const renderStatsView = (container, store, route) => {
     if (route === 'stats/nutrition/trend') {
         container.appendChild(controls);
         renderNutritionTrendView(container, store);
+        return;
+    }
+    if (route === 'stats/nutrition/quality') {
+        container.appendChild(controls);
+        renderNutritionQualityView(container, store);
         return;
     }
     const placeholder = el(

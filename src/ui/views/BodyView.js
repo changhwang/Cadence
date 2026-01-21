@@ -27,13 +27,13 @@ const getBodyEntries = (userdb) => {
         .sort((a, b) => a.date.localeCompare(b.date));
 };
 
-const buildSparkline = (values) => {
+const buildSparkline = (values, { unit, formatLabel } = {}) => {
     if (!values || values.length < 2) {
         return el('div', { className: 'empty-state' }, '기록 없음');
     }
     const width = 160;
-    const height = 44;
-    const padding = 4;
+    const height = 56;
+    const padding = 6;
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min || 1;
@@ -41,7 +41,7 @@ const buildSparkline = (values) => {
     const points = values.map((value, index) => {
         const x = padding + index * stepX;
         const y = height - padding - ((value - min) / range) * (height - padding * 2);
-        return `${x},${y}`;
+        return { x, y };
     });
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -49,10 +49,69 @@ const buildSparkline = (values) => {
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     svg.setAttribute('preserveAspectRatio', 'none');
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', `M ${points.join(' L ')}`);
+    path.setAttribute(
+        'd',
+        `M ${points.map((point) => `${point.x},${point.y}`).join(' L ')}`
+    );
     path.setAttribute('class', 'sparkline-path');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'var(--ios-blue)');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(path);
-    return svg;
+
+    const makeDot = (x, y) => {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', String(x));
+        dot.setAttribute('cy', String(y));
+        dot.setAttribute('r', '2.2');
+        dot.setAttribute('fill', 'var(--ios-blue)');
+        return dot;
+    };
+    const minIndex = values.indexOf(min);
+    const maxIndex = values.indexOf(max);
+    const minPoint = points[minIndex];
+    const maxPoint = points[maxIndex];
+    const makeLabel = (value) => {
+        if (typeof formatLabel === 'function') return formatLabel(value, unit);
+        return unit ? `${value} ${unit}` : String(value);
+    };
+    if (maxPoint) {
+        svg.appendChild(makeDot(maxPoint.x, maxPoint.y));
+    }
+    if (minPoint) {
+        svg.appendChild(makeDot(minPoint.x, minPoint.y));
+    }
+    const wrap = el('div', { className: 'sparkline-wrap' });
+    wrap.appendChild(svg);
+    if (maxPoint) {
+        const xPct = (maxPoint.x / width) * 100;
+        wrap.appendChild(
+            el(
+                'div',
+                {
+                    className: 'sparkline-label sparkline-label-max',
+                    style: `left:${xPct}%;`
+                },
+                `max ${makeLabel(max)}`
+            )
+        );
+    }
+    if (minPoint) {
+        const xPct = (minPoint.x / width) * 100;
+        wrap.appendChild(
+            el(
+                'div',
+                {
+                    className: 'sparkline-label sparkline-label-min',
+                    style: `left:${xPct}%;`
+                },
+                `min ${makeLabel(min)}`
+            )
+        );
+    }
+    return wrap;
 };
 
 const formatValue = (value, unit) => {
@@ -62,6 +121,12 @@ const formatValue = (value, unit) => {
 };
 
 const pad2 = (value) => String(value).padStart(2, '0');
+
+const formatShortDate = (isoDate) => {
+    if (!isoDate) return '';
+    const [, month, day] = isoDate.split('-');
+    return `${month}.${day}`;
+};
 
 const getMonthLabel = (monthISO) => {
     if (!monthISO) return '';
@@ -157,15 +222,16 @@ export const renderBodyView = (container, store) => {
             'button',
             { className: `body-stat-box ${activeBodyMetric === 'weight' ? 'is-active' : ''}`, type: 'button' },
             el('div', { className: 'body-stat-title' }, '체중 (BMI)'),
-            el('div', { className: 'body-stat-value' }, formatValue(displayWeightValue(entry.weight), weightUnit)),
-            el('div', { className: 'body-stat-subvalue' }, (() => {
+            (() => {
+                const weightLabel = formatValue(displayWeightValue(entry.weight), weightUnit);
                 const weightKg = Number(entry.weight);
                 const heightCm = Number(userdb.profile?.height_cm || 0);
-                if (!weightKg || !heightCm) return '';
+                if (!weightKg || !heightCm) return el('div', { className: 'body-stat-value' }, weightLabel);
                 const hM = heightCm / 100;
                 const bmi = weightKg / (hM * hM);
-                return Number.isNaN(bmi) ? '' : `(${bmi.toFixed(1)})`;
-            })())
+                const bmiLabel = Number.isNaN(bmi) ? '' : `(${bmi.toFixed(1)})`;
+                return el('div', { className: 'body-stat-value' }, `${weightLabel} ${bmiLabel}`.trim());
+            })()
         ),
         el(
             'button',
@@ -217,6 +283,8 @@ export const renderBodyView = (container, store) => {
         fat: { label: '체지방률', unit: '%', series: fatSeries }
     };
     const activeMetric = metricMap[activeBodyMetric] || metricMap.weight;
+    const rangeStart = cutoff;
+    const rangeEnd = todayIso();
     const trendControls = el(
         'div',
         { className: 'stats-range' },
@@ -271,8 +339,19 @@ export const renderBodyView = (container, store) => {
             { className: 'body-trend-box' },
             activeMetric.series.length < 2
                 ? el('div', { className: 'empty-state' }, `기간 내 데이터 없음 (${bodyTrendRangeDays}D)`)
-                : buildSparkline(activeMetric.series)
-        )
+                : buildSparkline(activeMetric.series, {
+                    unit: activeMetric.unit,
+                    formatLabel: (value, unitLabel) => formatValue(value, unitLabel)
+                })
+        ),
+        activeMetric.series.length < 2
+            ? null
+            : el(
+                'div',
+                { className: 'body-trend-x' },
+                el('div', {}, formatShortDate(rangeStart)),
+                el('div', {}, formatShortDate(rangeEnd))
+            )
     );
     const heatmapDays = selectWorkoutHeatmap(store.getState(), heatmapMonthISO, 'sets', true);
     const heatmapCard = el(
@@ -317,37 +396,37 @@ export const renderBodyView = (container, store) => {
             'button',
             { className: 'stats-card', dataset: { action: 'route', route: 'stats/activity' } },
             el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'bar-chart-2' } })),
-            el('div', { className: 'stats-label' }, 'Activity')
+            el('div', { className: 'stats-label' }, '운동 지표')
         ),
         el(
             'button',
             { className: 'stats-card', dataset: { action: 'route', route: 'stats/balance' } },
             el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'scale' } })),
-            el('div', { className: 'stats-label' }, 'Balance')
+            el('div', { className: 'stats-label' }, '근육 밸런스')
         ),
         el(
             'button',
             { className: 'stats-card', dataset: { action: 'route', route: 'stats/distribution' } },
             el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'layout-grid' } })),
-            el('div', { className: 'stats-label' }, 'Distribution')
+            el('div', { className: 'stats-label' }, '세부 자극')
         ),
         el(
             'button',
             { className: 'stats-card', dataset: { action: 'route', route: 'stats/exercises' } },
             el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'dumbbell' } })),
-            el('div', { className: 'stats-label' }, 'Exercises')
+            el('div', { className: 'stats-label' }, '운동 기록')
         ),
         el(
             'button',
             { className: 'stats-card', dataset: { action: 'route', route: 'stats/nutrition/trend' } },
             el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'apple' } })),
-            el('div', { className: 'stats-label' }, 'Nutrition')
+            el('div', { className: 'stats-label' }, '영양 트렌드')
         ),
         el(
             'div',
             { className: 'stats-card is-reserved' },
             el('div', { className: 'stats-icon' }, el('i', { dataset: { lucide: 'beaker' } })),
-            el('div', { className: 'stats-label' }, 'Coming soon')
+            el('div', { className: 'stats-label' }, '준비중')
         )
     );
     container.appendChild(headerWrap);

@@ -1575,6 +1575,7 @@ input[type="range"].range-full {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-height: 70px;
 }
 
 .body-map-label {
@@ -1605,7 +1606,7 @@ input[type="range"].range-full {
     background: var(--card-bg);
     border-radius: 14px;
     padding: 10px;
-    text-align: left;
+    text-align: center;
 }
 
 .body-stat-box.is-active {
@@ -1622,7 +1623,7 @@ input[type="range"].range-full {
 .body-stat-value {
     font-size: 16px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--ios-blue);
 }
 
 .body-stat-subvalue {
@@ -1646,11 +1647,48 @@ input[type="range"].range-full {
     justify-content: flex-end;
 }
 
+.sparkline-wrap {
+    position: relative;
+}
+
+.sparkline {
+    width: 100%;
+    height: 56px;
+    display: block;
+    overflow: visible;
+}
+
+.sparkline-label {
+    position: absolute;
+    font-size: 10px;
+    color: var(--text-secondary);
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.sparkline-label-max {
+    top: -12px;
+}
+
+.sparkline-label-min {
+    bottom: -12px;
+}
+
 .body-trend-box {
     background: #f9f9f9;
     border-radius: 14px;
     padding: 16px;
 }
+
+.body-trend-x {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding: 0 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
 
 .goal-calendar-date {
     font-size: 13px;

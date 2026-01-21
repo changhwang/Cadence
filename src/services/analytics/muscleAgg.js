@@ -64,10 +64,9 @@ const summarizeStrengthLog = (log) => {
     if (!log) return { sets: 0, volume: 0 };
     const detail = Array.isArray(log.setsDetail) ? log.setsDetail : [];
     if (detail.length > 0) {
-        const hasCompleted = detail.some((set) => Boolean(set.completed));
-        const setsToUse = hasCompleted ? detail.filter((set) => Boolean(set.completed)) : detail;
-        const sets = setsToUse.length;
-        const volume = setsToUse.reduce(
+        const completed = detail.filter((set) => Boolean(set.completed));
+        const sets = completed.length;
+        const volume = completed.reduce(
             (sum, set) => sum + toNumber(set.weight) * toNumber(set.reps),
             0
         );
