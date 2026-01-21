@@ -182,7 +182,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         if (editingIndex === null || !setsDetail[editingIndex]) return;
         const current = setsDetail[editingIndex];
         const repsInput = el('input', { type: 'number', min: '1', value: current.reps || defaultReps });
-        const weightInput = el('input', { type: 'number', min: '0', value: current.weight || defaultWeight });
+        const weightInput = el('input', { type: 'number', min: '0', step: '0.1', value: current.weight || defaultWeight });
         const completedInput = el('input', { type: 'checkbox', checked: Boolean(current.completed) });
         const saveButton = el('button', { type: 'button', className: 'btn' }, '저장');
         const cancelButton = el('button', { type: 'button', className: 'btn btn-text' }, '닫기');
@@ -264,7 +264,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         if (mode === 'log') {
             timerStatus.textContent = restRunning ? '휴식 중 · 기록 입력' : '기록 입력';
             const repsInput = el('input', { type: 'number', min: '1', value: setsDetail[activeSetIndex]?.reps || defaultReps });
-            const weightInput = el('input', { type: 'number', min: '0', value: setsDetail[activeSetIndex]?.weight || defaultWeight });
+            const weightInput = el('input', { type: 'number', min: '0', step: '0.1', value: setsDetail[activeSetIndex]?.weight || defaultWeight });
             logArea.appendChild(
                 el('label', { className: 'input-label' }, '횟수', repsInput)
             );

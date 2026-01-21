@@ -27,14 +27,14 @@ export const renderBodyView = (container, store) => {
         el(
             'div',
             { className: 'row row-gap' },
-            el('input', { name: 'weight', type: 'number', min: '0', placeholder: '체중', value: entry.weight }),
-            el('input', { name: 'waist', type: 'number', min: '0', placeholder: '허리둘레', value: entry.waist })
+            el('input', { name: 'weight', type: 'number', min: '0', step: '0.1', placeholder: '체중', value: entry.weight }),
+            el('input', { name: 'waist', type: 'number', min: '0', step: '0.1', placeholder: '허리둘레', value: entry.waist })
         ),
         el(
             'div',
             { className: 'row row-gap' },
-            el('input', { name: 'muscle', type: 'number', min: '0', placeholder: '골격근량', value: entry.muscle }),
-            el('input', { name: 'fat', type: 'number', min: '0', placeholder: '체지방률', value: entry.fat })
+            el('input', { name: 'muscle', type: 'number', min: '0', step: '0.1', placeholder: '골격근량', value: entry.muscle }),
+            el('input', { name: 'fat', type: 'number', min: '0', step: '0.1', placeholder: '체지방률', value: entry.fat })
         ),
         el('button', { type: 'submit', className: 'btn' }, '저장')
     );

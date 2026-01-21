@@ -36,7 +36,7 @@ export const buildRoutineForm = (store, routine) => {
     const selectedOrder = Array.isArray(routine?.exerciseIds) ? [...routine.exerciseIds] : [];
     const setsInput = el('input', { type: 'number', min: '1', value: defaults.sets });
     const repsInput = el('input', { type: 'number', min: '1', value: defaults.reps });
-    const weightInput = el('input', { type: 'number', min: '0', value: defaults.weight });
+    const weightInput = el('input', { type: 'number', min: '0', step: '0.1', value: defaults.weight });
     const unitSelect = el(
         'select',
         {},
@@ -130,7 +130,7 @@ export const buildRoutineForm = (store, routine) => {
                         { className: 'row row-gap routine-defaults-row' },
                         el('label', { className: 'input-label' }, '세트', el('input', { type: 'number', min: '1', value: strengthDefaults.sets, dataset: { role: 'defaults-sets', id } })),
                         el('label', { className: 'input-label' }, '횟수', el('input', { type: 'number', min: '1', value: strengthDefaults.reps, dataset: { role: 'defaults-reps', id } })),
-                        el('label', { className: 'input-label' }, '중량', el('input', { type: 'number', min: '0', value: strengthDefaults.weight, dataset: { role: 'defaults-weight', id } })),
+                        el('label', { className: 'input-label' }, '중량', el('input', { type: 'number', min: '0', step: '0.1', value: strengthDefaults.weight, dataset: { role: 'defaults-weight', id } })),
                         el(
                             'label',
                             { className: 'input-label' },

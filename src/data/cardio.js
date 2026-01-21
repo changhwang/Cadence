@@ -78,7 +78,7 @@ export const CARDIO_DB = [
     },
     {
         id: 'elliptical',
-        labels: { ko: '일립티컬', en: 'Elliptical' },
+        labels: { ko: '엘립티컬(크로스트레이너)', en: 'Elliptical' },
         met: 5.0,
         intensity: 'moderate',
         kind: 'cardio',

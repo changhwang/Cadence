@@ -152,7 +152,7 @@ export const openWorkoutAddModal = (store, options = {}) => {
                     'label',
                     { className: 'input-label' },
                     '중량',
-                    el('input', { name: 'weight', type: 'number', min: '0', value: 0 })
+                    el('input', { name: 'weight', type: 'number', min: '0', step: '0.1', value: 0 })
                 ),
                 el(
                     'label',
@@ -717,6 +717,7 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                     name: 'setWeight',
                     type: 'number',
                     min: '0',
+                    step: '0.1',
                     value: set.weight,
                     placeholder: `중량 (세트 ${index + 1})`
                 }),
@@ -786,7 +787,7 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                 'label',
                 { className: 'input-label' },
                 '중량',
-                el('input', { name: 'weight', type: 'number', min: '0', value: log.weight || 0 })
+                el('input', { name: 'weight', type: 'number', min: '0', step: '0.1', value: log.weight || 0 })
             ),
             el(
                 'label',

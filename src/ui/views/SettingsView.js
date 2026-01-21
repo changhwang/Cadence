@@ -98,7 +98,7 @@ export const renderSettingsView = (container, store) => {
                 'label',
                 { className: 'input-label' },
                 `체중 (${settings.units.weight})`,
-                el('input', { name: 'profileWeight', type: 'number', min: '0', value: userdb.profile.weight_kg })
+                el('input', { name: 'profileWeight', type: 'number', min: '0', step: '0.1', value: userdb.profile.weight_kg })
             )
         ),
         el(

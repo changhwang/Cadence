@@ -36,6 +36,16 @@ const summarizeCardio = (logs) => {
     return logs.reduce((sum, entry) => sum + toNumber(entry.minutes), 0);
 };
 
+const formatVolume = (value, unit) => {
+    const safeUnit = unit || '';
+    if (value >= 1000) {
+        const rounded = Math.round((value / 1000) * 10) / 10;
+        const text = rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+        return `${text}k${safeUnit ? ` ${safeUnit}` : ''}`;
+    }
+    return `${Math.round(value)}${safeUnit ? ` ${safeUnit}` : ''}`;
+};
+
 export const renderDailySummary = ({ userdb, settings, dateKey }) => {
     const workoutEntry = userdb.workout?.[dateKey] || { logs: [] };
     const strengthLogs = Array.isArray(workoutEntry.logs) ? workoutEntry.logs : [];
@@ -48,7 +58,7 @@ export const renderDailySummary = ({ userdb, settings, dateKey }) => {
         profile: userdb.profile
     });
 
-    const volumeLabel = `${Math.round(strength.volume)}${settings.units.workout}`;
+    const volumeLabel = formatVolume(strength.volume, settings.units.workout);
     const cardioLabel = `${Math.round(cardioMinutes)}m`;
     const kcalLabel = `${Math.round(cardioKcal)}kcal`;
 
