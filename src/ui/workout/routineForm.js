@@ -1,18 +1,19 @@
 import { CARDIO_DB } from '../../data/cardio.js';
 import { EXERCISE_DB } from '../../data/exercises.js';
 import { el } from '../../utils/dom.js';
+import { fromDisplayWeight, roundWeight, toDisplayWeight } from '../../utils/units.js';
 import { getLabelByLang } from '../utils/labels.js';
 
 export const buildRoutineForm = (store, routine) => {
     const state = store.getState();
     const lang = state.settings.lang || 'ko';
-    const defaultUnit = state.settings.units?.workout || 'kg';
+    const displayUnit = state.settings.units?.workout || 'kg';
     const routineDefaults = routine?.defaults || {};
     const defaults = {
         sets: routineDefaults.sets ?? 3,
         reps: routineDefaults.reps ?? 10,
         weight: routineDefaults.weight ?? 0,
-        unit: routineDefaults.unit || defaultUnit
+        unit: 'kg'
     };
     const defaultsById = routine?.defaultsById ? { ...routine.defaultsById } : {};
     const titleInput = el('input', { type: 'text', placeholder: '루틴 이름', value: routine?.title || '' });
@@ -36,12 +37,17 @@ export const buildRoutineForm = (store, routine) => {
     const selectedOrder = Array.isArray(routine?.exerciseIds) ? [...routine.exerciseIds] : [];
     const setsInput = el('input', { type: 'number', min: '1', value: defaults.sets });
     const repsInput = el('input', { type: 'number', min: '1', value: defaults.reps });
-    const weightInput = el('input', { type: 'number', min: '0', step: '0.1', value: defaults.weight });
+    const weightInput = el('input', {
+        type: 'number',
+        min: '0',
+        step: '0.1',
+        value: roundWeight(toDisplayWeight(defaults.weight, displayUnit), 1)
+    });
     const unitSelect = el(
         'select',
-        {},
-        el('option', { value: 'kg', selected: defaults.unit === 'kg' }, 'kg'),
-        el('option', { value: 'lb', selected: defaults.unit === 'lb' }, 'lb')
+        { disabled: true },
+        el('option', { value: 'kg', selected: displayUnit === 'kg' }, 'kg'),
+        el('option', { value: 'lb', selected: displayUnit === 'lb' }, 'lb')
     );
 
     const isCardioExercise = (exercise) => {
@@ -59,7 +65,7 @@ export const buildRoutineForm = (store, routine) => {
             sets: Number(saved.sets ?? defaults.sets ?? 3),
             reps: Number(saved.reps ?? defaults.reps ?? 10),
             weight: Number(saved.weight ?? defaults.weight ?? 0),
-            unit: saved.unit || defaults.unit || 'kg'
+            unit: 'kg'
         };
     };
 
@@ -130,16 +136,27 @@ export const buildRoutineForm = (store, routine) => {
                         { className: 'row row-gap routine-defaults-row' },
                         el('label', { className: 'input-label' }, '세트', el('input', { type: 'number', min: '1', value: strengthDefaults.sets, dataset: { role: 'defaults-sets', id } })),
                         el('label', { className: 'input-label' }, '횟수', el('input', { type: 'number', min: '1', value: strengthDefaults.reps, dataset: { role: 'defaults-reps', id } })),
-                        el('label', { className: 'input-label' }, '중량', el('input', { type: 'number', min: '0', step: '0.1', value: strengthDefaults.weight, dataset: { role: 'defaults-weight', id } })),
+                        el(
+                            'label',
+                            { className: 'input-label' },
+                            '중량',
+                            el('input', {
+                                type: 'number',
+                                min: '0',
+                                step: '0.1',
+                                value: roundWeight(toDisplayWeight(strengthDefaults.weight, displayUnit), 1),
+                                dataset: { role: 'defaults-weight', id }
+                            })
+                        ),
                         el(
                             'label',
                             { className: 'input-label' },
                             '단위',
                             el(
                                 'select',
-                                { dataset: { role: 'defaults-unit', id } },
-                                el('option', { value: 'kg', selected: strengthDefaults.unit === 'kg' }, 'kg'),
-                                el('option', { value: 'lb', selected: strengthDefaults.unit === 'lb' }, 'lb')
+                                { dataset: { role: 'defaults-unit', id }, disabled: true },
+                                el('option', { value: 'kg', selected: displayUnit === 'kg' }, 'kg'),
+                                el('option', { value: 'lb', selected: displayUnit === 'lb' }, 'lb')
                             )
                         )
                     )
@@ -230,8 +247,10 @@ export const buildRoutineForm = (store, routine) => {
         const next = getStrengthDefaults(id);
         if (role === 'defaults-sets') next.sets = Math.max(1, Number(input.value || next.sets));
         if (role === 'defaults-reps') next.reps = Math.max(1, Number(input.value || next.reps));
-        if (role === 'defaults-weight') next.weight = Math.max(0, Number(input.value || next.weight));
-        if (role === 'defaults-unit') next.unit = input.value || next.unit;
+        if (role === 'defaults-weight') {
+            const nextValue = fromDisplayWeight(Number(input.value || 0), displayUnit);
+            next.weight = Math.max(0, Number.isNaN(nextValue) ? next.weight : nextValue);
+        }
         defaultsById[id] = next;
     });
 
@@ -240,8 +259,8 @@ export const buildRoutineForm = (store, routine) => {
         const selected = selectedOrder.slice();
         const sets = Number(setsInput.value || 0);
         const reps = Number(repsInput.value || 0);
-        const weight = Number(weightInput.value || 0);
-        const unit = unitSelect.value || 'kg';
+        const weight = fromDisplayWeight(Number(weightInput.value || 0), displayUnit);
+        const unit = 'kg';
         const category = categorySelect.value || 'strength';
         const tags = tagsInput.value
             .split(',')

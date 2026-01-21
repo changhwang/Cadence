@@ -8,6 +8,7 @@ import { updateUserDb } from '../store/userDb.js';
 import { getLabelByLang } from '../utils/labels.js';
 import { buildRoutineForm } from '../workout/routineForm.js';
 import { appendWorkoutLogs, buildDefaultSets, createWorkoutLog } from '../workout/workoutLogUtils.js';
+import { fromDisplayWeight, roundWeight, toDisplayWeight } from '../../utils/units.js';
 
 export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
     if (!log) return;
@@ -160,7 +161,7 @@ export const openWorkoutAddModal = (store, options = {}) => {
                     '단위',
                     el(
                         'select',
-                        { name: 'unit' },
+                        { name: 'unit', disabled: true },
                         el('option', { value: 'kg', selected: preferredUnit === 'kg' }, 'kg'),
                         el('option', { value: 'lb', selected: preferredUnit === 'lb' }, 'lb')
                     )
@@ -205,7 +206,7 @@ export const openWorkoutAddModal = (store, options = {}) => {
             const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
             const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
             const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
-            const unit = form.querySelector('[name="unit"]')?.value || 'kg';
+            const unit = preferredUnit || 'kg';
             if (Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) {
                 window.alert('세트 수와 횟수를 입력해 주세요.');
                 return false;
@@ -690,7 +691,7 @@ export const openExerciseSearchModal = (store) => {
 
 export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
     const settings = store.getState().settings;
-    const preferredUnit = log.unit || settings.units?.workout || 'kg';
+    const preferredUnit = settings.units?.workout || 'kg';
     const setsDetail = Array.isArray(log.setsDetail) && log.setsDetail.length > 0
         ? log.setsDetail.map((set) => ({
             reps: Number(set.reps || 0),
@@ -718,7 +719,7 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                     type: 'number',
                     min: '0',
                     step: '0.1',
-                    value: set.weight,
+                    value: roundWeight(toDisplayWeight(set.weight, preferredUnit), 1),
                     placeholder: `중량 (세트 ${index + 1})`
                 }),
                 el(
@@ -787,7 +788,13 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                 'label',
                 { className: 'input-label' },
                 '중량',
-                el('input', { name: 'weight', type: 'number', min: '0', step: '0.1', value: log.weight || 0 })
+                el('input', {
+                    name: 'weight',
+                    type: 'number',
+                    min: '0',
+                    step: '0.1',
+                    value: roundWeight(toDisplayWeight(log.weight || 0, preferredUnit), 1)
+                })
             ),
             el(
                 'label',
@@ -795,7 +802,7 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                 '단위',
                 el(
                     'select',
-                    { name: 'unit' },
+                    { name: 'unit', disabled: true },
                     el('option', { value: 'kg', selected: preferredUnit === 'kg' }, 'kg'),
                     el('option', { value: 'lb', selected: preferredUnit === 'lb' }, 'lb')
                 )
@@ -845,12 +852,16 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
             const name = form.querySelector('[name="exerciseName"]')?.value.trim() || '';
             const sets = Number(form.querySelector('[name="sets"]')?.value || 0);
             const reps = Number(form.querySelector('[name="reps"]')?.value || 0);
-            const weight = Number(form.querySelector('[name="weight"]')?.value || 0);
-            const unit = form.querySelector('[name="unit"]')?.value || log.unit;
+            const weight = fromDisplayWeight(Number(form.querySelector('[name="weight"]')?.value || 0), preferredUnit);
+            const unit = 'kg';
             if (!name || Number.isNaN(sets) || Number.isNaN(reps) || sets <= 0 || reps <= 0) return false;
-            const nextSets = Array.from(form.querySelectorAll('[data-set-row]')).map((row) => ({
+            const nextSets = Array.from(form.querySelectorAll('[data-set-row]')).map((row, index) => ({
                 reps: Number(row.querySelector('[name="setReps"]')?.value || 0),
-                weight: Number(row.querySelector('[name="setWeight"]')?.value || 0)
+                weight: fromDisplayWeight(
+                    Number(row.querySelector('[name="setWeight"]')?.value || 0),
+                    preferredUnit
+                ),
+                completed: Boolean(setsDetail[index]?.completed)
             }));
             updateUserDb(store, (nextDb) => {
                 const nextEntry = nextDb.workout[dateKey] || { logs: [] };

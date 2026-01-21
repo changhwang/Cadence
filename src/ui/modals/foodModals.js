@@ -28,28 +28,71 @@ export const openFoodSearchModal = (store, options = {}) => {
         el('option', { value: 'serving' }, '서빙'),
         el('option', { value: 'g' }, '그램(g)')
     );
+    const categoryLabels = {
+        protein: '단백질',
+        carb: '탄수',
+        fat: '지방',
+        fruit: '과일',
+        veg: '채소',
+        oil: '오일',
+        sauce: '소스',
+        meal: '식사',
+        snack: '간식',
+        drink: '음료',
+        fastfood: '패스트푸드',
+        dessert: '디저트'
+    };
+    const categoryOrder = [
+        'meal',
+        'fastfood',
+        'snack',
+        'drink',
+        'protein',
+        'carb',
+        'fat',
+        'veg',
+        'fruit',
+        'oil',
+        'sauce',
+        'dessert'
+    ];
+    const categoryValues = Array.from(new Set(FOOD_DB.map((item) => item.category).filter(Boolean)));
+    const orderedCategories = categoryOrder
+        .filter((category) => categoryValues.includes(category))
+        .concat(categoryValues.filter((category) => !categoryOrder.includes(category)).sort());
     const categorySelect = el(
         'select',
         { name: 'foodCategory' },
         el('option', { value: 'all' }, '전체 카테고리'),
-        el('option', { value: 'protein' }, '단백질'),
-        el('option', { value: 'carb' }, '탄수'),
-        el('option', { value: 'fat' }, '지방'),
-        el('option', { value: 'fruit' }, '과일'),
-        el('option', { value: 'veg' }, '채소'),
-        el('option', { value: 'oil' }, '오일/소스'),
-        el('option', { value: 'meal' }, '식사'),
-        el('option', { value: 'snack' }, '간식')
+        ...orderedCategories.map((category) =>
+            el('option', { value: category }, categoryLabels[category] || category)
+        )
     );
+    const cuisineLabels = {
+        korean: '한식',
+        japanese: '일식',
+        chinese: '중식',
+        western: '양식',
+        global: '기타'
+    };
+    const cuisineOrder = ['korean', 'japanese', 'chinese', 'western', 'global'];
+    const cuisineValues = Array.from(
+        new Set(
+            FOOD_DB.flatMap((item) =>
+                Array.isArray(item.cuisine) ? item.cuisine : item.cuisine ? [item.cuisine] : []
+            )
+        )
+    ).filter(Boolean);
+    const orderedCuisines = cuisineOrder
+        .filter((cuisine) => cuisineValues.includes(cuisine))
+        .concat(cuisineValues.filter((cuisine) => !cuisineOrder.includes(cuisine)).sort());
     const cuisineSelect = el(
         'select',
         { name: 'foodCuisine' },
         el('option', { value: 'all' }, '전체 지역'),
-        el('option', { value: 'korean' }, '한식'),
-        el('option', { value: 'japanese' }, '일식'),
-        el('option', { value: 'chinese' }, '중식'),
-        el('option', { value: 'western' }, '양식'),
-        el('option', { value: 'global' }, '기타')
+        ...orderedCuisines.map((cuisine) =>
+            el('option', { value: cuisine }, cuisineLabels[cuisine] || cuisine)
+        )
     );
     const sortSelect = el(
         'select',

@@ -23284,5 +23284,1511 @@ export const FOOD_DB = [
       "korean"
     ],
     "tags": []
+  },
+  {
+    "id": "soy_sauce_egg_rice",
+    "labels": {
+      "ko": "간장계란밥",
+      "en": "Soy Sauce Egg Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 520,
+      "proteinG": 18,
+      "carbG": 75,
+      "fatG": 16,
+      "fiberG": 2,
+      "unsatFatG": 9,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 1,
+      "sodiumMg": 900,
+      "potassiumMg": 250
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "butter_soy_rice",
+    "labels": {
+      "ko": "버터간장밥",
+      "en": "Butter Soy Sauce Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 560,
+      "proteinG": 10,
+      "carbG": 78,
+      "fatG": 22,
+      "fiberG": 1.5,
+      "unsatFatG": 12,
+      "satFatG": 8,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 1,
+      "sodiumMg": 850,
+      "potassiumMg": 200
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "egg_fried_rice",
+    "labels": {
+      "ko": "계란볶음밥",
+      "en": "Egg Fried Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 550,
+      "proteinG": 16,
+      "carbG": 80,
+      "fatG": 18,
+      "fiberG": 2,
+      "unsatFatG": 10,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 700,
+      "potassiumMg": 220
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean",
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "tuna_mayo_rice_bowl",
+    "labels": {
+      "ko": "참치마요 덮밥",
+      "en": "Tuna Mayo Rice Bowl"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 650,
+      "proteinG": 22,
+      "carbG": 85,
+      "fatG": 24,
+      "fiberG": 2,
+      "unsatFatG": 13,
+      "satFatG": 7,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 1,
+      "sodiumMg": 1000,
+      "potassiumMg": 250
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "spam_egg_rice_bowl",
+    "labels": {
+      "ko": "스팸에그 덮밥",
+      "en": "Spam Egg Rice Bowl"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 700,
+      "proteinG": 24,
+      "carbG": 75,
+      "fatG": 30,
+      "fiberG": 1.5,
+      "unsatFatG": 16,
+      "satFatG": 10,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 1200,
+      "potassiumMg": 260
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "kimchi_tuna_fried_rice",
+    "labels": {
+      "ko": "참치김치볶음밥",
+      "en": "Tuna Kimchi Fried Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 620,
+      "proteinG": 24,
+      "carbG": 78,
+      "fatG": 22,
+      "fiberG": 4,
+      "unsatFatG": 12,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 1,
+      "sodiumMg": 1100,
+      "potassiumMg": 300
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "curry_rice_simple",
+    "labels": {
+      "ko": "카레라이스",
+      "en": "Curry Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 720,
+      "proteinG": 18,
+      "carbG": 105,
+      "fatG": 20,
+      "fiberG": 4,
+      "unsatFatG": 10,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 1,
+      "sodiumMg": 900,
+      "potassiumMg": 300
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean",
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "chicken_breast_rice_bowl",
+    "labels": {
+      "ko": "닭가슴살 덮밥",
+      "en": "Chicken Breast Rice Bowl"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 520,
+      "proteinG": 35,
+      "carbG": 65,
+      "fatG": 12,
+      "fiberG": 3,
+      "unsatFatG": 6,
+      "satFatG": 3,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 700,
+      "potassiumMg": 400
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean",
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "salad_plain",
+    "labels": {
+      "ko": "샐러드(소스 X)",
+      "en": "Salad (No Dressing)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 120,
+      "proteinG": 4,
+      "carbG": 10,
+      "fatG": 6,
+      "fiberG": 5,
+      "unsatFatG": 4,
+      "satFatG": 1,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 0,
+      "sodiumMg": 80,
+      "potassiumMg": 350
+    },
+    "category": "meal",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "light",
+      "no_dressing"
+    ]
+  },
+  {
+    "id": "ramen_shin",
+    "labels": {
+      "ko": "신라면(1봉, 조리)",
+      "en": "Shin Ramyun (Prepared)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 500,
+      "proteinG": 10,
+      "carbG": 80,
+      "fatG": 15,
+      "fiberG": 3,
+      "unsatFatG": 7,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 1,
+      "sodiumMg": 1800,
+      "potassiumMg": 250
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "ramen"
+    ]
+  },
+  {
+    "id": "ramen_jjapagetti",
+    "labels": {
+      "ko": "짜파게티(1봉, 조리)",
+      "en": "Jjapagetti (Prepared)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 560,
+      "proteinG": 12,
+      "carbG": 85,
+      "fatG": 18,
+      "fiberG": 4,
+      "unsatFatG": 9,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 2,
+      "sodiumMg": 1500,
+      "potassiumMg": 220
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "ramen"
+    ]
+  },
+  {
+    "id": "ramen_buldak",
+    "labels": {
+      "ko": "불닭볶음면(1봉, 조리)",
+      "en": "Buldak Spicy Noodles (Prepared)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 540,
+      "proteinG": 12,
+      "carbG": 85,
+      "fatG": 16,
+      "fiberG": 3,
+      "unsatFatG": 8,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 7,
+      "addedSugarG": 2,
+      "sodiumMg": 2000,
+      "potassiumMg": 240
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "ramen",
+      "spicy"
+    ]
+  },
+  {
+    "id": "ramen_palbo_bibim",
+    "labels": {
+      "ko": "팔도 비빔면(1봉, 조리)",
+      "en": "Paldo Bibim Noodles (Prepared)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 500,
+      "proteinG": 9,
+      "carbG": 85,
+      "fatG": 12,
+      "fiberG": 2,
+      "unsatFatG": 6,
+      "satFatG": 4,
+      "transFatG": 0,
+      "sugarG": 10,
+      "addedSugarG": 4,
+      "sodiumMg": 1500,
+      "potassiumMg": 220
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "ramen"
+    ]
+  },
+  {
+    "id": "kimchi_fried_rice_spam",
+    "labels": {
+      "ko": "스팸 김치볶음밥",
+      "en": "Spam Kimchi Fried Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 700,
+      "proteinG": 22,
+      "carbG": 85,
+      "fatG": 28,
+      "fiberG": 3,
+      "unsatFatG": 15,
+      "satFatG": 9,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 1,
+      "sodiumMg": 1300,
+      "potassiumMg": 260
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "garlic_egg_fried_rice",
+    "labels": {
+      "ko": "마늘계란볶음밥",
+      "en": "Garlic Egg Fried Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 580,
+      "proteinG": 17,
+      "carbG": 82,
+      "fatG": 18,
+      "fiberG": 2,
+      "unsatFatG": 10,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 650,
+      "potassiumMg": 240
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean",
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "kimchi_egg_rice_bowl",
+    "labels": {
+      "ko": "김치계란 덮밥",
+      "en": "Kimchi Egg Rice Bowl"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 540,
+      "proteinG": 16,
+      "carbG": 75,
+      "fatG": 16,
+      "fiberG": 3,
+      "unsatFatG": 9,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 1,
+      "sodiumMg": 950,
+      "potassiumMg": 260
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "canned_tuna_salad",
+    "labels": {
+      "ko": "참치샐러드(간단)",
+      "en": "Simple Tuna Salad"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 320,
+      "proteinG": 24,
+      "carbG": 6,
+      "fatG": 22,
+      "fiberG": 3,
+      "unsatFatG": 13,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 600,
+      "potassiumMg": 350
+    },
+    "category": "meal",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy",
+      "salad"
+    ]
+  },
+  {
+    "id": "chicken_salad_plain",
+    "labels": {
+      "ko": "닭가슴살 샐러드(소스 X)",
+      "en": "Chicken Salad (No Dressing)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 280,
+      "proteinG": 30,
+      "carbG": 10,
+      "fatG": 12,
+      "fiberG": 4,
+      "unsatFatG": 6,
+      "satFatG": 3,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 0,
+      "sodiumMg": 250,
+      "potassiumMg": 450
+    },
+    "category": "meal",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "light",
+      "no_dressing"
+    ]
+  },
+  {
+    "id": "avocado_toast",
+    "labels": {
+      "ko": "아보카도 토스트",
+      "en": "Avocado Toast"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 320,
+      "proteinG": 6,
+      "carbG": 30,
+      "fatG": 18,
+      "fiberG": 7,
+      "unsatFatG": 12,
+      "satFatG": 3,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 400,
+      "potassiumMg": 450
+    },
+    "category": "meal",
+    "cuisine": [
+      "western"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "kimchi_udon",
+    "labels": {
+      "ko": "김치우동",
+      "en": "Kimchi Udon"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 560,
+      "proteinG": 16,
+      "carbG": 90,
+      "fatG": 14,
+      "fiberG": 4,
+      "unsatFatG": 7,
+      "satFatG": 4,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 1,
+      "sodiumMg": 1600,
+      "potassiumMg": 300
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean",
+      "japanese"
+    ],
+    "tags": [
+      "noodle"
+    ]
+  },
+  {
+    "id": "tuna_kimbap",
+    "labels": {
+      "ko": "참치김밥",
+      "en": "Tuna Kimbap"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "roll"
+    },
+    "nutrition": {
+      "kcal": 520,
+      "proteinG": 20,
+      "carbG": 75,
+      "fatG": 16,
+      "fiberG": 4,
+      "unsatFatG": 9,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 5,
+      "addedSugarG": 0,
+      "sodiumMg": 900,
+      "potassiumMg": 260
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "ham_cheese_sandwich",
+    "labels": {
+      "ko": "햄치즈 샌드위치",
+      "en": "Ham & Cheese Sandwich"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 430,
+      "proteinG": 18,
+      "carbG": 42,
+      "fatG": 20,
+      "fiberG": 3,
+      "unsatFatG": 10,
+      "satFatG": 7,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 1,
+      "sodiumMg": 900,
+      "potassiumMg": 250
+    },
+    "category": "meal",
+    "cuisine": [
+      "western"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "peanut_butter_banana_toast",
+    "labels": {
+      "ko": "땅콩버터 바나나 토스트",
+      "en": "Peanut Butter Banana Toast"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 380,
+      "proteinG": 10,
+      "carbG": 45,
+      "fatG": 18,
+      "fiberG": 5,
+      "unsatFatG": 11,
+      "satFatG": 4,
+      "transFatG": 0,
+      "sugarG": 12,
+      "addedSugarG": 2,
+      "sodiumMg": 300,
+      "potassiumMg": 420
+    },
+    "category": "meal",
+    "cuisine": [
+      "western"
+    ],
+    "tags": [
+      "home",
+      "easy",
+      "sweet"
+    ]
+  },
+  {
+    "id": "kimchi_cheese_rice",
+    "labels": {
+      "ko": "김치치즈밥",
+      "en": "Kimchi Cheese Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bowl"
+    },
+    "nutrition": {
+      "kcal": 610,
+      "proteinG": 18,
+      "carbG": 78,
+      "fatG": 22,
+      "fiberG": 3,
+      "unsatFatG": 12,
+      "satFatG": 7,
+      "transFatG": 0,
+      "sugarG": 5,
+      "addedSugarG": 0,
+      "sodiumMg": 1100,
+      "potassiumMg": 260
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "rice_ball_tuna",
+    "labels": {
+      "ko": "참치 주먹밥",
+      "en": "Tuna Rice Ball"
+    },
+    "serving": {
+      "size": 2,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 420,
+      "proteinG": 14,
+      "carbG": 68,
+      "fatG": 10,
+      "fiberG": 2,
+      "unsatFatG": 5,
+      "satFatG": 3,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 700,
+      "potassiumMg": 220
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "rice_ball_spam",
+    "labels": {
+      "ko": "스팸 주먹밥",
+      "en": "Spam Rice Ball"
+    },
+    "serving": {
+      "size": 2,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 480,
+      "proteinG": 16,
+      "carbG": 66,
+      "fatG": 16,
+      "fiberG": 2,
+      "unsatFatG": 8,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 900,
+      "potassiumMg": 220
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "microwave_fried_rice",
+    "labels": {
+      "ko": "냉동 볶음밥(전자레인지)",
+      "en": "Microwave Fried Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 520,
+      "proteinG": 12,
+      "carbG": 88,
+      "fatG": 14,
+      "fiberG": 3,
+      "unsatFatG": 7,
+      "satFatG": 4,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 1,
+      "sodiumMg": 950,
+      "potassiumMg": 200
+    },
+    "category": "meal",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "microwave_curry_rice",
+    "labels": {
+      "ko": "레토르트 카레밥",
+      "en": "Retort Curry Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "plate"
+    },
+    "nutrition": {
+      "kcal": 700,
+      "proteinG": 15,
+      "carbG": 105,
+      "fatG": 18,
+      "fiberG": 4,
+      "unsatFatG": 9,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 7,
+      "addedSugarG": 2,
+      "sodiumMg": 1000,
+      "potassiumMg": 260
+    },
+    "category": "meal",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "home",
+      "easy"
+    ]
+  },
+  {
+    "id": "banchan_spinach_namul",
+    "labels": {
+      "ko": "시금치나물",
+      "en": "Spinach Namul"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 80,
+      "proteinG": 3,
+      "carbG": 6,
+      "fatG": 5,
+      "fiberG": 3,
+      "unsatFatG": 3,
+      "satFatG": 1,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 250,
+      "potassiumMg": 350
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_bean_sprout",
+    "labels": {
+      "ko": "콩나물무침",
+      "en": "Bean Sprout Namul"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 70,
+      "proteinG": 4,
+      "carbG": 6,
+      "fatG": 3,
+      "fiberG": 2.5,
+      "unsatFatG": 2,
+      "satFatG": 0.5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 220,
+      "potassiumMg": 300
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_fernbrake",
+    "labels": {
+      "ko": "고사리나물",
+      "en": "Fernbrake Namul"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 90,
+      "proteinG": 3,
+      "carbG": 9,
+      "fatG": 4,
+      "fiberG": 3,
+      "unsatFatG": 2.5,
+      "satFatG": 0.8,
+      "transFatG": 0,
+      "sugarG": 1.5,
+      "addedSugarG": 0,
+      "sodiumMg": 240,
+      "potassiumMg": 320
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_zucchini",
+    "labels": {
+      "ko": "애호박볶음",
+      "en": "Stir-fried Zucchini"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 85,
+      "proteinG": 2,
+      "carbG": 7,
+      "fatG": 5,
+      "fiberG": 2,
+      "unsatFatG": 3,
+      "satFatG": 1,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 200,
+      "potassiumMg": 260
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_stir_fried_anchovy",
+    "labels": {
+      "ko": "멸치볶음",
+      "en": "Stir-fried Anchovies"
+    },
+    "serving": {
+      "size": 40,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 120,
+      "proteinG": 12,
+      "carbG": 6,
+      "fatG": 5,
+      "fiberG": 0.5,
+      "unsatFatG": 3,
+      "satFatG": 1,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 3,
+      "sodiumMg": 450,
+      "potassiumMg": 180
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_soy_braised_egg",
+    "labels": {
+      "ko": "계란장조림",
+      "en": "Soy Braised Eggs"
+    },
+    "serving": {
+      "size": 2,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 140,
+      "proteinG": 12,
+      "carbG": 2,
+      "fatG": 9,
+      "fiberG": 0,
+      "unsatFatG": 5,
+      "satFatG": 3,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 400,
+      "potassiumMg": 120
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_tofu_jorim",
+    "labels": {
+      "ko": "두부조림",
+      "en": "Braised Tofu"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 180,
+      "proteinG": 14,
+      "carbG": 6,
+      "fatG": 10,
+      "fiberG": 1,
+      "unsatFatG": 6,
+      "satFatG": 2,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 500,
+      "potassiumMg": 200
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_kongjorim",
+    "labels": {
+      "ko": "콩자반",
+      "en": "Soy Braised Beans"
+    },
+    "serving": {
+      "size": 40,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 150,
+      "proteinG": 8,
+      "carbG": 20,
+      "fatG": 3,
+      "fiberG": 3,
+      "unsatFatG": 2,
+      "satFatG": 0.5,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 4,
+      "sodiumMg": 350,
+      "potassiumMg": 180
+    },
+    "category": "snack",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_pickled_radish",
+    "labels": {
+      "ko": "단무지",
+      "en": "Pickled Radish"
+    },
+    "serving": {
+      "size": 50,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 15,
+      "proteinG": 0.3,
+      "carbG": 3,
+      "fatG": 0,
+      "fiberG": 0.5,
+      "unsatFatG": 0,
+      "satFatG": 0,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 1,
+      "sodiumMg": 350,
+      "potassiumMg": 60
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan",
+      "pickled"
+    ]
+  },
+  {
+    "id": "banchan_cucumber_salad",
+    "labels": {
+      "ko": "오이무침",
+      "en": "Spicy Cucumber Salad"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 60,
+      "proteinG": 1,
+      "carbG": 6,
+      "fatG": 3,
+      "fiberG": 1.5,
+      "unsatFatG": 2,
+      "satFatG": 0.5,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 250,
+      "potassiumMg": 150
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_radish_kimchi",
+    "labels": {
+      "ko": "깍두기",
+      "en": "Radish Kimchi"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 25,
+      "proteinG": 1,
+      "carbG": 5,
+      "fatG": 0.3,
+      "fiberG": 1.5,
+      "unsatFatG": 0,
+      "satFatG": 0,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 500,
+      "potassiumMg": 120
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan",
+      "fermented"
+    ]
+  },
+  {
+    "id": "banchan_seaweed",
+    "labels": {
+      "ko": "김(구운 김)",
+      "en": "Roasted Seaweed"
+    },
+    "serving": {
+      "size": 5,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 25,
+      "proteinG": 2,
+      "carbG": 2,
+      "fatG": 1.5,
+      "fiberG": 0.8,
+      "unsatFatG": 1,
+      "satFatG": 0.3,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 120,
+      "potassiumMg": 60
+    },
+    "category": "snack",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_braised_potato",
+    "labels": {
+      "ko": "감자조림",
+      "en": "Braised Potatoes"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 160,
+      "proteinG": 2,
+      "carbG": 30,
+      "fatG": 3,
+      "fiberG": 2,
+      "unsatFatG": 2,
+      "satFatG": 0.6,
+      "transFatG": 0,
+      "sugarG": 6,
+      "addedSugarG": 4,
+      "sodiumMg": 350,
+      "potassiumMg": 300
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_stir_fried_kimchi",
+    "labels": {
+      "ko": "김치볶음",
+      "en": "Stir-fried Kimchi"
+    },
+    "serving": {
+      "size": 80,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 70,
+      "proteinG": 2,
+      "carbG": 6,
+      "fatG": 4,
+      "fiberG": 2,
+      "unsatFatG": 2.5,
+      "satFatG": 0.8,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 400,
+      "potassiumMg": 140
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_pickled_perilla",
+    "labels": {
+      "ko": "깻잎장아찌",
+      "en": "Pickled Perilla Leaves"
+    },
+    "serving": {
+      "size": 40,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 60,
+      "proteinG": 2,
+      "carbG": 7,
+      "fatG": 2,
+      "fiberG": 2,
+      "unsatFatG": 1,
+      "satFatG": 0.4,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 1,
+      "sodiumMg": 500,
+      "potassiumMg": 120
+    },
+    "category": "veg",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan",
+      "pickled"
+    ]
+  },
+  {
+    "id": "banchan_steamed_egg",
+    "labels": {
+      "ko": "계란찜",
+      "en": "Steamed Egg"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 180,
+      "proteinG": 14,
+      "carbG": 2,
+      "fatG": 12,
+      "fiberG": 0,
+      "unsatFatG": 6,
+      "satFatG": 4,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 320,
+      "potassiumMg": 120
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_spicy_pork",
+    "labels": {
+      "ko": "제육볶음",
+      "en": "Spicy Pork Stir-fry"
+    },
+    "serving": {
+      "size": 120,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 320,
+      "proteinG": 24,
+      "carbG": 12,
+      "fatG": 18,
+      "fiberG": 2,
+      "unsatFatG": 10,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 5,
+      "addedSugarG": 2,
+      "sodiumMg": 700,
+      "potassiumMg": 280
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
+  },
+  {
+    "id": "banchan_braised_quail_eggs",
+    "labels": {
+      "ko": "메추리알 장조림",
+      "en": "Braised Quail Eggs"
+    },
+    "serving": {
+      "size": 6,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 130,
+      "proteinG": 10,
+      "carbG": 2,
+      "fatG": 8,
+      "fiberG": 0,
+      "unsatFatG": 4,
+      "satFatG": 2.5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 380,
+      "potassiumMg": 100
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "banchan"
+    ]
   }
 ];

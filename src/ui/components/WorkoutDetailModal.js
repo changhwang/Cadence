@@ -1,6 +1,7 @@
 import { el } from '../../utils/dom.js';
 import { openModal } from './Modal.js';
 import { todayIso } from '../../utils/date.js';
+import { fromDisplayWeight, roundWeight, toDisplayWeight } from '../../utils/units.js';
 
 const formatDate = (dateISO) => dateISO || '';
 const formatTime = (seconds) => {
@@ -31,6 +32,7 @@ const getNextIncompleteSetIndex = (setsDetail) => {
 
 export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
     const userdb = store.getState().userdb;
+    const unit = store.getState().settings?.units?.workout || 'kg';
     const isToday = dateISO === todayIso();
     const targetState = {
         sets: Number(log.target?.sets || log.sets || 3),
@@ -64,12 +66,12 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         const rows = prevSets.length
             ? prevSets.map((set, index) => {
                 const reps = Number(set.reps || 0);
-                const weight = Number(set.weight || 0);
+                const weight = roundWeight(toDisplayWeight(Number(set.weight || 0), unit), 1);
                 return el(
                     'div',
                     { className: 'set-row' },
                     el('div', { className: 'set-label' }, `세트 ${index + 1}`),
-                    el('div', { className: 'badge' }, `${weight}${log.unit || ''} · ${reps}회`)
+                    el('div', { className: 'badge' }, `${weight}${unit} · ${reps}회`)
                 );
             })
             : [el('div', { className: 'list-subtitle' }, '이전 세트 기록이 없습니다.')];
@@ -127,7 +129,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         logList.textContent = '';
         setsDetail.forEach((set, index) => {
             const reps = Number(set.reps || 0);
-            const weight = Number(set.weight || 0);
+            const weight = roundWeight(toDisplayWeight(Number(set.weight || 0), unit), 1);
             const duration = Number(set.duration || 0);
             const editButton = el(
                 'button',
@@ -167,7 +169,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
                         'div',
                         { className: 'badge' },
                         set.completed
-                            ? `${weight}${log.unit || ''} · ${reps}회${duration ? ` · ${duration}s` : ''}`
+                            ? `${weight}${unit} · ${reps}회${duration ? ` · ${duration}s` : ''}`
                             : '미기록'
                     ),
                     el('div', { className: 'set-actions' }, editButton, deleteButton)
@@ -182,13 +184,18 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         if (editingIndex === null || !setsDetail[editingIndex]) return;
         const current = setsDetail[editingIndex];
         const repsInput = el('input', { type: 'number', min: '1', value: current.reps || defaultReps });
-        const weightInput = el('input', { type: 'number', min: '0', step: '0.1', value: current.weight || defaultWeight });
+        const weightInput = el('input', {
+            type: 'number',
+            min: '0',
+            step: '0.1',
+            value: roundWeight(toDisplayWeight(current.weight || defaultWeight, unit), 1)
+        });
         const completedInput = el('input', { type: 'checkbox', checked: Boolean(current.completed) });
         const saveButton = el('button', { type: 'button', className: 'btn' }, '저장');
         const cancelButton = el('button', { type: 'button', className: 'btn btn-text' }, '닫기');
         saveButton.addEventListener('click', () => {
             const reps = Number(repsInput.value || 0);
-            const weight = Number(weightInput.value || 0);
+            const weight = fromDisplayWeight(Number(weightInput.value || 0), unit);
             if (!reps || Number.isNaN(reps)) return;
             current.reps = reps;
             current.weight = Number.isNaN(weight) ? 0 : weight;
@@ -205,7 +212,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         });
         editPanel.appendChild(el('div', { className: 'section-title' }, `세트 ${editingIndex + 1} 수정`));
         editPanel.appendChild(el('label', { className: 'input-label' }, '횟수', repsInput));
-        editPanel.appendChild(el('label', { className: 'input-label' }, `중량(${log.unit || 'kg'})`, weightInput));
+        editPanel.appendChild(el('label', { className: 'input-label' }, `중량(${unit})`, weightInput));
         editPanel.appendChild(el('label', { className: 'input-label' }, '완료', completedInput));
         editPanel.appendChild(el('div', { className: 'row row-gap' }, saveButton, cancelButton));
     };
@@ -264,12 +271,20 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         if (mode === 'log') {
             timerStatus.textContent = restRunning ? '휴식 중 · 기록 입력' : '기록 입력';
             const repsInput = el('input', { type: 'number', min: '1', value: setsDetail[activeSetIndex]?.reps || defaultReps });
-            const weightInput = el('input', { type: 'number', min: '0', step: '0.1', value: setsDetail[activeSetIndex]?.weight || defaultWeight });
+            const weightInput = el('input', {
+                type: 'number',
+                min: '0',
+                step: '0.1',
+                value: roundWeight(
+                    toDisplayWeight(setsDetail[activeSetIndex]?.weight || defaultWeight, unit),
+                    1
+                )
+            });
             logArea.appendChild(
                 el('label', { className: 'input-label' }, '횟수', repsInput)
             );
             logArea.appendChild(
-                el('label', { className: 'input-label' }, `중량(${log.unit || 'kg'})`, weightInput)
+                el('label', { className: 'input-label' }, `중량(${unit})`, weightInput)
             );
             controls.appendChild(
                 el(
@@ -280,7 +295,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
             );
             controls.lastChild.addEventListener('click', () => {
                 const reps = Number(repsInput.value || 0);
-                const weight = Number(weightInput.value || 0);
+                const weight = fromDisplayWeight(Number(weightInput.value || 0), unit);
                 const duration = Math.max(0, Math.round((Date.now() - workStartAt) / 1000));
                 if (!reps || Number.isNaN(reps)) return;
                 const targetSet = setsDetail[activeSetIndex];

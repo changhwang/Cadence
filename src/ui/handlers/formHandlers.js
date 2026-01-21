@@ -4,6 +4,7 @@ import { computeBaseTargets } from '../../services/nutrition/targetEngine.js';
 import { calcAge, parseDateInput, todayIso } from '../../utils/date.js';
 import { updateUserDb } from '../store/userDb.js';
 import { createWorkoutLog } from '../workout/workoutLogUtils.js';
+import { fromDisplayWeight } from '../../utils/units.js';
 import { buildGoalModeSpec } from '../goals/goalUtils.js';
 
 export const handleDietAddSubmit = (store, event, form) => {
@@ -41,15 +42,16 @@ export const handleWorkoutSubmit = (store, event, form) => {
     const name = nameInput ? nameInput.value.trim() : '';
     const sets = Number(setsInput ? setsInput.value : 0);
     const reps = Number(repsInput ? repsInput.value : 0);
-    const weight = Number(weightInput ? weightInput.value : 0);
-    const unit = unitSelect ? unitSelect.value : 'kg';
+    const settingsUnit = store.getState().settings.units?.workout || 'kg';
+    const weight = fromDisplayWeight(Number(weightInput ? weightInput.value : 0), settingsUnit);
+    const unit = unitSelect ? unitSelect.value : settingsUnit;
 
     if (!name || sets <= 0 || reps <= 0) return;
 
     updateUserDb(store, (userdb) => {
         const dateKey = userdb.meta.selectedDate.workout;
         const entry = userdb.workout[dateKey] || { logs: [] };
-        const nextLog = createWorkoutLog({ name, sets, reps, weight, unit });
+    const nextLog = createWorkoutLog({ name, sets, reps, weight, unit: settingsUnit });
         entry.logs = entry.logs.concat(nextLog);
         userdb.workout[dateKey] = entry;
         userdb.updatedAt = new Date().toISOString();
@@ -200,6 +202,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         }
         nextDb.updatedAt = new Date().toISOString();
     });
+    window.alert('설정이 저장되었습니다.');
 };
 
 export const handleDietWaterChange = (store, actionEl) => {

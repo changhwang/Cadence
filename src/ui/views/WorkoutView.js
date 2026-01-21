@@ -6,6 +6,7 @@ import { EXERCISE_DB } from '../../data/exercises.js';
 import { estimateCardioKcal } from '../../services/workout/energy.js';
 import { todayIso } from '../../utils/date.js';
 import { getLabelByLang } from '../utils/labels.js';
+import { roundWeight, toDisplayWeight } from '../../utils/units.js';
 
 const getWorkoutEntry = (userdb, dateKey) => {
     return userdb.workout[dateKey] || { logs: [] };
@@ -19,7 +20,7 @@ const getCardioLogs = (entry) => {
     return [];
 };
 
-const renderWorkoutList = (logs, lang, manageMode, isToday) => {
+const renderWorkoutList = (logs, lang, manageMode, isToday, unit) => {
     if (logs.length === 0) {
         return el('p', { className: 'empty-state' }, '아직 기록이 없습니다.');
     }
@@ -34,11 +35,10 @@ const renderWorkoutList = (logs, lang, manageMode, isToday) => {
         const totalReps = setsDetail.length
             ? setsDetail.reduce((sum, set) => sum + Number(set.reps || 0), 0)
             : Number(log.reps || 0) * totalSets;
-        const avgWeight = setsDetail.length
-            ? Math.round(
-                setsDetail.reduce((sum, set) => sum + Number(set.weight || 0), 0) / setsDetail.length
-            )
+        const avgWeightKg = setsDetail.length
+            ? setsDetail.reduce((sum, set) => sum + Number(set.weight || 0), 0) / setsDetail.length
             : Number(log.weight || 0);
+        const avgWeight = roundWeight(toDisplayWeight(avgWeightKg, unit), 1);
         const hasCompleted = setsDetail.some((set) => Boolean(set.completed));
         const actionButton = isToday && !hasCompleted
             ? el(
@@ -60,7 +60,7 @@ const renderWorkoutList = (logs, lang, manageMode, isToday) => {
                 '수정/삭제'
             );
         const setText = totalReps > 0 ? `${totalSets}세트 · ${totalReps}회` : `${totalSets}세트`;
-        const weightText = avgWeight > 0 ? `평균 ${avgWeight}${log.unit}` : '중량 없음';
+        const weightText = avgWeight > 0 ? `평균 ${avgWeight}${unit}` : '중량 없음';
         const summaryText = `${setText} · ${weightText}`;
         const selectBox = manageMode
             ? el('input', {
@@ -163,7 +163,8 @@ export const renderWorkoutView = (container, store) => {
 
     const manageMode = Boolean(store.getState().ui.workoutManageMode);
     const isToday = dateKey === todayIso();
-    const list = renderWorkoutList(entry.logs, settings.lang, manageMode, isToday);
+    const unit = settings.units?.workout || 'kg';
+    const list = renderWorkoutList(entry.logs, settings.lang, manageMode, isToday, unit);
     const cardioLogs = getCardioLogs(entry);
     const cardioList = renderCardioList(cardioLogs, userdb, settings.lang, manageMode);
     container.appendChild(headerWrap);

@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from './constants.js';
 import { createDefaultSettings, createDefaultUserDb } from './schema.js';
+import { lbToKg } from '../utils/units.js';
 
 const safeParse = (raw, fallback) => {
     if (!raw) return fallback;
@@ -68,7 +69,7 @@ export const loadUserDb = () => {
     }
     const defaults = createDefaultUserDb();
     const parsed = safeParse(raw, defaults);
-    return {
+    const merged = {
         ...defaults,
         ...parsed,
         profile: { ...defaults.profile, ...(parsed.profile || {}) },
@@ -90,6 +91,57 @@ export const loadUserDb = () => {
             }
         }
     };
+
+    const normalizeWorkoutUnits = (userdb) => {
+        const toNumber = (value) => (Number.isNaN(Number(value)) ? 0 : Number(value));
+        const convertLog = (log) => {
+            if (!log || typeof log !== 'object') return;
+            if (log.unit === 'lb') {
+                log.weight = lbToKg(toNumber(log.weight));
+                if (Array.isArray(log.setsDetail)) {
+                    log.setsDetail = log.setsDetail.map((set) => ({
+                        ...set,
+                        weight: lbToKg(toNumber(set.weight))
+                    }));
+                }
+                log.unit = 'kg';
+                return;
+            }
+            if (!log.unit) {
+                log.unit = 'kg';
+            }
+        };
+        Object.values(userdb.workout || {}).forEach((entry) => {
+            if (!entry || !Array.isArray(entry.logs)) return;
+            entry.logs.forEach((log) => convertLog(log));
+        });
+        if (Array.isArray(userdb.routines)) {
+            userdb.routines.forEach((routine) => {
+                if (routine?.defaults?.unit === 'lb') {
+                    routine.defaults.weight = lbToKg(toNumber(routine.defaults.weight));
+                    routine.defaults.unit = 'kg';
+                } else if (routine?.defaults && !routine.defaults.unit) {
+                    routine.defaults.unit = 'kg';
+                }
+                if (routine?.defaultsById) {
+                    Object.values(routine.defaultsById).forEach((item) => {
+                        if (!item) return;
+                        if (item.unit === 'lb') {
+                            item.weight = lbToKg(toNumber(item.weight));
+                            item.unit = 'kg';
+                            return;
+                        }
+                        if (item.unit === undefined && item.weight !== undefined) {
+                            item.unit = 'kg';
+                        }
+                    });
+                }
+            });
+        }
+    };
+
+    normalizeWorkoutUnits(merged);
+    return merged;
 };
 
 export const saveSettings = (settings) => {
