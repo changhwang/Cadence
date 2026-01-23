@@ -1562,6 +1562,54 @@ input[type="range"].range-full {
     gap: 10px;
 }
 
+.body-map-silhouette {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.body-map-panel {
+    width: 46%;
+    max-width: 180px;
+    aspect-ratio: 3 / 5;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    background: #f5f7fb;
+    --body-map-scale: 1;
+    --body-map-shift-x: 0%;
+    --body-map-shift-y: 0%;
+}
+
+.body-map-panel.is-back {
+    background: #f5f7fb;
+}
+
+.body-map-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('assets/bodymap/body_front_silhouette.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.body-map-panel.is-back .body-map-bg {
+    background-image: url('assets/bodymap/body_back_silhouette.png');
+}
+
+.body-map-overlay {
+    position: absolute;
+    inset: 0;
+}
+
+.body-map-overlay svg {
+    width: 100%;
+    height: 100%;
+    transform-origin: center;
+    transform: translate(var(--body-map-shift-x), var(--body-map-shift-y)) scale(var(--body-map-scale));
+}
+
 .body-map-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

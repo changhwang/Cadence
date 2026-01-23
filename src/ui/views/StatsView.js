@@ -107,6 +107,32 @@ const statsState = {
     nutrition: { ...DEFAULT_STATE, metric: 'kcal' }
 };
 
+// TODO: Body map feature (WIP)
+// const BODYMAP_DEBUG = true;
+// const BODYMAP_SVG_CACHE = new Map();
+// const loadBodyMapSvg = (view) => {
+//     if (BODYMAP_SVG_CACHE.has(view)) return BODYMAP_SVG_CACHE.get(view);
+//     const url = view === 'back' ? 'assets/bodymap/body_back.svg' : 'assets/bodymap/body_front.svg';
+//     const promise = fetch(url)
+//         .then((res) => (res.ok ? res.text() : ''))
+//         .catch(() => '');
+//     BODYMAP_SVG_CACHE.set(view, promise);
+//     return promise;
+// };
+// const applyBodyMapColors = (container, groupColors, debugColors = {}) => {
+//     if (!container) return;
+//     const svg = container.querySelector('svg');
+//     if (!svg) return;
+//     svg.querySelectorAll('[data-group]').forEach((node) => {
+//         const group = node.getAttribute('data-group');
+//         const mappedGroup = DETAIL_TO_GROUP[group] || group;
+//         const color = BODYMAP_DEBUG
+//             ? (debugColors[group] || debugColors[mappedGroup] || 'rgba(0, 0, 0, 0)')
+//             : (groupColors[mappedGroup] || 'rgba(0, 0, 0, 0)');
+//         node.setAttribute('fill', color);
+//     });
+// };
+
 const groupOrder = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Other'];
 const GROUP_LABELS = {
     ko: {
@@ -537,35 +563,26 @@ const renderDistributionView = (container, store) => {
         acc[group] = (acc[group] || 0) + value;
         return acc;
     }, {});
-    const mapGroups = groupOrder.filter((group) => group !== 'Other');
-    const maxGroup = Math.max(...mapGroups.map((group) => groupTotals[group] || 0), 1);
-    const bodyMap = el(
-        'div',
-        { className: 'body-map-grid' },
-        ...mapGroups.map((group) => {
-            const value = groupTotals[group] || 0;
-            const intensity = Math.min(value / maxGroup, 1);
-            return el(
-                'div',
-                {
-                    className: 'body-map-cell',
-                    style: `background: rgba(0, 122, 255, ${0.15 + intensity * 0.7});`
-                },
-                el(
-                    'div',
-                    { className: 'body-map-label' },
-                    (GROUP_LABELS[state.lang] || GROUP_LABELS.ko)[group] || group
-                ),
-                el('div', { className: 'body-map-value' }, formatNumber(value))
-            );
-        })
-    );
+    // TODO: Body map feature (WIP)
+    // const mapGroups = groupOrder.filter((group) => group !== 'Other');
+    // const maxGroup = Math.max(...mapGroups.map((group) => groupTotals[group] || 0), 1);
+    // const GROUP_DEBUG_COLORS = { ... };
+    // const DETAIL_DEBUG_COLORS = { ... };
+    // const groupColors = mapGroups.reduce((acc, group) => { ... }, {});
+    // const buildMapPanel = (view) => { ... };
+    // const bodyMap = el('div', { className: 'body-map-silhouette' }, ...);
     const cardBody = state.viewMode === 'map'
         ? el(
             'div',
             { className: 'body-map-card' },
-            bodyMap,
-            el('div', { className: 'list-subtitle stats-meta' }, 'Major groups based on current metric')
+            el(
+                'div',
+                { className: 'empty-state', style: 'padding: 40px 20px; text-align: center;' },
+                el('div', { style: 'font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;' }, '준비 중'),
+                el('div', { style: 'font-size: 12px; color: var(--text-secondary);' }, state.lang === 'ko'
+                    ? '바디맵 기능은 곧 추가될 예정입니다.'
+                    : 'Body map feature coming soon.')
+            )
         )
         : list;
     container.appendChild(
