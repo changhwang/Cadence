@@ -3,7 +3,7 @@ import { closeModal, openModal } from '../components/Modal.js';
 import { updateUserDb } from '../store/userDb.js';
 import { openFoodSearchModal } from './foodModals.js';
 import { FOOD_DB } from '../../data/foods.js';
-import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime } from '../../utils/time.js';
+import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime, formatTimeHHMM } from '../../utils/time.js';
 import { fromDisplayFoodAmount, ozToG, roundWeight, toDisplayFoodAmount } from '../../utils/units.js';
 
 const formatAmount = (meal, foodUnit = 'g') => {
@@ -527,4 +527,124 @@ export const openMealBatchModal = (store, initialType = '식사', options = {}) 
     };
 
     render();
+};
+
+export const openNutrientDetailModal = (store, options = {}) => {
+    const { userdb, settings } = store.getState();
+    const dateKey = userdb.meta.selectedDate.diet;
+    const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0, logs: [] };
+    const logs = Array.isArray(entry.logs) ? entry.logs : [];
+    const nutrientType = options.nutrientType || 'kcal';
+
+    const nutrientLabels = {
+        kcal: { label: '칼로리', unit: 'kcal', icon: 'flame' },
+        water: { label: '수분', unit: settings.units?.water || 'ml', icon: 'droplet' },
+        sodiumMg: { label: '나트륨', unit: 'mg', icon: 'zap' },
+        proteinG: { label: '단백질', unit: 'g', icon: 'drumstick' },
+        carbG: { label: '탄수/당', unit: 'g', icon: 'wheat' },
+        fatG: { label: '지방', unit: 'g', icon: 'droplets' }
+    };
+
+    const config = nutrientLabels[nutrientType] || nutrientLabels.kcal;
+    const timeFormat = settings.timeFormat || 'H24';
+    const waterUnit = settings.units?.water || 'ml';
+    const isOz = waterUnit === 'oz';
+
+    // 영양소별 기여도 계산
+    const contributions = [];
+    let total = 0;
+
+    if (nutrientType === 'water') {
+        // 수분: 물 로그 + 음식의 수분량
+        logs.forEach((log) => {
+            if (log.kind === 'water') {
+                const amount = Number(log.amountMl || 0);
+                const displayAmount = isOz ? Math.round(amount / 29.5735) : amount;
+                contributions.push({
+                    name: '물',
+                    amount: displayAmount,
+                    unit: waterUnit,
+                    time: formatTimeHHMM(log.timeHHMM || timeHHMMFromDate(log.createdAt), timeFormat),
+                    pct: 0 // 나중에 계산
+                });
+                total += amount;
+            } else if (log.kind === 'meal' && log.waterMl) {
+                const amount = Number(log.waterMl || 0);
+                const displayAmount = isOz ? Math.round(amount / 29.5735) : amount;
+                contributions.push({
+                    name: log.name || '알 수 없음',
+                    amount: displayAmount,
+                    unit: waterUnit,
+                    time: formatTimeHHMM(log.timeHHMM || timeHHMMFromDate(log.createdAt), timeFormat),
+                    pct: 0
+                });
+                total += amount;
+            }
+        });
+    } else {
+        // 다른 영양소: 음식 로그만
+        logs.forEach((log) => {
+            if (log.kind === 'water') return;
+            const value = Number(log[nutrientType] || 0);
+            if (value <= 0) return;
+            contributions.push({
+                name: log.name || '알 수 없음',
+                amount: Math.round(value * 10) / 10,
+                unit: config.unit,
+                time: formatTimeHHMM(log.timeHHMM || timeHHMMFromDate(log.createdAt), timeFormat),
+                pct: 0
+            });
+            total += value;
+        });
+    }
+
+    // 비율 계산 및 정렬
+    contributions.forEach((item) => {
+        item.pct = total > 0 ? Math.round((item.amount / total) * 100) : 0;
+    });
+    contributions.sort((a, b) => b.amount - a.amount);
+
+    const list = el('div', { className: 'list' });
+    if (contributions.length === 0) {
+        list.appendChild(
+            el('div', { className: 'list-item', style: { padding: '16px', textAlign: 'center', color: '#9AA3AF' } }, '기록된 데이터가 없습니다.')
+        );
+    } else {
+        contributions.forEach((item) => {
+            const itemEl = el(
+                'div',
+                { className: 'list-item' },
+                el('div', { className: 'list-item-main' },
+                    el('div', { className: 'list-item-title' }, item.name),
+                    el('div', { className: 'list-item-subtitle', style: { fontSize: '13px', color: '#9AA3AF', marginTop: '4px' } }, item.time)
+                ),
+                el('div', { className: 'list-item-right' },
+                    el('div', { style: { fontWeight: '600', fontSize: '15px' } }, `${item.amount} ${item.unit}`),
+                    el('div', { style: { fontSize: '12px', color: '#9AA3AF', marginTop: '2px' } }, `${item.pct}%`)
+                )
+            );
+            list.appendChild(itemEl);
+        });
+    }
+
+    const totalEl = el(
+        'div',
+        { style: { padding: '12px 16px', borderTop: '1px solid var(--ios-border)', backgroundColor: 'var(--ios-bg-secondary)' } },
+        el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            el('div', { style: { fontWeight: '600', fontSize: '16px' } }, '합계'),
+            el('div', { style: { fontWeight: '600', fontSize: '16px', color: 'var(--ios-blue)' } },
+                nutrientType === 'water' && isOz
+                    ? `${Math.round(total / 29.5735)} ${waterUnit}`
+                    : `${Math.round(total)} ${config.unit}`
+            )
+        )
+    );
+
+    const body = el('div', { className: 'stack-form' }, list, totalEl);
+
+    openModal({
+        title: config.label,
+        body,
+        showClose: true
+    });
 };

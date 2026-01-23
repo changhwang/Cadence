@@ -260,12 +260,16 @@ export const renderDietView = (container, store) => {
         if (pct >= range.warning[0] && pct <= range.warning[1]) return '#FFB347';
         return '#FF6B6B';
     };
-    const buildSummaryItem = ({ icon, label, current, target, unit, type, displayValue, displayTarget }) => {
+    const buildSummaryItem = ({ icon, label, current, target, unit, type, displayValue, displayTarget, nutrientType }) => {
         const pct = target > 0 ? Math.round((current / target) * 100) : 0;
         const color = getHealthColor(current, target, type);
         return el(
             'div',
-            { className: 'diet-summary-item' },
+            {
+                className: 'diet-summary-item',
+                style: { cursor: 'pointer' },
+                dataset: { action: 'diet.nutrient.detail', nutrientType }
+            },
             el('div', { className: 'diet-summary-icon', style: { color } }, el('i', { dataset: { lucide: icon } })),
             el('div', { className: 'diet-summary-label' }, label),
             el('div', { className: 'diet-summary-current' }, `${displayValue ?? Math.round(current || 0)}`),
@@ -306,7 +310,8 @@ export const renderDietView = (container, store) => {
             current: totals.kcal || 0,
             target: targetKcal,
             unit: 'kcal',
-            type: 'calories'
+            type: 'calories',
+            nutrientType: 'kcal'
         }),
         buildSummaryItem({
             icon: 'droplet',
@@ -316,7 +321,8 @@ export const renderDietView = (container, store) => {
             unit: waterUnit,
             type: 'water',
             displayValue: displayWater(waterTotal),
-            displayTarget: displayWater(targetWater)
+            displayTarget: displayWater(targetWater),
+            nutrientType: 'water'
         }),
         buildSummaryItem({
             icon: 'zap',
@@ -324,7 +330,8 @@ export const renderDietView = (container, store) => {
             current: totals.sodiumMg || 0,
             target: targetSodium,
             unit: 'mg',
-            type: 'sodium'
+            type: 'sodium',
+            nutrientType: 'sodiumMg'
         }),
         buildSummaryItem({
             icon: 'drumstick',
@@ -332,7 +339,8 @@ export const renderDietView = (container, store) => {
             current: totals.proteinG || 0,
             target: targetProtein,
             unit: 'g',
-            type: 'protein'
+            type: 'protein',
+            nutrientType: 'proteinG'
         }),
         buildSummaryItem({
             icon: 'wheat',
@@ -340,7 +348,8 @@ export const renderDietView = (container, store) => {
             current: totals.carbG || 0,
             target: targetCarb,
             unit: 'g',
-            type: 'carbs'
+            type: 'carbs',
+            nutrientType: 'carbG'
         }),
         buildSummaryItem({
             icon: 'droplets',
@@ -348,7 +357,8 @@ export const renderDietView = (container, store) => {
             current: totals.fatG || 0,
             target: targetFat,
             unit: 'g',
-            type: 'fat'
+            type: 'fat',
+            nutrientType: 'fatG'
         })
     );
 

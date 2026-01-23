@@ -9,7 +9,7 @@ import {
     openWorkoutRoutineModal
 } from '../modals/workoutModals.js';
 import { openDietEditModal, openFoodSearchModal } from '../modals/foodModals.js';
-import { openDietAddMenuModal, openMealBatchModal, openWaterLogModal } from '../modals/dietModals.js';
+import { openDietAddMenuModal, openMealBatchModal, openWaterLogModal, openNutrientDetailModal } from '../modals/dietModals.js';
 import { openWorkoutAddMenuModal } from '../modals/menuModals.js';
 
 export const handleRouteAction = (actionEl, action) => {
@@ -71,6 +71,11 @@ export const handleDietClickAction = (store, actionEl, action) => {
     }
     if (action === 'diet.manage.toggle') {
         store.dispatch({ type: 'TOGGLE_DIET_MANAGE' });
+        return true;
+    }
+    if (action === 'diet.nutrient.detail') {
+        const nutrientType = actionEl.dataset.nutrientType;
+        openNutrientDetailModal(store, { nutrientType });
         return true;
     }
     if (action === 'diet.delete.selected') {
