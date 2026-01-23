@@ -28,7 +28,8 @@ export const FRAMEWORK_POLICIES = {
         label: 'ISSN Strength',
         protein_g_per_kg: [1.4, 2.0],
         fat_pct: [0.2, 0.35],
-        carb_pct: [0.35, 0.55]
+        carb_pct: [0.35, 0.55],
+        sodium_mg_max: 2300
     },
     acsm_endurance: {
         label: 'ACSM Endurance',

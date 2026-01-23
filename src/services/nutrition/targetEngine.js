@@ -82,6 +82,20 @@ export const computeBaseTargets = ({ profile, spec, settings }) => {
         fatG = Math.round(calcFatFromPct(targetCal, pickMid(policy.fat_pct)));
     }
 
+    // Validate and adjust macros to match targetCal
+    // Calculate current macro calories: protein*4 + carbs*4 + fat*9
+    const proteinKcal = (proteinG || 0) * 4;
+    const carbsKcal = (carbsG || 0) * 4;
+    const fatKcal = (fatG || 0) * 9;
+    const totalMacroKcal = proteinKcal + carbsKcal + fatKcal;
+    const diffKcal = targetCal - totalMacroKcal;
+
+    // If there's a significant difference (>10kcal), adjust carbs to match
+    if (Math.abs(diffKcal) > 10 && carbsG !== null) {
+        carbsG = Math.round(carbsG + diffKcal / 4);
+        carbsG = clamp(carbsG, 0, 999);
+    }
+
     const targets = {
         kcal: targetCal,
         proteinG: clamp(proteinG, 0, 999),
