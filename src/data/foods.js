@@ -24790,5 +24790,1157 @@ export const FOOD_DB = [
     "tags": [
       "banchan"
     ]
+  },
+  // 프로틴 제품
+  {
+    "id": "protein_bar_chocolate",
+    "labels": {
+      "ko": "프로틴바(초콜릿)",
+      "en": "Protein Bar (Chocolate)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 222,
+      "proteinG": 20,
+      "carbG": 22,
+      "fatG": 6,
+      "fiberG": 5,
+      "unsatFatG": 3,
+      "satFatG": 2.5,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 2,
+      "sodiumMg": 200,
+      "potassiumMg": 150
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement"
+    ]
+  },
+  {
+    "id": "protein_bar_peanut",
+    "labels": {
+      "ko": "프로틴바(땅콩)",
+      "en": "Protein Bar (Peanut)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 232,
+      "proteinG": 20,
+      "carbG": 20,
+      "fatG": 8,
+      "fiberG": 4,
+      "unsatFatG": 5,
+      "satFatG": 2.5,
+      "transFatG": 0,
+      "sugarG": 4,
+      "addedSugarG": 2,
+      "sodiumMg": 180,
+      "potassiumMg": 200
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement"
+    ]
+  },
+  {
+    "id": "protein_shake_vanilla",
+    "labels": {
+      "ko": "프로틴 쉐이크(바닐라)",
+      "en": "Protein Shake (Vanilla)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 138,
+      "proteinG": 25,
+      "carbG": 5,
+      "fatG": 2,
+      "fiberG": 0,
+      "unsatFatG": 0.5,
+      "satFatG": 1,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 1,
+      "sodiumMg": 120,
+      "potassiumMg": 200
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement",
+      "drink"
+    ]
+  },
+  {
+    "id": "protein_shake_chocolate",
+    "labels": {
+      "ko": "프로틴 쉐이크(초콜릿)",
+      "en": "Protein Shake (Chocolate)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 160,
+      "proteinG": 25,
+      "carbG": 6,
+      "fatG": 2.5,
+      "fiberG": 1,
+      "unsatFatG": 0.7,
+      "satFatG": 1.2,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 2,
+      "sodiumMg": 130,
+      "potassiumMg": 220
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement",
+      "drink"
+    ]
+  },
+  {
+    "id": "protein_shake_strawberry",
+    "labels": {
+      "ko": "프로틴 쉐이크(딸기)",
+      "en": "Protein Shake (Strawberry)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 150,
+      "proteinG": 25,
+      "carbG": 5,
+      "fatG": 2,
+      "fiberG": 0,
+      "unsatFatG": 0.5,
+      "satFatG": 1,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 1,
+      "sodiumMg": 120,
+      "potassiumMg": 200
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement",
+      "drink"
+    ]
+  },
+  {
+    "id": "casein_protein",
+    "labels": {
+      "ko": "케이스인 프로틴(1스쿱)",
+      "en": "Casein Protein (1 scoop)"
+    },
+    "serving": {
+      "size": 30,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 110,
+      "proteinG": 24,
+      "carbG": 2,
+      "fatG": 1,
+      "fiberG": 0,
+      "unsatFatG": 0.3,
+      "satFatG": 0.5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 90,
+      "potassiumMg": 140
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement"
+    ]
+  },
+  {
+    "id": "plant_protein",
+    "labels": {
+      "ko": "식물성 프로틴(1스쿱)",
+      "en": "Plant Protein (1 scoop)"
+    },
+    "serving": {
+      "size": 30,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 127,
+      "proteinG": 22,
+      "carbG": 4,
+      "fatG": 2.5,
+      "fiberG": 2,
+      "unsatFatG": 1.5,
+      "satFatG": 0.5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 150,
+      "potassiumMg": 180
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement"
+    ]
+  },
+  // 소고기 부위
+  {
+    "id": "beef_flank",
+    "labels": {
+      "ko": "소고기 부채살",
+      "en": "Beef Flank Steak"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 192,
+      "proteinG": 28,
+      "carbG": 0,
+      "fatG": 8.5,
+      "fiberG": 0,
+      "unsatFatG": 4.5,
+      "satFatG": 3.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 60,
+      "potassiumMg": 300
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_skirt",
+    "labels": {
+      "ko": "소고기 치마살",
+      "en": "Beef Skirt Steak"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 205,
+      "proteinG": 27,
+      "carbG": 0,
+      "fatG": 10,
+      "fiberG": 0,
+      "unsatFatG": 5.5,
+      "satFatG": 4,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 65,
+      "potassiumMg": 290
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_ribs",
+    "labels": {
+      "ko": "소고기 갈비살",
+      "en": "Beef Ribs"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 250,
+      "proteinG": 26,
+      "carbG": 0,
+      "fatG": 16,
+      "fiberG": 0,
+      "unsatFatG": 8,
+      "satFatG": 7,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 70,
+      "potassiumMg": 280
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_chuck",
+    "labels": {
+      "ko": "소고기 목살",
+      "en": "Beef Chuck"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 215,
+      "proteinG": 27,
+      "carbG": 0,
+      "fatG": 11,
+      "fiberG": 0,
+      "unsatFatG": 5.5,
+      "satFatG": 4.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 65,
+      "potassiumMg": 295
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_round",
+    "labels": {
+      "ko": "소고기 우둔살",
+      "en": "Beef Round"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 175,
+      "proteinG": 30,
+      "carbG": 0,
+      "fatG": 6,
+      "fiberG": 0,
+      "unsatFatG": 3,
+      "satFatG": 2.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 55,
+      "potassiumMg": 320
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_striploin",
+    "labels": {
+      "ko": "소고기 채끝살",
+      "en": "Beef Striploin"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 240,
+      "proteinG": 25,
+      "carbG": 0,
+      "fatG": 15,
+      "fiberG": 0,
+      "unsatFatG": 7.5,
+      "satFatG": 6.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 70,
+      "potassiumMg": 270
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_ribeye",
+    "labels": {
+      "ko": "소고기 꽃등심",
+      "en": "Beef Ribeye"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 280,
+      "proteinG": 24,
+      "carbG": 0,
+      "fatG": 20,
+      "fiberG": 0,
+      "unsatFatG": 10,
+      "satFatG": 9,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 75,
+      "potassiumMg": 260
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_chuck_eye",
+    "labels": {
+      "ko": "소고기 살치살",
+      "en": "Beef Chuck Eye"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 270,
+      "proteinG": 25,
+      "carbG": 0,
+      "fatG": 19,
+      "fiberG": 0,
+      "unsatFatG": 9.5,
+      "satFatG": 8.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 72,
+      "potassiumMg": 265
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_short_ribs",
+    "labels": {
+      "ko": "소고기 갈비(찜용)",
+      "en": "Beef Short Ribs"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 295,
+      "proteinG": 23,
+      "carbG": 0,
+      "fatG": 22,
+      "fiberG": 0,
+      "unsatFatG": 11,
+      "satFatG": 10,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 80,
+      "potassiumMg": 250
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "beef_shank",
+    "labels": {
+      "ko": "소고기 사태",
+      "en": "Beef Shank"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 180,
+      "proteinG": 29,
+      "carbG": 0,
+      "fatG": 7,
+      "fiberG": 0,
+      "unsatFatG": 3.5,
+      "satFatG": 3,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 58,
+      "potassiumMg": 310
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  // 혼자 사는 20-30대 남자 필수 음식들
+  {
+    "id": "spam",
+    "labels": {
+      "ko": "스팸",
+      "en": "Spam"
+    },
+    "serving": {
+      "size": 50,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 150,
+      "proteinG": 7,
+      "carbG": 1,
+      "fatG": 13,
+      "fiberG": 0,
+      "unsatFatG": 6,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 790,
+      "potassiumMg": 120
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "processed"
+    ]
+  },
+  {
+    "id": "instant_rice",
+    "labels": {
+      "ko": "즉석밥(햇반)",
+      "en": "Instant Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "pack"
+    },
+    "nutrition": {
+      "kcal": 300,
+      "proteinG": 6,
+      "carbG": 65,
+      "fatG": 1,
+      "fiberG": 1,
+      "unsatFatG": 0.3,
+      "satFatG": 0.2,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 5,
+      "potassiumMg": 50
+    },
+    "category": "carb",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "convenience"
+    ]
+  },
+  {
+    "id": "tuna_can_oil",
+    "labels": {
+      "ko": "참치캔(기름)",
+      "en": "Tuna Can (Oil)"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 198,
+      "proteinG": 25,
+      "carbG": 0,
+      "fatG": 10,
+      "fiberG": 0,
+      "unsatFatG": 6,
+      "satFatG": 2.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 396,
+      "potassiumMg": 237
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "canned"
+    ]
+  },
+  {
+    "id": "mackerel_can",
+    "labels": {
+      "ko": "고등어 통조림",
+      "en": "Canned Mackerel"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 251,
+      "proteinG": 20,
+      "carbG": 0,
+      "fatG": 19,
+      "fiberG": 0,
+      "unsatFatG": 12,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 450,
+      "potassiumMg": 300
+    },
+    "category": "protein",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "canned"
+    ]
+  },
+  {
+    "id": "frozen_dumpling",
+    "labels": {
+      "ko": "냉동만두",
+      "en": "Frozen Dumpling"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 195,
+      "proteinG": 8,
+      "carbG": 28,
+      "fatG": 6,
+      "fiberG": 1,
+      "unsatFatG": 3,
+      "satFatG": 2.5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 450,
+      "potassiumMg": 150
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "frozen"
+    ]
+  },
+  {
+    "id": "frozen_pizza",
+    "labels": {
+      "ko": "냉동피자(1조각)",
+      "en": "Frozen Pizza (1 slice)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "slice"
+    },
+    "nutrition": {
+      "kcal": 280,
+      "proteinG": 12,
+      "carbG": 32,
+      "fatG": 12,
+      "fiberG": 2,
+      "unsatFatG": 5,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 2,
+      "sodiumMg": 580,
+      "potassiumMg": 180
+    },
+    "category": "meal",
+    "cuisine": [
+      "western"
+    ],
+    "tags": [
+      "frozen"
+    ]
+  },
+  {
+    "id": "kimbap_triangle",
+    "labels": {
+      "ko": "삼각김밥",
+      "en": "Triangle Kimbap"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 200,
+      "proteinG": 5,
+      "carbG": 35,
+      "fatG": 4,
+      "fiberG": 1,
+      "unsatFatG": 2,
+      "satFatG": 1.5,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 650,
+      "potassiumMg": 100
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "convenience"
+    ]
+  },
+  {
+    "id": "convenience_store_lunchbox",
+    "labels": {
+      "ko": "편의점 도시락",
+      "en": "Convenience Store Lunchbox"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "pack"
+    },
+    "nutrition": {
+      "kcal": 550,
+      "proteinG": 20,
+      "carbG": 75,
+      "fatG": 15,
+      "fiberG": 3,
+      "unsatFatG": 7,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 8,
+      "addedSugarG": 5,
+      "sodiumMg": 1200,
+      "potassiumMg": 400
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": [
+      "convenience"
+    ]
+  },
+  {
+    "id": "sausage",
+    "labels": {
+      "ko": "소시지",
+      "en": "Sausage"
+    },
+    "serving": {
+      "size": 50,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 150,
+      "proteinG": 7,
+      "carbG": 2,
+      "fatG": 12,
+      "fiberG": 0,
+      "unsatFatG": 5,
+      "satFatG": 5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 600,
+      "potassiumMg": 150
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "processed"
+    ]
+  },
+  {
+    "id": "hotdog",
+    "labels": {
+      "ko": "핫도그",
+      "en": "Hot Dog"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 250,
+      "proteinG": 10,
+      "carbG": 20,
+      "fatG": 14,
+      "fiberG": 1,
+      "unsatFatG": 6,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 2,
+      "sodiumMg": 800,
+      "potassiumMg": 180
+    },
+    "category": "meal",
+    "cuisine": [
+      "western"
+    ],
+    "tags": [
+      "fastfood"
+    ]
+  },
+  {
+    "id": "ham",
+    "labels": {
+      "ko": "햄",
+      "en": "Ham"
+    },
+    "serving": {
+      "size": 50,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 90,
+      "proteinG": 10,
+      "carbG": 1,
+      "fatG": 4.5,
+      "fiberG": 0,
+      "unsatFatG": 2,
+      "satFatG": 1.5,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 750,
+      "potassiumMg": 150
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "processed"
+    ]
+  },
+  {
+    "id": "cheese_slice",
+    "labels": {
+      "ko": "치즈(슬라이스)",
+      "en": "Cheese (Slice)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "slice"
+    },
+    "nutrition": {
+      "kcal": 70,
+      "proteinG": 4,
+      "carbG": 1,
+      "fatG": 6,
+      "fiberG": 0,
+      "unsatFatG": 2,
+      "satFatG": 3.5,
+      "transFatG": 0,
+      "sugarG": 0,
+      "addedSugarG": 0,
+      "sodiumMg": 200,
+      "potassiumMg": 30
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "white_bread",
+    "labels": {
+      "ko": "식빵(1장)",
+      "en": "White Bread (1 slice)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "slice"
+    },
+    "nutrition": {
+      "kcal": 80,
+      "proteinG": 3,
+      "carbG": 15,
+      "fatG": 1,
+      "fiberG": 1,
+      "unsatFatG": 0.3,
+      "satFatG": 0.2,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 1,
+      "sodiumMg": 150,
+      "potassiumMg": 40
+    },
+    "category": "carb",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "baguette",
+    "labels": {
+      "ko": "바게트(1조각)",
+      "en": "Baguette (1 piece)"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 120,
+      "proteinG": 4,
+      "carbG": 24,
+      "fatG": 1,
+      "fiberG": 1,
+      "unsatFatG": 0.2,
+      "satFatG": 0.2,
+      "transFatG": 0,
+      "sugarG": 1,
+      "addedSugarG": 0,
+      "sodiumMg": 300,
+      "potassiumMg": 50
+    },
+    "category": "carb",
+    "cuisine": [
+      "western"
+    ],
+    "tags": []
+  },
+  {
+    "id": "milk",
+    "labels": {
+      "ko": "우유",
+      "en": "Milk"
+    },
+    "serving": {
+      "size": 200,
+      "unit": "ml"
+    },
+    "nutrition": {
+      "kcal": 130,
+      "proteinG": 6.6,
+      "carbG": 10,
+      "fatG": 7,
+      "fiberG": 0,
+      "unsatFatG": 2,
+      "satFatG": 4.5,
+      "transFatG": 0,
+      "sugarG": 10,
+      "addedSugarG": 0,
+      "sodiumMg": 100,
+      "potassiumMg": 300
+    },
+    "category": "drink",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "yogurt",
+    "labels": {
+      "ko": "요구르트",
+      "en": "Yogurt"
+    },
+    "serving": {
+      "size": 100,
+      "unit": "g"
+    },
+    "nutrition": {
+      "kcal": 60,
+      "proteinG": 3.5,
+      "carbG": 4.5,
+      "fatG": 3.5,
+      "fiberG": 0,
+      "unsatFatG": 1,
+      "satFatG": 2.3,
+      "transFatG": 0,
+      "sugarG": 4.5,
+      "addedSugarG": 0,
+      "sodiumMg": 50,
+      "potassiumMg": 150
+    },
+    "category": "drink",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "fried_egg",
+    "labels": {
+      "ko": "계란후라이",
+      "en": "Fried Egg"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 90,
+      "proteinG": 6,
+      "carbG": 0.4,
+      "fatG": 7,
+      "fiberG": 0,
+      "unsatFatG": 3,
+      "satFatG": 2,
+      "transFatG": 0,
+      "sugarG": 0.2,
+      "addedSugarG": 0,
+      "sodiumMg": 70,
+      "potassiumMg": 70
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": []
+  },
+  {
+    "id": "spam_fried_rice",
+    "labels": {
+      "ko": "스팸볶음밥",
+      "en": "Spam Fried Rice"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 550,
+      "proteinG": 18,
+      "carbG": 75,
+      "fatG": 18,
+      "fiberG": 2,
+      "unsatFatG": 8,
+      "satFatG": 7,
+      "transFatG": 0,
+      "sugarG": 3,
+      "addedSugarG": 0,
+      "sodiumMg": 1200,
+      "potassiumMg": 300
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": []
+  },
+  {
+    "id": "tuna_mayo_rice",
+    "labels": {
+      "ko": "참치마요덮밥",
+      "en": "Tuna Mayo Rice Bowl"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "serving"
+    },
+    "nutrition": {
+      "kcal": 650,
+      "proteinG": 25,
+      "carbG": 80,
+      "fatG": 22,
+      "fiberG": 2,
+      "unsatFatG": 10,
+      "satFatG": 8,
+      "transFatG": 0,
+      "sugarG": 5,
+      "addedSugarG": 2,
+      "sodiumMg": 900,
+      "potassiumMg": 400
+    },
+    "category": "meal",
+    "cuisine": [
+      "korean"
+    ],
+    "tags": []
+  },
+  {
+    "id": "ham_egg_sandwich",
+    "labels": {
+      "ko": "햄에그샌드위치",
+      "en": "Ham Egg Sandwich"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 350,
+      "proteinG": 18,
+      "carbG": 35,
+      "fatG": 15,
+      "fiberG": 2,
+      "unsatFatG": 6,
+      "satFatG": 6,
+      "transFatG": 0,
+      "sugarG": 5,
+      "addedSugarG": 2,
+      "sodiumMg": 1100,
+      "potassiumMg": 250
+    },
+    "category": "meal",
+    "cuisine": [
+      "western"
+    ],
+    "tags": []
   }
 ];
