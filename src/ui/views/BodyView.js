@@ -148,8 +148,17 @@ const renderHeatmap = ({ monthISO, days, onSelectDate }) => {
     const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     weekdays.forEach((label) => grid.appendChild(el('div', { className: 'heatmap-weekday' }, label)));
 
-    const firstDate = `${monthISO}-01`;
-    const firstDay = new Date(firstDate).getDay();
+    // 시간대 문제를 피하기 위해 year, month, day 형식 사용
+    // monthISO는 "YYYY-MM" 형식
+    const parts = monthISO.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    if (!year || !month) {
+        console.error('Invalid monthISO:', monthISO);
+        return grid;
+    }
+    // JavaScript Date: month는 0부터 시작 (0=1월, 11=12월)
+    const firstDay = new Date(year, month - 1, 1).getDay();
     for (let i = 0; i < firstDay; i += 1) {
         grid.appendChild(el('div', { className: 'heatmap-cell is-empty' }, ''));
     }

@@ -25019,6 +25019,71 @@ export const FOOD_DB = [
       "supplement"
     ]
   },
+  {
+    "id": "fairlife_nutrition_plan_chocolate",
+    "labels": {
+      "ko": "페어라이프 뉴트리션 플랜 초콜릿",
+      "en": "Fairlife Nutrition Plan Chocolate"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "bottle"
+    },
+    "nutrition": {
+      "kcal": 150,
+      "proteinG": 30,
+      "carbG": 4,
+      "fatG": 2.5,
+      "fiberG": 1,
+      "unsatFatG": 1.0,
+      "satFatG": 1.5,
+      "transFatG": 0,
+      "sugarG": 2,
+      "addedSugarG": 0,
+      "sodiumMg": 230,
+      "potassiumMg": 460
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement",
+      "drink"
+    ]
+  },
+  {
+    "id": "built_puff_protein_bar",
+    "labels": {
+      "ko": "빌트 퍼프 프로틴바",
+      "en": "Built Puff Protein Bar"
+    },
+    "serving": {
+      "size": 1,
+      "unit": "piece"
+    },
+    "nutrition": {
+      "kcal": 140,
+      "proteinG": 17,
+      "carbG": 13,
+      "fatG": 3,
+      "fiberG": 0,
+      "unsatFatG": 1.5,
+      "satFatG": 1.5,
+      "transFatG": 0,
+      "sugarG": 7,
+      "addedSugarG": 6,
+      "sodiumMg": 90,
+      "potassiumMg": 161
+    },
+    "category": "protein",
+    "cuisine": [
+      "global"
+    ],
+    "tags": [
+      "supplement"
+    ]
+  },
   // 소고기 부위
   {
     "id": "beef_flank",

@@ -38,27 +38,32 @@ export const openModal = ({
         form.appendChild(body);
     }
 
+    // 정보 표시용 모달(showClose=true이고 onSubmit 없음)에서는 액션 버튼 숨김
+    const isInfoOnly = showClose && typeof onSubmit !== 'function';
+    
     const actions = el('div', { className: 'modal-actions' });
-    const cancelButton = el('button', { type: 'button', className: 'btn btn-text' }, '취소');
-    actions.appendChild(cancelButton);
-    if (dangerLabel && typeof onDanger === 'function') {
-        const dangerButton = el('button', { type: 'button', className: 'btn btn-text btn-danger-text' }, dangerLabel);
-        dangerButton.addEventListener('click', () => {
-            const result = onDanger();
-            if (result === false) return;
-            closeModal();
-        });
-        actions.appendChild(dangerButton);
-    }
-    const submitClass = submitLabel.trim() === '닫기' ? 'btn btn-text' : 'btn';
-    actions.appendChild(el('button', { type: 'submit', className: submitClass }, submitLabel));
-
-    cancelButton.addEventListener('click', () => {
-        closeModal();
-        if (typeof onCancel === 'function') {
-            onCancel();
+    if (!isInfoOnly) {
+        const cancelButton = el('button', { type: 'button', className: 'btn btn-text' }, '취소');
+        actions.appendChild(cancelButton);
+        if (dangerLabel && typeof onDanger === 'function') {
+            const dangerButton = el('button', { type: 'button', className: 'btn btn-text btn-danger-text' }, dangerLabel);
+            dangerButton.addEventListener('click', () => {
+                const result = onDanger();
+                if (result === false) return;
+                closeModal();
+            });
+            actions.appendChild(dangerButton);
         }
-    });
+        const submitClass = submitLabel.trim() === '닫기' ? 'btn btn-text' : 'btn';
+        actions.appendChild(el('button', { type: 'submit', className: submitClass }, submitLabel));
+
+        cancelButton.addEventListener('click', () => {
+            closeModal();
+            if (typeof onCancel === 'function') {
+                onCancel();
+            }
+        });
+    }
 
     if (showClose) {
         const closeButton = header.querySelector('[data-action="modal.close"]');
@@ -72,7 +77,9 @@ export const openModal = ({
         }
     }
 
-    form.appendChild(actions);
+    if (!isInfoOnly) {
+        form.appendChild(actions);
+    }
     content.appendChild(header);
     content.appendChild(form);
     overlay.appendChild(content);
@@ -86,14 +93,16 @@ export const openModal = ({
         }
     });
 
-    form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        if (typeof onSubmit === 'function') {
-            const shouldClose = onSubmit(form);
-            if (shouldClose === false) return;
-        }
-        closeModal();
-    });
+    if (!isInfoOnly) {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (typeof onSubmit === 'function') {
+                const shouldClose = onSubmit(form);
+                if (shouldClose === false) return;
+            }
+            closeModal();
+        });
+    }
 
     document.body.appendChild(overlay);
     activeOverlay = overlay;
