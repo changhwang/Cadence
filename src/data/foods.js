@@ -1719,6 +1719,181 @@ export const FOOD_DB = [
     "tags": []
   },
   {
+    "id": "mushroom_king_oyster",
+    "labels": {
+      "ko": "새송이버섯",
+      "en": "King Oyster Mushroom"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 37,
+      "proteinG": 3.3,
+      "carbG": 6.1,
+      "fatG": 0.4,
+      "fiberG": 2.3,
+      "unsatFatG": 0.1,
+      "satFatG": 0.1,
+      "transFatG": 0,
+      "sugarG": 1.7,
+      "addedSugarG": 0,
+      "sodiumMg": 18,
+      "potassiumMg": 420
+    },
+    "category": "veg",
+    "cuisine": [ "korean", "global" ],
+    "tags": []
+  },
+  {
+    "id": "mushroom_shiitake",
+    "labels": {
+      "ko": "표고버섯",
+      "en": "Shiitake Mushroom"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 34,
+      "proteinG": 2.2,
+      "carbG": 6.8,
+      "fatG": 0.5,
+      "fiberG": 2.5,
+      "unsatFatG": 0.1,
+      "satFatG": 0.1,
+      "transFatG": 0,
+      "sugarG": 2.4,
+      "addedSugarG": 0,
+      "sodiumMg": 9,
+      "potassiumMg": 304
+    },
+    "category": "veg",
+    "cuisine": [ "korean", "global" ],
+    "tags": []
+  },
+  {
+    "id": "mushroom_enoki",
+    "labels": {
+      "ko": "팽이버섯",
+      "en": "Enoki Mushroom"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 37,
+      "proteinG": 2.7,
+      "carbG": 7.8,
+      "fatG": 0.3,
+      "fiberG": 2.7,
+      "unsatFatG": 0,
+      "satFatG": 0.1,
+      "transFatG": 0,
+      "sugarG": 0.2,
+      "addedSugarG": 0,
+      "sodiumMg": 3,
+      "potassiumMg": 359
+    },
+    "category": "veg",
+    "cuisine": [ "korean", "global" ],
+    "tags": []
+  },
+  {
+    "id": "mushroom_oyster",
+    "labels": {
+      "ko": "느타리버섯",
+      "en": "Oyster Mushroom"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 33,
+      "proteinG": 3.3,
+      "carbG": 6.1,
+      "fatG": 0.4,
+      "fiberG": 2.3,
+      "unsatFatG": 0.1,
+      "satFatG": 0.1,
+      "transFatG": 0,
+      "sugarG": 1.1,
+      "addedSugarG": 0,
+      "sodiumMg": 18,
+      "potassiumMg": 420
+    },
+    "category": "veg",
+    "cuisine": [ "korean", "global" ],
+    "tags": []
+  },
+  {
+    "id": "asparagus",
+    "labels": {
+      "ko": "아스파라거스",
+      "en": "Asparagus"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 20,
+      "proteinG": 2.2,
+      "carbG": 3.9,
+      "fatG": 0.1,
+      "fiberG": 2.1,
+      "unsatFatG": 0,
+      "satFatG": 0,
+      "transFatG": 0,
+      "sugarG": 2.3,
+      "addedSugarG": 0,
+      "sodiumMg": 2,
+      "potassiumMg": 224
+    },
+    "category": "veg",
+    "cuisine": [ "global" ],
+    "tags": []
+  },
+  {
+    "id": "cherry_tomato",
+    "labels": {
+      "ko": "방울토마토",
+      "en": "Cherry Tomato"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 18,
+      "proteinG": 0.9,
+      "carbG": 3.9,
+      "fatG": 0.2,
+      "fiberG": 1.2,
+      "unsatFatG": 0,
+      "satFatG": 0,
+      "transFatG": 0,
+      "sugarG": 2.6,
+      "addedSugarG": 0,
+      "sodiumMg": 5,
+      "potassiumMg": 237
+    },
+    "category": "veg",
+    "cuisine": [ "korean", "global" ],
+    "tags": []
+  },
+  {
+    "id": "zucchini",
+    "labels": {
+      "ko": "주키니",
+      "en": "Zucchini"
+    },
+    "serving": { "size": 100, "unit": "g" },
+    "nutrition": {
+      "kcal": 17,
+      "proteinG": 1.2,
+      "carbG": 3.1,
+      "fatG": 0.3,
+      "fiberG": 1.0,
+      "unsatFatG": 0,
+      "satFatG": 0.1,
+      "transFatG": 0,
+      "sugarG": 2.5,
+      "addedSugarG": 0,
+      "sodiumMg": 8,
+      "potassiumMg": 261
+    },
+    "category": "veg",
+    "cuisine": [ "global" ],
+    "tags": []
+  },
+  {
     "id": "kimchi",
     "labels": {
       "ko": "김치",
