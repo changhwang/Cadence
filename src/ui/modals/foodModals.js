@@ -324,6 +324,43 @@ export const openDietEditModal = (store, { id }) => {
         type: 'time',
         value: coerceTimeHHMM(target.timeHHMM || timeHHMMFromDate(target.createdAt) || getNowHHMM())
     });
+    const amountInput = el('input', { name: 'amount', type: 'number', min: '0', value: displayAmount });
+    const amountUnitSelect = el(
+        'select',
+        { name: 'amountUnit' },
+        el('option', { value: 'serving', selected: target.amountUnit === 'serving' }, '서빙'),
+        el(
+            'option',
+            { value: foodUnit, selected: target.amountUnit !== 'serving' },
+            foodUnit === 'oz' ? '온스(oz)' : '그램(g)'
+        )
+    );
+    const kcalInput = el('input', { name: 'kcal', type: 'number', min: '0', value: Math.round(target.kcal || 0) });
+    const proteinInput = el('input', { name: 'proteinG', type: 'number', min: '0', value: Math.round(target.proteinG || 0) });
+    const carbInput = el('input', { name: 'carbG', type: 'number', min: '0', value: Math.round(target.carbG || 0) });
+    const fatInput = el('input', { name: 'fatG', type: 'number', min: '0', value: Math.round(target.fatG || 0) });
+
+    // 수량을 바꾸면 매크로 입력칸도 함께 맞춘다(안 그러면 저장 시 미량영양소와 값이 어긋난다).
+    const syncMacros = () => {
+        if (!food) return;
+        const per = food.nutrition || {};
+        const raw = Math.max(0, Number(amountInput.value || 0));
+        const unit = amountUnitSelect.value || 'serving';
+        const amountValue = unit === 'serving' ? raw : fromDisplayFoodAmount(raw, unit);
+        const multiplier = unit === 'serving' ? amountValue : amountValue / servingSize;
+        kcalInput.value = Math.round((per.kcal || 0) * multiplier);
+        proteinInput.value = Math.round((per.proteinG || 0) * multiplier);
+        carbInput.value = Math.round((per.carbG || 0) * multiplier);
+        fatInput.value = Math.round((per.fatG || 0) * multiplier);
+    };
+    amountInput.addEventListener('input', syncMacros);
+    amountUnitSelect.addEventListener('change', () => {
+        amountInput.value = amountUnitSelect.value === 'serving'
+            ? 1
+            : roundWeight(toDisplayFoodAmount(servingSize, foodUnit), foodUnit === 'oz' ? 1 : 0);
+        syncMacros();
+    });
+
     openModal({
         title: '식단 수정',
         body: el(
@@ -340,37 +377,18 @@ export const openDietEditModal = (store, { id }) => {
                 el('option', { value: '저녁', selected: target.type === '저녁' }, '저녁')
             ),
             el('label', { className: 'input-label' }, '시간', timeInput),
+            el('div', { className: 'row row-gap' }, amountInput, amountUnitSelect),
             el(
                 'div',
                 { className: 'row row-gap' },
-                el('input', {
-                    name: 'amount',
-                    type: 'number',
-                    min: '0',
-                    value: displayAmount
-                }),
-                el(
-                    'select',
-                    { name: 'amountUnit' },
-                    el('option', { value: 'serving', selected: target.amountUnit === 'serving' }, '서빙'),
-                    el(
-                        'option',
-                        { value: foodUnit, selected: target.amountUnit !== 'serving' },
-                        foodUnit === 'oz' ? '온스(oz)' : '그램(g)'
-                    )
-                )
+                el('label', { className: 'input-label' }, '칼로리', kcalInput),
+                el('label', { className: 'input-label' }, '단백질', proteinInput)
             ),
             el(
                 'div',
                 { className: 'row row-gap' },
-                el('label', { className: 'input-label' }, '칼로리', el('input', { name: 'kcal', type: 'number', min: '0', value: Math.round(target.kcal || 0) })),
-                el('label', { className: 'input-label' }, '단백질', el('input', { name: 'proteinG', type: 'number', min: '0', value: Math.round(target.proteinG || 0) }))
-            ),
-            el(
-                'div',
-                { className: 'row row-gap' },
-                el('label', { className: 'input-label' }, '탄수', el('input', { name: 'carbG', type: 'number', min: '0', value: Math.round(target.carbG || 0) })),
-                el('label', { className: 'input-label' }, '지방', el('input', { name: 'fatG', type: 'number', min: '0', value: Math.round(target.fatG || 0) }))
+                el('label', { className: 'input-label' }, '탄수', carbInput),
+                el('label', { className: 'input-label' }, '지방', fatInput)
             )
         ),
         onSubmit: (form) => {

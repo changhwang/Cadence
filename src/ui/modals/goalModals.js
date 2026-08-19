@@ -1,13 +1,8 @@
-import { addGoalTimelineEntry, setGoalOverride } from '../../services/goals/goalService.js';
-import { computeBaseTargets } from '../../services/nutrition/targetEngine.js';
-import { DEFAULT_ENERGY_MODEL } from '../../services/nutritionPolicies.js';
-import { calcAge, todayIso } from '../../utils/date.js';
+import { setGoalOverride } from '../../services/goals/goalService.js';
 import { selectGoalForDate } from '../../selectors/goalSelectors.js';
 import { el } from '../../utils/dom.js';
 import { openModal } from '../components/Modal.js';
 import { updateUserDb } from '../store/userDb.js';
-import { buildGoalModeSpec } from '../goals/goalUtils.js';
-import { FRAMEWORK_OPTIONS, GOAL_OPTIONS, buildOptionSelect } from '../goals/goalOptions.js';
 
 export const openGoalOverrideModal = (store, { dateISO }) => {
     const state = store.getState();
@@ -57,92 +52,6 @@ export const openGoalOverrideModal = (store, { dateISO }) => {
                 });
                 nextDb.goals.overrideByDate = overrideByDate;
             });
-            return true;
-        },
-        submitLabel: '저장'
-    });
-};
-
-export const openGoalChangeDefaultModal = (store, { dateISO }) => {
-    const state = store.getState();
-    const settings = state.settings;
-
-    const body = el(
-        'div',
-        { className: 'stack-form' },
-        el(
-            'label',
-            { className: 'input-label' },
-            '목표',
-            buildOptionSelect({ name: 'goalMode', options: GOAL_OPTIONS, selected: settings.nutrition.goal })
-        ),
-        el(
-            'label',
-            { className: 'input-label' },
-            '프레임워크',
-            buildOptionSelect({ name: 'framework', options: FRAMEWORK_OPTIONS, selected: settings.nutrition.framework })
-        )
-    );
-
-    openModal({
-        title: '오늘부터 목표 변경',
-        body,
-        onSubmit: (form) => {
-            const goal = form.querySelector('[name="goalMode"]')?.value || settings.nutrition.goal;
-            const framework = form.querySelector('[name="framework"]')?.value || settings.nutrition.framework;
-
-            const { userdb } = store.getState();
-            const birth = userdb.profile.birth;
-            const height = userdb.profile.height_cm;
-            const weight = userdb.profile.weight_kg;
-            const age = calcAge(birth);
-            const heightCm = Number(height);
-            const weightKg = Number(weight);
-
-            if (!age || !heightCm || !weightKg) {
-                window.alert('프로필 정보를 먼저 입력하세요.');
-                return false;
-            }
-
-            const spec = { frameworkId: framework, goalMode: buildGoalModeSpec(goal) };
-            const computed = computeBaseTargets({
-                profile: {
-                    sex: userdb.profile.sex,
-                    age,
-                    heightCm,
-                    weightKg,
-                    activityFactor: userdb.profile.activity
-                },
-                spec,
-                settings: { energyModel: DEFAULT_ENERGY_MODEL }
-            });
-
-            if (!computed.targets) return false;
-
-            updateUserDb(store, (nextDb) => {
-                const { timeline } = addGoalTimelineEntry({
-                    goals: nextDb.goals,
-                    effectiveDate: dateISO || todayIso(),
-                    spec,
-                    computed,
-                    note: '',
-                    nowMs: Date.now()
-                });
-                nextDb.goals.timeline = timeline;
-            });
-
-            store.dispatch({
-                type: 'UPDATE_SETTINGS',
-                payload: {
-                    ...settings,
-                    nutrition: {
-                        ...settings.nutrition,
-                        goal,
-                        framework
-                    }
-                }
-            });
-
             return true;
         },
         submitLabel: '저장'

@@ -586,12 +586,7 @@ export const renderSettingsView = (container, store) => {
             el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '목표')),
             nutritionSection
         ),
-        renderGoalCard(store, {
-            title: '목표 미리보기',
-            dateISO: todayIso(),
-            showControls: false,
-            showActions: false
-        }),
+        renderGoalCard(store, { title: '목표 미리보기', dateISO: todayIso() }),
         el(
             'div',
             { className: 'card' },

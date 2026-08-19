@@ -3,7 +3,7 @@ import { clearGoalOverride } from '../../services/goals/goalService.js';
 import { selectSelectedDate } from '../../selectors/goalSelectors.js';
 import { parseDateInput, todayIso } from '../../utils/date.js';
 import { shiftDate } from '../components/DateBar.js';
-import { openGoalChangeDefaultModal, openGoalOverrideModal } from '../modals/goalModals.js';
+import { openGoalOverrideModal } from '../modals/goalModals.js';
 import { updateUserDb } from '../store/userDb.js';
 import { showStatusBanner } from '../components/StatusBanner.js';
 
@@ -56,49 +56,6 @@ export const handleGoalAction = (store, actionEl, action) => {
         });
         actionEl.dataset.expanded = nextExpanded ? 'true' : 'false';
         actionEl.textContent = nextExpanded ? '접기' : '더보기';
-        return true;
-    }
-    if (action === 'goal.changeDefault') {
-        const state = store.getState();
-        const dateISO = actionEl.dataset.date || selectSelectedDate(state, actionEl.dataset.domain) || todayIso();
-        openGoalChangeDefaultModal(store, { dateISO });
-        return true;
-    }
-    if (action === 'goal.credit.toggle') {
-        const settings = store.getState().settings;
-        const enabled = Boolean(actionEl.checked ?? actionEl.dataset.checked);
-        store.dispatch({
-            type: 'UPDATE_SETTINGS',
-            payload: {
-                ...settings,
-                nutrition: {
-                    ...settings.nutrition,
-                    exerciseCredit: {
-                        ...settings.nutrition.exerciseCredit,
-                        enabled
-                    }
-                }
-            }
-        });
-        return true;
-    }
-    if (action === 'goal.credit.factor') {
-        const raw = Number(actionEl.value || actionEl.dataset.value || 0);
-        const value = Math.min(1, Math.max(0, raw / 100));
-        const settings = store.getState().settings;
-        store.dispatch({
-            type: 'UPDATE_SETTINGS',
-            payload: {
-                ...settings,
-                nutrition: {
-                    ...settings.nutrition,
-                    exerciseCredit: {
-                        ...settings.nutrition.exerciseCredit,
-                        factor: value
-                    }
-                }
-            }
-        });
         return true;
     }
     return false;

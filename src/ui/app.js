@@ -69,44 +69,6 @@ export const initApp = (store) => {
             const label = creditCapSlider.closest('label');
             if (label) label.firstChild.textContent = `운동 보정 상한 (${creditCapSlider.value} kcal)`;
         }
-        const capSlider = event.target.closest('[data-action="goal.credit.cap"]');
-        if (capSlider) {
-            const label = capSlider.closest('label');
-            if (label) label.firstChild.textContent = `상한 (${capSlider.value} kcal)`;
-            const settings = store.getState().settings;
-            store.dispatch({
-                type: 'UPDATE_SETTINGS',
-                payload: {
-                    ...settings,
-                    nutrition: {
-                        ...settings.nutrition,
-                        exerciseCredit: {
-                            ...settings.nutrition.exerciseCredit,
-                            capKcal: Number(capSlider.value || 0)
-                        }
-                    }
-                }
-            });
-        }
-        const factorSlider = event.target.closest('[data-action="goal.credit.factor"]');
-        if (factorSlider) {
-            const label = factorSlider.closest('label');
-            if (label) label.firstChild.textContent = `비율 (${factorSlider.value}%)`;
-            const settings = store.getState().settings;
-            store.dispatch({
-                type: 'UPDATE_SETTINGS',
-                payload: {
-                    ...settings,
-                    nutrition: {
-                        ...settings.nutrition,
-                        exerciseCredit: {
-                            ...settings.nutrition.exerciseCredit,
-                            factor: Math.min(1, Math.max(0, Number(factorSlider.value || 0) / 100))
-                        }
-                    }
-                }
-            });
-        }
         const actionEl = event.target.closest('[data-action]');
         if (actionEl?.dataset.action === 'backup.import') {
             handleBackupImportChange(store, actionEl);
