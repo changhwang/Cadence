@@ -1,8 +1,14 @@
 import { el } from '../../utils/dom.js';
-import { addDays, todayIso } from '../../utils/date.js';
+import { todayIso } from '../../utils/date.js';
+import { GROUP_ORDER } from '../../data/muscleGroups.js';
+import { renderBodyMap } from '../components/BodyMap.js';
 import { makeDateRange, shiftRange } from '../../services/analytics/period.js';
 import { selectWorkoutActivity } from '../../selectors/stats/workoutStatsSelectors.js';
-import { selectMuscleBalance, selectMuscleDistribution } from '../../selectors/stats/muscleStatsSelectors.js';
+import {
+    selectMuscleBalance,
+    selectMuscleDistribution,
+    selectMuscleGroupTotals
+} from '../../selectors/stats/muscleStatsSelectors.js';
 import { selectExerciseIndex } from '../../selectors/stats/exerciseStatsSelectors.js';
 import { selectNutritionTrend } from '../../selectors/stats/nutritionStatsSelectors.js';
 
@@ -107,33 +113,6 @@ const statsState = {
     nutrition: { ...DEFAULT_STATE, metric: 'kcal' }
 };
 
-// TODO: Body map feature (WIP)
-// const BODYMAP_DEBUG = true;
-// const BODYMAP_SVG_CACHE = new Map();
-// const loadBodyMapSvg = (view) => {
-//     if (BODYMAP_SVG_CACHE.has(view)) return BODYMAP_SVG_CACHE.get(view);
-//     const url = view === 'back' ? 'assets/bodymap/body_back.svg' : 'assets/bodymap/body_front.svg';
-//     const promise = fetch(url)
-//         .then((res) => (res.ok ? res.text() : ''))
-//         .catch(() => '');
-//     BODYMAP_SVG_CACHE.set(view, promise);
-//     return promise;
-// };
-// const applyBodyMapColors = (container, groupColors, debugColors = {}) => {
-//     if (!container) return;
-//     const svg = container.querySelector('svg');
-//     if (!svg) return;
-//     svg.querySelectorAll('[data-group]').forEach((node) => {
-//         const group = node.getAttribute('data-group');
-//         const mappedGroup = DETAIL_TO_GROUP[group] || group;
-//         const color = BODYMAP_DEBUG
-//             ? (debugColors[group] || debugColors[mappedGroup] || 'rgba(0, 0, 0, 0)')
-//             : (groupColors[mappedGroup] || 'rgba(0, 0, 0, 0)');
-//         node.setAttribute('fill', color);
-//     });
-// };
-
-const groupOrder = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Other'];
 const GROUP_LABELS = {
     ko: {
         Chest: '가슴',
@@ -187,37 +166,6 @@ const MUSCLE_LABELS = {
         Other: '기타'
     }
 };
-const DETAIL_TO_GROUP = {
-    chest: 'Chest',
-    upper_chest: 'Chest',
-    middle_chest: 'Chest',
-    lower_chest: 'Chest',
-    lats: 'Back',
-    mid_back: 'Back',
-    upper_back: 'Back',
-    lower_traps: 'Back',
-    traps: 'Back',
-    erectors: 'Back',
-    quads: 'Legs',
-    hamstrings: 'Legs',
-    glutes: 'Legs',
-    calves: 'Legs',
-    adductors: 'Legs',
-    abductors: 'Legs',
-    front_delts: 'Shoulders',
-    lateral_delts: 'Shoulders',
-    rear_delts: 'Shoulders',
-    delts: 'Shoulders',
-    biceps: 'Arms',
-    triceps: 'Arms',
-    forearms: 'Arms',
-    grip: 'Arms',
-    core: 'Core',
-    hip_flexors: 'Core',
-    abs: 'Core',
-    obliques: 'Core'
-};
-
 const formatNumber = (value, suffix = '') => {
     if (value === null || value === undefined) return '-';
     const num = Number(value);
@@ -402,7 +350,7 @@ const renderBalanceView = (container, store) => {
     const range = buildRange(state);
     const prevRange = shiftRange({ range, direction: -1 });
     const data = selectMuscleBalance(store.getState(), range, prevRange);
-    const groups = groupOrder;
+    const groups = GROUP_ORDER;
     const legend = el(
         'div',
         { className: 'stats-legend' },
@@ -557,32 +505,12 @@ const renderDistributionView = (container, store) => {
 
     container.appendChild(viewToggle);
     container.appendChild(metricToggle);
-    const groupTotals = Object.entries(muscles || {}).reduce((acc, [key, entry]) => {
-        const group = DETAIL_TO_GROUP[key] || 'Other';
-        const value = entry[state.metric] || 0;
-        acc[group] = (acc[group] || 0) + value;
-        return acc;
-    }, {});
-    // TODO: Body map feature (WIP)
-    // const mapGroups = groupOrder.filter((group) => group !== 'Other');
-    // const maxGroup = Math.max(...mapGroups.map((group) => groupTotals[group] || 0), 1);
-    // const GROUP_DEBUG_COLORS = { ... };
-    // const DETAIL_DEBUG_COLORS = { ... };
-    // const groupColors = mapGroups.reduce((acc, group) => { ... }, {});
-    // const buildMapPanel = (view) => { ... };
-    // const bodyMap = el('div', { className: 'body-map-silhouette' }, ...);
+    const groupTotals = selectMuscleGroupTotals(store.getState(), range, state.metric);
     const cardBody = state.viewMode === 'map'
         ? el(
             'div',
             { className: 'body-map-card' },
-            el(
-                'div',
-                { className: 'empty-state', style: 'padding: 40px 20px; text-align: center;' },
-                el('div', { style: 'font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;' }, '준비 중'),
-                el('div', { style: 'font-size: 12px; color: var(--text-secondary);' }, state.lang === 'ko'
-                    ? '바디맵 기능은 곧 추가될 예정입니다.'
-                    : 'Body map feature coming soon.')
-            )
+            renderBodyMap({ groupTotals, metric: state.metric, lang: state.lang })
         )
         : list;
     container.appendChild(
@@ -624,9 +552,11 @@ const renderExercisesView = (container, store) => {
         )
     );
     const list = el('div', { className: 'list-group' });
+    const meta = el('div', { className: 'list-subtitle stats-meta' }, '');
     const renderList = () => {
         list.textContent = '';
         const items = selectExerciseIndex(store.getState(), range, state.metric, state.sortKey, state.query);
+        meta.textContent = `${t(state.lang, 'items')}: ${items.length}`;
         if (!items.length) {
             list.appendChild(el('p', { className: 'empty-state' }, '기록이 없습니다.'));
             return;
@@ -662,9 +592,10 @@ const renderExercisesView = (container, store) => {
         statsState.exercises.metric = 'time';
         renderStatsView(container, store, 'stats/exercises');
     });
+    // 입력 중 포커스가 날아가지 않도록 전체 재렌더 대신 리스트만 갱신한다.
     queryInput.addEventListener('input', () => {
         statsState.exercises.query = queryInput.value;
-        renderStatsView(container, store, 'stats/exercises');
+        renderList();
     });
 
     container.appendChild(queryInput);
@@ -674,11 +605,7 @@ const renderExercisesView = (container, store) => {
             'div',
             { className: 'card stats-section' },
             el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, t(state.lang, 'exercises'))),
-            el(
-                'div',
-                { className: 'list-subtitle stats-meta' },
-                `${t(state.lang, 'items')}: ${selectExerciseIndex(store.getState(), range, state.metric, state.sortKey, state.query).length}`
-            ),
+            meta,
             list
         )
     );

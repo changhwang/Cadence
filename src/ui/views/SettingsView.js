@@ -2,6 +2,8 @@ import { el } from '../../utils/dom.js';
 import { renderGoalCard } from '../components/GoalCard.js';
 import { addDays, formatDisplay, todayIso } from '../../utils/date.js';
 import { roundWeight, toDisplayHeight, toDisplayWeight } from '../../utils/units.js';
+import { getGoalModeLabel } from '../goals/goalUtils.js';
+import { FRAMEWORK_OPTIONS, GOAL_OPTIONS, buildOptionSelect, getFrameworkLabel } from '../goals/goalOptions.js';
 
 export const renderSettingsView = (container, store) => {
     container.textContent = '';
@@ -261,30 +263,17 @@ export const renderSettingsView = (container, store) => {
             'label',
             { className: 'input-label' },
             '목표',
-            el(
-                'select',
-                { name: 'nutritionGoal' },
-                el('option', { value: 'maintain', selected: settings.nutrition.goal === 'maintain' }, '유지'),
-                el('option', { value: 'cut', selected: settings.nutrition.goal === 'cut' }, '감량'),
-                el('option', { value: 'minicut', selected: settings.nutrition.goal === 'minicut' }, '미니컷'),
-                el('option', { value: 'bulk', selected: settings.nutrition.goal === 'bulk' }, '증량'),
-                el('option', { value: 'leanbulk', selected: settings.nutrition.goal === 'leanbulk' }, '린 벌크'),
-                el('option', { value: 'recomp', selected: settings.nutrition.goal === 'recomp' }, '리컴프'),
-                el('option', { value: 'performance', selected: settings.nutrition.goal === 'performance' }, '퍼포먼스')
-            )
+            buildOptionSelect({ name: 'nutritionGoal', options: GOAL_OPTIONS, selected: settings.nutrition.goal })
         ),
         el(
             'label',
             { className: 'input-label' },
             '프레임워크',
-            el(
-                'select',
-                { name: 'nutritionFramework' },
-                el('option', { value: 'dga_2025', selected: settings.nutrition.framework === 'dga_2025' }, 'DGA 2025–2030'),
-                el('option', { value: 'amdr', selected: settings.nutrition.framework === 'amdr' }, 'AMDR Balanced'),
-                el('option', { value: 'issn_strength', selected: settings.nutrition.framework === 'issn_strength' }, 'ISSN Strength'),
-                el('option', { value: 'acsm_endurance', selected: settings.nutrition.framework === 'acsm_endurance' }, 'ACSM Endurance')
-            )
+            buildOptionSelect({
+                name: 'nutritionFramework',
+                options: FRAMEWORK_OPTIONS,
+                selected: settings.nutrition.framework
+            })
         ),
         el(
             'label',
@@ -340,23 +329,6 @@ export const renderSettingsView = (container, store) => {
         )
     );
 
-    const goalModeLabel = (mode) => {
-        if (mode === 'CUT') return '감량';
-        if (mode === 'LEAN_BULK') return '린 벌크';
-        if (mode === 'BULK') return '증량';
-        if (mode === 'RECOMP') return '리컴프';
-        if (mode === 'MAINTAIN') return '유지';
-        return mode || '-';
-    };
-
-    const frameworkLabel = (id) => {
-        if (id === 'dga_2025') return 'DGA 2025–2030';
-        if (id === 'amdr') return 'AMDR Balanced';
-        if (id === 'issn_strength') return 'ISSN Strength';
-        if (id === 'acsm_endurance') return 'ACSM Endurance';
-        return id || '-';
-    };
-
     const buildHistoryList = ({ items, renderItem, listId }) => {
         const limit = 5;
         const list = el('div', { className: 'list-group', id: listId });
@@ -404,8 +376,8 @@ export const renderSettingsView = (container, store) => {
             listId: 'goal-history-timeline',
             renderItem: (entry) => {
                 const dateLabel = formatDisplay(entry.effectiveDate, settings.dateFormat);
-                const mode = goalModeLabel(entry?.spec?.goalMode?.mode);
-                const framework = frameworkLabel(entry?.spec?.frameworkId);
+                const mode = getGoalModeLabel(entry?.spec?.goalMode?.mode);
+                const framework = getFrameworkLabel(entry?.spec?.frameworkId);
                 return el(
                     'div',
                     { className: 'list-item' },

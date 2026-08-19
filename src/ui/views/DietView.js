@@ -1,21 +1,12 @@
 import { el } from '../../utils/dom.js';
 import { renderDateBar } from '../components/DateBar.js';
-import { FOOD_DB } from '../../data/foods.js';
 import { getDietTotalsForDate } from '../../services/nutrition/intake.js';
+import { getDietEntry, getDietLogs, getWaterTotalMl } from '../../services/nutrition/dietEntry.js';
+import { calcWaterTarget } from '../../services/nutrition/targetEngine.js';
 import { selectGoalForDate } from '../../selectors/goalSelectors.js';
-import { getLabelByLang } from '../utils/labels.js';
 import { formatTimeHHMM, timeHHMMFromDate } from '../../utils/time.js';
-
-const getDietEntry = (userdb, dateKey) => {
-    return userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-};
-
-const formatAmount = (meal) => {
-    if (!meal.amount) return '';
-    if (meal.amountUnit === 'g') return `${meal.amount}g`;
-    if (meal.amountUnit === 'serving') return `${meal.amount}서빙`;
-    return `${meal.amount}`;
-};
+import { renderIcons } from '../icons.js';
+import { renderGoalProgress } from '../components/GoalProgress.js';
 
 const formatTime = (value, timeFormat) => {
     if (!value) return '';
@@ -33,7 +24,7 @@ const getTimeKey = (entry) => {
     return '';
 };
 
-const renderTimelineList = (entries, lang, manageMode, waterUnit, displayWater, timeFormat) => {
+const renderTimelineList = (entries, manageMode, waterUnit, displayWater, timeFormat) => {
     if (entries.length === 0) {
         return el('p', { className: 'empty-state' }, '아직 기록이 없습니다.');
     }
@@ -114,28 +105,8 @@ const bucketMealType = (type) => {
     return '식사';
 };
 
-const buildTimelineLogs = (entry) => {
-    if (Array.isArray(entry.logs) && entry.logs.length > 0) {
-        return [...entry.logs];
-    }
-    const logs = (entry.meals || []).map((meal) => ({
-        ...meal,
-        kind: 'meal',
-        createdAt: meal.createdAt || null
-    }));
-    if (entry.waterMl) {
-        logs.push({
-            id: `water-${Date.now()}`,
-            kind: 'water',
-            amountMl: entry.waterMl,
-            createdAt: null
-        });
-    }
-    return logs;
-};
-
 const buildTimelineEntries = (entry) => {
-    const logs = buildTimelineLogs(entry).map((log) => ({
+    const logs = getDietLogs(entry).map((log) => ({
         ...log,
         timeHHMM: log.timeHHMM || timeHHMMFromDate(log.createdAt)
     }));
@@ -235,7 +206,6 @@ export const renderDietView = (container, store) => {
     const targetCarb = goal.final?.carbG || 0;
     const targetFat = goal.final?.fatG || 0;
     const targetSodium = goal.final?.sodiumMg || 0;
-    const calcWaterTarget = (weightKg) => Math.min(4500, Math.max(1500, Math.round(weightKg * 35)));
     const weightKg = Number(userdb.profile?.weightKg ?? userdb.profile?.weight_kg);
     const targetWater = goal.final?.waterMl || (weightKg ? calcWaterTarget(weightKg) : 0);
     const waterUnit = settings.units?.water || 'ml';
@@ -291,16 +261,12 @@ export const renderDietView = (container, store) => {
     const entries = buildTimelineEntries(entry);
     const list = renderTimelineList(
         entries,
-        settings.lang,
         manageMode,
         waterUnit,
         displayWater,
         settings.timeFormat
     );
-    const waterTotal =
-        Array.isArray(entry.logs) && entry.logs.some((log) => log.kind === 'water')
-            ? entry.logs.reduce((sum, log) => sum + (log.kind === 'water' ? Number(log.amountMl || 0) : 0), 0)
-            : Number(entry.waterMl || 0);
+    const waterTotal = getWaterTotalMl(entry);
     const summaryGrid = el(
         'div',
         { className: 'diet-summary-grid' },
@@ -363,6 +329,7 @@ export const renderDietView = (container, store) => {
     );
 
     container.appendChild(headerWrap);
+    container.appendChild(renderGoalProgress(store, dateKey));
     container.appendChild(
         el(
             'div',
@@ -409,7 +376,5 @@ export const renderDietView = (container, store) => {
         ? el('div', { className: 'row row-gap' }, addButton, manageButton, deleteButton)
         : el('div', { className: 'row row-gap' }, addButton, manageButton);
     container.appendChild(actionRow);
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
+    renderIcons();
 };

@@ -41,7 +41,6 @@ export const handleGoalAction = (store, actionEl, action) => {
         updateUserDb(store, (nextDb) => {
             const { overrideByDate } = clearGoalOverride({ goals: nextDb.goals, dateISO });
             nextDb.goals.overrideByDate = overrideByDate;
-            nextDb.updatedAt = new Date().toISOString();
         });
         return true;
     }
@@ -120,7 +119,6 @@ export const handleDateAction = (store, actionEl, action) => {
             } else {
                 nextDb.meta.selectedDate[ui.route] = nextDate;
             }
-            nextDb.updatedAt = new Date().toISOString();
         });
         return true;
     }
@@ -136,7 +134,6 @@ export const handleDateAction = (store, actionEl, action) => {
             } else {
                 nextDb.meta.selectedDate[ui.route] = nextDate;
             }
-            nextDb.updatedAt = new Date().toISOString();
         });
         return true;
     }

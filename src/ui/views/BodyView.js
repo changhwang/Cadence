@@ -4,6 +4,7 @@ import { openBodyLogModal } from '../modals/bodyModals.js';
 import { updateUserDb } from '../store/userDb.js';
 import { roundWeight, toDisplayHeight, toDisplayWeight } from '../../utils/units.js';
 import { selectWorkoutHeatmap } from '../../selectors/stats/workoutStatsSelectors.js';
+import { renderIcons } from '../icons.js';
 
 const getBodyEntry = (userdb, dateKey) => {
     return userdb.body[dateKey] || { weight: '', waist: '', muscle: '', fat: '' };
@@ -449,9 +450,7 @@ export const renderBodyView = (container, store) => {
             statsGrid
         )
     );
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
+    renderIcons();
     const navButtons = heatmapCard.querySelectorAll('.heatmap-nav .btn');
     if (navButtons.length === 2) {
         navButtons[0].addEventListener('click', () => {

@@ -1,28 +1,14 @@
-const clone = (value) => JSON.parse(JSON.stringify(value));
-const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+const clone = (value) =>
+    (typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value)));
 
-const normalizeWorkoutCardio = (db) => {
-    if (!db || !db.workout) return;
-    Object.values(db.workout).forEach((entry) => {
-        if (!entry) return;
-        const legacy = Array.isArray(entry.cardioLogs)
-            ? entry.cardioLogs
-            : Array.isArray(entry.cardio)
-                ? entry.cardio
-                : [];
-        const current = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : legacy;
-        if (!Array.isArray(current) || current.length === 0) return;
-        const normalized = current.map((log) => ({
-            ...log,
-            id: log.id || createId()
-        }));
-        entry.cardio = { ...(entry.cardio || {}), logs: normalized };
-    });
-};
+const nowIso = () => new Date().toISOString();
 
 export const updateUserDb = (store, updater) => {
     const next = clone(store.getState().userdb);
     updater(next);
-    normalizeWorkoutCardio(next);
+    // 어떤 쓰기 경로든 수정 시각이 남도록 한 곳에서 처리한다.
+    next.updatedAt = nowIso();
+    // updatedAt은 ms 해상도라 같은 밀리초에 두 번 쓰면 통계 캐시가 옛 값을 돌려준다.
+    next.revision = (Number(next.revision) || 0) + 1;
     store.dispatch({ type: 'UPDATE_USERDB', payload: next });
 };

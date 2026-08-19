@@ -1,5 +1,6 @@
 import { el } from '../../utils/dom.js';
-import { closeModal, openModal } from './Modal.js';
+import { openModal } from './Modal.js';
+import { playTimerSound, primeTimerSound } from '../sound.js';
 
 let restTimerInterval = null;
 
@@ -30,16 +31,10 @@ export const openRestTimerModal = (store, defaultSeconds = 60) => {
         running = false;
         startButton.textContent = '시작';
     };
-    const playSound = () => {
-        const audio = document.getElementById('timer-sound');
-        if (!audio) return;
-        const volume = Math.min(1, Math.max(0, Number(state.settings?.sound?.volume || 0) / 100));
-        audio.volume = volume;
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-    };
+    const playSound = () => playTimerSound(state.settings?.sound?.volume);
 
     startButton.addEventListener('click', () => {
+        primeTimerSound();
         if (!running) {
             remaining = Number(durationInput.value || remaining);
             if (Number.isNaN(remaining) || remaining <= 0) {
@@ -85,10 +80,7 @@ export const openRestTimerModal = (store, defaultSeconds = 60) => {
             el('div', { className: 'timer-controls' }, startButton, resetButton)
         ),
         submitLabel: '닫기',
-        onSubmit: () => {
-            stopTimer();
-            closeModal();
-            return true;
-        }
+        onSubmit: () => true,
+        onClose: stopTimer
     });
 };

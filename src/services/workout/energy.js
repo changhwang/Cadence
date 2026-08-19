@@ -1,3 +1,5 @@
+import { getCardioLogs } from './workoutEntry.js';
+
 const toNumber = (value) => (Number.isNaN(Number(value)) ? 0 : Number(value));
 
 export const estimateCardioKcal = ({ entry, profile }) => {
@@ -10,8 +12,7 @@ export const estimateCardioKcal = ({ entry, profile }) => {
     return Math.round((met * 3.5 * weightKg * minutes) / 200);
 };
 
+// day는 userdb.workout[dateISO] 엔트리 전체를 받는다(유산소 로그만 합산).
 export const getExerciseKcalForDate = ({ day, profile }) => {
-    if (!day) return 0;
-    const logs = Array.isArray(day.logs) ? day.logs : [];
-    return logs.reduce((sum, entry) => sum + estimateCardioKcal({ entry, profile }), 0);
+    return getCardioLogs(day).reduce((sum, entry) => sum + estimateCardioKcal({ entry, profile }), 0);
 };

@@ -1,11 +1,11 @@
 import { aggregateWorkoutRange, aggregateWorkoutHeatmap } from '../../services/analytics/workoutAgg.js';
+import { createStatsCache, statsCacheKey } from './cache.js';
 
-const cache = new Map();
+const cache = createStatsCache();
 
-const getKey = (state, suffix) => `${state.userdb.updatedAt}:${suffix}`;
 
 export const selectWorkoutActivity = (state, range, metric = 'volume') => {
-    const key = getKey(state, `activity:${range.key}:${metric}`);
+    const key = statsCacheKey(state, `activity:${range.key}:${metric}`);
     if (cache.has(key)) return cache.get(key);
     const result = aggregateWorkoutRange({
         userdb: state.userdb,
@@ -18,7 +18,7 @@ export const selectWorkoutActivity = (state, range, metric = 'volume') => {
 };
 
 export const selectWorkoutHeatmap = (state, monthISO, metric = 'volume', performedOnly = false) => {
-    const key = getKey(state, `heatmap:${monthISO}:${metric}:${performedOnly ? 'performed' : 'all'}`);
+    const key = statsCacheKey(state, `heatmap:${monthISO}:${metric}:${performedOnly ? 'performed' : 'all'}`);
     if (cache.has(key)) return cache.get(key);
     const result = aggregateWorkoutHeatmap({
         userdb: state.userdb,

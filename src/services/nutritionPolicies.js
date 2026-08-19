@@ -1,12 +1,24 @@
+// 목표 프리셋은 여기 하나만 유지한다(모드 + 열량 증감률의 단일 출처).
 export const GOAL_PRESETS = {
-    maintain: { label: '유지', deltaPct: 0 },
-    cut: { label: '감량', deltaPct: -0.15 },
-    minicut: { label: '미니컷', deltaPct: -0.25 },
-    bulk: { label: '증량', deltaPct: 0.1 },
-    leanbulk: { label: '린 벌크', deltaPct: 0.05 },
-    recomp: { label: '리컴프', deltaPct: 0 },
-    performance: { label: '퍼포먼스 유지', deltaPct: 0 }
+    maintain: { label: '유지', mode: 'MAINTAIN', deltaPct: 0 },
+    cut: { label: '감량', mode: 'CUT', deltaPct: -0.15 },
+    minicut: { label: '미니컷', mode: 'CUT', deltaPct: -0.25 },
+    bulk: { label: '증량', mode: 'BULK', deltaPct: 0.1 },
+    leanbulk: { label: '린 벌크', mode: 'LEAN_BULK', deltaPct: 0.05 },
+    recomp: { label: '리컴프', mode: 'RECOMP', deltaPct: -0.05 },
+    performance: { label: '퍼포먼스', mode: 'MAINTAIN', deltaPct: 0 }
 };
+
+export const MODE_LABELS = {
+    MAINTAIN: '유지',
+    CUT: '감량',
+    BULK: '증량',
+    LEAN_BULK: '린 벌크',
+    RECOMP: '리컴프'
+};
+
+// spec에 증감률이 없을 때만 쓰이는 폴백.
+export const DEFAULT_ENERGY_MODEL = { cutPct: 0.15, bulkPct: 0.1 };
 
 export const FRAMEWORK_POLICIES = {
     dga_2025: {

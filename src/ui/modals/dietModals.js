@@ -1,8 +1,9 @@
 import { el } from '../../utils/dom.js';
+import { createId } from '../../utils/id.js';
 import { closeModal, openModal } from '../components/Modal.js';
+import { ensureDietEntry, getDietEntry, getDietLogs } from '../../services/nutrition/dietEntry.js';
 import { updateUserDb } from '../store/userDb.js';
 import { openFoodSearchModal } from './foodModals.js';
-import { FOOD_DB } from '../../data/foods.js';
 import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime, formatTimeHHMM } from '../../utils/time.js';
 import { fromDisplayFoodAmount, ozToG, roundWeight, toDisplayFoodAmount } from '../../utils/units.js';
 
@@ -68,8 +69,7 @@ export const openWaterLogModal = (store, options = {}) => {
             const ml = isOz ? Math.round(raw * 29.5735) : raw;
             updateUserDb(store, (nextDb) => {
                 const dateKey = nextDb.meta.selectedDate.diet;
-                const entry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
-                entry.logs = Array.isArray(entry.logs) ? entry.logs : [];
+                const entry = ensureDietEntry(nextDb, dateKey);
                 const timeHHMM = coerceTimeHHMM(timeInput.value || '');
                 const createdAt = combineDateAndTime(dateKey, timeHHMM) || new Date().toISOString();
                 if (options.log) {
@@ -80,15 +80,8 @@ export const openWaterLogModal = (store, options = {}) => {
                         target.createdAt = createdAt;
                     }
                 } else {
-                    const logId = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
-                    entry.logs.push({ id: logId, kind: 'water', amountMl: ml, createdAt, timeHHMM });
+                    entry.logs.push({ id: createId(), kind: 'water', amountMl: ml, createdAt, timeHHMM });
                 }
-                entry.waterMl = entry.logs.reduce(
-                    (sum, log) => sum + (log.kind === 'water' ? Number(log.amountMl || 0) : 0),
-                    0
-                );
-                nextDb.diet[dateKey] = entry;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         },
@@ -98,15 +91,8 @@ export const openWaterLogModal = (store, options = {}) => {
                 if (!window.confirm('이 수분 기록을 삭제할까요?')) return false;
                 updateUserDb(store, (nextDb) => {
                     const dateKey = nextDb.meta.selectedDate.diet;
-                    const entry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
-                    entry.logs = Array.isArray(entry.logs) ? entry.logs : [];
+                    const entry = ensureDietEntry(nextDb, dateKey);
                     entry.logs = entry.logs.filter((log) => log.id !== options.log.id);
-                    entry.waterMl = entry.logs.reduce(
-                        (sum, log) => sum + (log.kind === 'water' ? Number(log.amountMl || 0) : 0),
-                        0
-                    );
-                    nextDb.diet[dateKey] = entry;
-                    nextDb.updatedAt = new Date().toISOString();
                 });
             }
             : undefined
@@ -325,14 +311,9 @@ export const openDietAddDetailModal = (store, selection, options = {}) => {
             }
             updateUserDb(store, (userdb) => {
                 const dateKey = userdb.meta.selectedDate.diet;
-                const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-                const logId = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+                const entry = ensureDietEntry(userdb, dateKey);
                 const createdAt = combineDateAndTime(dateKey, timeHHMM) || new Date().toISOString();
-                entry.meals = entry.meals.concat({ ...mealPayload, id: logId, createdAt, timeHHMM });
-                entry.logs = Array.isArray(entry.logs) ? entry.logs : [];
-                entry.logs.push({ ...mealPayload, id: logId, kind: 'meal', createdAt, timeHHMM });
-                userdb.diet[dateKey] = entry;
-                userdb.updatedAt = new Date().toISOString();
+                entry.logs.push({ ...mealPayload, id: createId(), kind: 'meal', createdAt, timeHHMM });
             });
             return true;
         }
@@ -438,7 +419,6 @@ export const openMealBatchModal = (store, initialType = '식사', options = {}) 
                 if (!Number.isInteger(index)) return;
                 const item = items[index];
                 if (!item) return;
-                const food = item.foodId ? FOOD_DB.find((entry) => entry.id === item.foodId) : null;
                 const fallbackNutrition = item.nutrition || {
                     kcal: item.kcal || 0,
                     proteinG: item.proteinG || 0,
@@ -455,7 +435,8 @@ export const openMealBatchModal = (store, initialType = '식사', options = {}) 
                 };
                 const fallbackServing = item.serving || { size: 1, unit: 'g' };
                 const selection = {
-                    food: food || { id: item.foodId || '', nutrition: fallbackNutrition, serving: fallbackServing },
+                    // 항목에 저장된 영양 스냅샷으로 편집한다(음식 DB 조회 불필요).
+                    food: { id: item.foodId || '', nutrition: fallbackNutrition, serving: fallbackServing },
                     type: item.type || initialType,
                     amount: item.amount ?? 1,
                     unit: item.amountUnit || 'serving',
@@ -496,30 +477,25 @@ export const openMealBatchModal = (store, initialType = '식사', options = {}) 
                 if (items.length === 0) return false;
                 updateUserDb(store, (userdb) => {
                     const dateKey = userdb.meta.selectedDate.diet;
-                    const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-                    const groupId = options.groupId || `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+                    const entry = ensureDietEntry(userdb, dateKey);
+                    const groupId = options.groupId || createId();
                     const groupCreatedAt = combineDateAndTime(dateKey, timeHHMM) || options.createdAt || new Date().toISOString();
                     if (options.groupId) {
-                        entry.meals = entry.meals.filter((meal) => meal.groupId !== options.groupId);
-                        if (Array.isArray(entry.logs)) {
-                            entry.logs = entry.logs.filter((log) => log.groupId !== options.groupId);
-                        }
+                        entry.logs = entry.logs.filter((log) => log.groupId !== options.groupId);
                     } else if (options.groupCreatedAt) {
-                        entry.meals = entry.meals.filter((meal) => meal.createdAt !== options.groupCreatedAt);
-                        if (Array.isArray(entry.logs)) {
-                            entry.logs = entry.logs.filter((log) => log.createdAt !== options.groupCreatedAt);
-                        }
+                        entry.logs = entry.logs.filter((log) => log.createdAt !== options.groupCreatedAt);
                     }
-                    entry.logs = Array.isArray(entry.logs) ? entry.logs : [];
                     items.forEach((item) => {
-                        const logId = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
-                        const createdAt = groupCreatedAt;
-                        const payload = { ...item, id: logId, createdAt, groupId, groupCreatedAt, timeHHMM };
-                        entry.meals = entry.meals.concat(payload);
-                        entry.logs.push({ ...payload, kind: 'meal' });
+                        entry.logs.push({
+                            ...item,
+                            id: createId(),
+                            kind: 'meal',
+                            createdAt: groupCreatedAt,
+                            groupId,
+                            groupCreatedAt,
+                            timeHHMM
+                        });
                     });
-                    userdb.diet[dateKey] = entry;
-                    userdb.updatedAt = new Date().toISOString();
                 });
                 return true;
             }
@@ -532,8 +508,7 @@ export const openMealBatchModal = (store, initialType = '식사', options = {}) 
 export const openNutrientDetailModal = (store, options = {}) => {
     const { userdb, settings } = store.getState();
     const dateKey = userdb.meta.selectedDate.diet;
-    const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0, logs: [] };
-    const logs = Array.isArray(entry.logs) ? entry.logs : [];
+    const logs = getDietLogs(getDietEntry(userdb, dateKey));
     const nutrientType = options.nutrientType || 'kcal';
 
     const nutrientLabels = {

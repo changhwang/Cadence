@@ -1,4 +1,5 @@
 import { updateUserDb } from '../store/userDb.js';
+import { createId } from '../../utils/id.js';
 import { fromDisplayWeight } from '../../utils/units.js';
 
 export const buildDefaultSets = (log) => {
@@ -11,7 +12,7 @@ export const buildDefaultSets = (log) => {
 export const createWorkoutLog = ({ name, sets, reps, weight, unit, exerciseId }) => {
     const weightKg = fromDisplayWeight(Number(weight || 0), unit || 'kg');
     const nextLog = {
-        id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+        id: createId(),
         name,
         exerciseId,
         sets,
@@ -29,6 +30,5 @@ export const appendWorkoutLogs = (store, logs) => {
         const entry = userdb.workout[dateKey] || { logs: [] };
         entry.logs = entry.logs.concat(logs);
         userdb.workout[dateKey] = entry;
-        userdb.updatedAt = new Date().toISOString();
     });
 };

@@ -1,6 +1,6 @@
 import { STORAGE_KEYS } from './constants.js';
 import { createDefaultSettings, createDefaultUserDb } from './schema.js';
-import { lbToKg } from '../utils/units.js';
+import { migrateUserDb } from './migrations.js';
 
 const safeParse = (raw, fallback) => {
     if (!raw) return fallback;
@@ -20,15 +20,10 @@ const trySetItem = (key, value) => {
     }
 };
 
-export const loadSettings = () => {
-    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    if (!raw) {
-        const defaults = createDefaultSettings();
-        trySetItem(STORAGE_KEYS.SETTINGS, defaults);
-        return defaults;
-    }
+// 저장소에서 읽든 백업에서 복원하든 항상 이 경로를 통과시킨다.
+export const hydrateSettings = (input) => {
     const defaults = createDefaultSettings();
-    const parsed = safeParse(raw, defaults);
+    const parsed = input && typeof input === 'object' ? input : defaults;
     const merged = {
         ...defaults,
         ...parsed,
@@ -60,15 +55,9 @@ export const loadSettings = () => {
     return merged;
 };
 
-export const loadUserDb = () => {
-    const raw = localStorage.getItem(STORAGE_KEYS.USERDB);
-    if (!raw) {
-        const defaults = createDefaultUserDb();
-        trySetItem(STORAGE_KEYS.USERDB, defaults);
-        return defaults;
-    }
+export const hydrateUserDb = (input) => {
     const defaults = createDefaultUserDb();
-    const parsed = safeParse(raw, defaults);
+    const parsed = input && typeof input === 'object' ? input : defaults;
     const merged = {
         ...defaults,
         ...parsed,
@@ -91,57 +80,27 @@ export const loadUserDb = () => {
             }
         }
     };
+    return migrateUserDb(merged);
+};
 
-    const normalizeWorkoutUnits = (userdb) => {
-        const toNumber = (value) => (Number.isNaN(Number(value)) ? 0 : Number(value));
-        const convertLog = (log) => {
-            if (!log || typeof log !== 'object') return;
-            if (log.unit === 'lb') {
-                log.weight = lbToKg(toNumber(log.weight));
-                if (Array.isArray(log.setsDetail)) {
-                    log.setsDetail = log.setsDetail.map((set) => ({
-                        ...set,
-                        weight: lbToKg(toNumber(set.weight))
-                    }));
-                }
-                log.unit = 'kg';
-                return;
-            }
-            if (!log.unit) {
-                log.unit = 'kg';
-            }
-        };
-        Object.values(userdb.workout || {}).forEach((entry) => {
-            if (!entry || !Array.isArray(entry.logs)) return;
-            entry.logs.forEach((log) => convertLog(log));
-        });
-        if (Array.isArray(userdb.routines)) {
-            userdb.routines.forEach((routine) => {
-                if (routine?.defaults?.unit === 'lb') {
-                    routine.defaults.weight = lbToKg(toNumber(routine.defaults.weight));
-                    routine.defaults.unit = 'kg';
-                } else if (routine?.defaults && !routine.defaults.unit) {
-                    routine.defaults.unit = 'kg';
-                }
-                if (routine?.defaultsById) {
-                    Object.values(routine.defaultsById).forEach((item) => {
-                        if (!item) return;
-                        if (item.unit === 'lb') {
-                            item.weight = lbToKg(toNumber(item.weight));
-                            item.unit = 'kg';
-                            return;
-                        }
-                        if (item.unit === undefined && item.weight !== undefined) {
-                            item.unit = 'kg';
-                        }
-                    });
-                }
-            });
-        }
-    };
+export const loadSettings = () => {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (!raw) {
+        const defaults = createDefaultSettings();
+        trySetItem(STORAGE_KEYS.SETTINGS, defaults);
+        return defaults;
+    }
+    return hydrateSettings(safeParse(raw, null));
+};
 
-    normalizeWorkoutUnits(merged);
-    return merged;
+export const loadUserDb = () => {
+    const raw = localStorage.getItem(STORAGE_KEYS.USERDB);
+    if (!raw) {
+        const defaults = createDefaultUserDb();
+        trySetItem(STORAGE_KEYS.USERDB, defaults);
+        return defaults;
+    }
+    return hydrateUserDb(safeParse(raw, null));
 };
 
 export const saveSettings = (settings) => {

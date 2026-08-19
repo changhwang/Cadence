@@ -1,11 +1,11 @@
 import { aggregateNutritionTrend, buildTopFoods } from '../../services/analytics/nutritionAgg.js';
+import { createStatsCache, statsCacheKey } from './cache.js';
 
-const cache = new Map();
+const cache = createStatsCache();
 
-const getKey = (state, suffix) => `${state.userdb.updatedAt}:${suffix}`;
 
 export const selectNutritionTrend = (state, range, metric = 'kcal') => {
-    const key = getKey(state, `nutrition:${range.key}:${metric}`);
+    const key = statsCacheKey(state, `nutrition:${range.key}:${metric}`);
     if (cache.has(key)) return cache.get(key);
     const result = aggregateNutritionTrend({
         userdb: state.userdb,
@@ -18,7 +18,7 @@ export const selectNutritionTrend = (state, range, metric = 'kcal') => {
 };
 
 export const selectTopFoods = (state, range, by = 'kcal', limit = 10) => {
-    const key = getKey(state, `topfoods:${range.key}:${by}:${limit}`);
+    const key = statsCacheKey(state, `topfoods:${range.key}:${by}:${limit}`);
     if (cache.has(key)) return cache.get(key);
     const result = buildTopFoods({
         userdb: state.userdb,

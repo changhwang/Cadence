@@ -1,15 +1,16 @@
 import {
+    aggregateGroupTotals,
     aggregateMuscleBalanceWithPrev,
     aggregateMuscleDistribution,
     computeBaselineP95
 } from '../../services/analytics/muscleAgg.js';
+import { createStatsCache, statsCacheKey } from './cache.js';
 
-const cache = new Map();
+const cache = createStatsCache();
 
-const getKey = (state, suffix) => `${state.userdb.updatedAt}:${suffix}`;
 
 export const selectMuscleBalance = (state, range, prevRange) => {
-    const key = getKey(state, `balance:${range.key}:${prevRange?.key || 'none'}`);
+    const key = statsCacheKey(state, `balance:${range.key}:${prevRange?.key || 'none'}`);
     if (cache.has(key)) return cache.get(key);
     const result = aggregateMuscleBalanceWithPrev({
         userdb: state.userdb,
@@ -22,8 +23,19 @@ export const selectMuscleBalance = (state, range, prevRange) => {
     return result;
 };
 
+export const selectMuscleGroupTotals = (state, range, metric = 'sets') => {
+    const key = statsCacheKey(state, `groupTotals:${range.key}:${metric}`);
+    if (cache.has(key)) return cache.get(key);
+    return cache.set(key, aggregateGroupTotals({
+        userdb: state.userdb,
+        startISO: range.startISO,
+        endISO: range.endISO,
+        metric
+    }));
+};
+
 export const selectMuscleDistribution = (state, range, metric = 'sets') => {
-    const key = getKey(state, `distribution:${range.key}:${metric}`);
+    const key = statsCacheKey(state, `distribution:${range.key}:${metric}`);
     if (cache.has(key)) return cache.get(key);
     const muscles = aggregateMuscleDistribution({
         userdb: state.userdb,

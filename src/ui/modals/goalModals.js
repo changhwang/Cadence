@@ -1,11 +1,13 @@
 import { addGoalTimelineEntry, setGoalOverride } from '../../services/goals/goalService.js';
 import { computeBaseTargets } from '../../services/nutrition/targetEngine.js';
+import { DEFAULT_ENERGY_MODEL } from '../../services/nutritionPolicies.js';
 import { calcAge, todayIso } from '../../utils/date.js';
 import { selectGoalForDate } from '../../selectors/goalSelectors.js';
 import { el } from '../../utils/dom.js';
 import { openModal } from '../components/Modal.js';
 import { updateUserDb } from '../store/userDb.js';
 import { buildGoalModeSpec } from '../goals/goalUtils.js';
+import { FRAMEWORK_OPTIONS, GOAL_OPTIONS, buildOptionSelect } from '../goals/goalOptions.js';
 
 export const openGoalOverrideModal = (store, { dateISO }) => {
     const state = store.getState();
@@ -54,7 +56,6 @@ export const openGoalOverrideModal = (store, { dateISO }) => {
                     nowMs: Date.now()
                 });
                 nextDb.goals.overrideByDate = overrideByDate;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         },
@@ -73,30 +74,13 @@ export const openGoalChangeDefaultModal = (store, { dateISO }) => {
             'label',
             { className: 'input-label' },
             '목표',
-            el(
-                'select',
-                { name: 'goalMode' },
-                el('option', { value: 'maintain', selected: settings.nutrition.goal === 'maintain' }, '유지'),
-                el('option', { value: 'cut', selected: settings.nutrition.goal === 'cut' }, '감량'),
-                el('option', { value: 'minicut', selected: settings.nutrition.goal === 'minicut' }, '미니컷'),
-                el('option', { value: 'bulk', selected: settings.nutrition.goal === 'bulk' }, '증량'),
-                el('option', { value: 'leanbulk', selected: settings.nutrition.goal === 'leanbulk' }, '린 벌크'),
-                el('option', { value: 'recomp', selected: settings.nutrition.goal === 'recomp' }, '리컴프'),
-                el('option', { value: 'performance', selected: settings.nutrition.goal === 'performance' }, '퍼포먼스')
-            )
+            buildOptionSelect({ name: 'goalMode', options: GOAL_OPTIONS, selected: settings.nutrition.goal })
         ),
         el(
             'label',
             { className: 'input-label' },
             '프레임워크',
-            el(
-                'select',
-                { name: 'framework' },
-                el('option', { value: 'dga_2025', selected: settings.nutrition.framework === 'dga_2025' }, 'DGA 2025–2030'),
-                el('option', { value: 'amdr', selected: settings.nutrition.framework === 'amdr' }, 'AMDR Balanced'),
-                el('option', { value: 'issn_strength', selected: settings.nutrition.framework === 'issn_strength' }, 'ISSN Strength'),
-                el('option', { value: 'acsm_endurance', selected: settings.nutrition.framework === 'acsm_endurance' }, 'ACSM Endurance')
-            )
+            buildOptionSelect({ name: 'framework', options: FRAMEWORK_OPTIONS, selected: settings.nutrition.framework })
         )
     );
 
@@ -130,7 +114,7 @@ export const openGoalChangeDefaultModal = (store, { dateISO }) => {
                     activityFactor: userdb.profile.activity
                 },
                 spec,
-                settings: { energyModel: { cutPct: 0.15, bulkPct: 0.1 } }
+                settings: { energyModel: DEFAULT_ENERGY_MODEL }
             });
 
             if (!computed.targets) return false;
@@ -145,7 +129,6 @@ export const openGoalChangeDefaultModal = (store, { dateISO }) => {
                     nowMs: Date.now()
                 });
                 nextDb.goals.timeline = timeline;
-                nextDb.updatedAt = new Date().toISOString();
             });
 
             store.dispatch({

@@ -1,6 +1,12 @@
-import { CARDIO_DB } from '../../data/cardio.js';
 import { EXERCISE_DB } from '../../data/exercises.js';
 import { ROUTINE_TEMPLATES } from '../../data/routines.js';
+import {
+    getCardioMetaById,
+    getExerciseById,
+    isCardioExercise
+} from '../../services/workout/exerciseIndex.js';
+import { getCardioLogs } from '../../services/workout/workoutEntry.js';
+import { createId } from '../../utils/id.js';
 import { el } from '../../utils/dom.js';
 import { closeModal, openModal } from '../components/Modal.js';
 import { openRestTimerModal } from '../components/RestTimer.js';
@@ -12,19 +18,13 @@ import { fromDisplayWeight, roundWeight, toDisplayWeight } from '../../utils/uni
 
 export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
     if (!log) return;
-    const meta = CARDIO_DB.find((item) => item.id === log.type);
+    const meta = getCardioMetaById(log.type);
     const title = meta ? getLabelByLang(meta.labels, store.getState().settings.lang || 'ko') : log.type || '유산소';
     const minutesInput = el('input', { type: 'number', min: '1', value: log.minutes || 10 });
     const kcalInput = el('input', { type: 'number', min: '0', value: log.kcal ?? '' });
     const safeIndex = Number.isInteger(index) && index >= 0 ? index : null;
-    const getCurrentLogs = (entry) => {
-        if (Array.isArray(entry.cardio?.logs)) return entry.cardio.logs;
-        if (Array.isArray(entry.cardioLogs)) return entry.cardioLogs;
-        if (Array.isArray(entry.cardio)) return entry.cardio;
-        return [];
-    };
     const resolveTarget = (entry) => {
-        const current = getCurrentLogs(entry);
+        const current = getCardioLogs(entry);
         if (id) return current.find((item) => item.id === id);
         if (safeIndex !== null) return current[safeIndex];
         return null;
@@ -53,11 +53,11 @@ export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
             }
             updateUserDb(store, (nextDb) => {
                 const entry = nextDb.workout[dateKey] || { logs: [] };
-                const current = getCurrentLogs(entry);
+                const current = getCardioLogs(entry);
                 const target = resolveTarget(entry);
                 if (!target) return;
                 if (!target.id) {
-                    target.id = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+                    target.id = createId();
                 }
                 target.minutes = minutes;
                 if (kcal === null) {
@@ -67,7 +67,6 @@ export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
                 }
                 entry.cardio = { ...(entry.cardio || {}), logs: current };
                 nextDb.workout[dateKey] = entry;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         },
@@ -76,7 +75,7 @@ export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
             if (!window.confirm('이 유산소 기록을 삭제할까요?')) return false;
             updateUserDb(store, (nextDb) => {
                 const entry = nextDb.workout[dateKey] || { logs: [] };
-                const current = getCurrentLogs(entry);
+                const current = getCardioLogs(entry);
                 const nextLogs = id
                     ? current.filter((item) => item.id !== id)
                     : safeIndex === null
@@ -84,7 +83,6 @@ export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
                         : current.filter((_, itemIndex) => itemIndex !== safeIndex);
                 entry.cardio = { ...(entry.cardio || {}), logs: nextLogs };
                 nextDb.workout[dateKey] = entry;
-                nextDb.updatedAt = new Date().toISOString();
             });
         }
     });
@@ -93,18 +91,9 @@ export const openCardioEditModal = (store, { log, dateKey, id, index }) => {
 export const openWorkoutAddModal = (store, options = {}) => {
     const settings = store.getState().settings;
     const preferredUnit = settings.units?.workout || 'kg';
-    const exerciseMeta = options.exerciseId
-        ? EXERCISE_DB.find((item) => item.id === options.exerciseId)
-        : null;
-    const cardioMeta = options.exerciseId
-        ? CARDIO_DB.find((item) => item.id === options.exerciseId)
-        : null;
-    const isCardioExercise = Boolean(
-        cardioMeta
-            || exerciseMeta?.classification === 'cardio'
-            || exerciseMeta?.pattern === 'cardio'
-            || (Array.isArray(exerciseMeta?.equipment) && exerciseMeta.equipment.includes('cardio'))
-    );
+    const exerciseMeta = options.exerciseId ? getExerciseById(options.exerciseId) : null;
+    const cardioMeta = options.exerciseId ? getCardioMetaById(options.exerciseId) : null;
+    const isCardio = Boolean(cardioMeta) || isCardioExercise(exerciseMeta);
     const minutesInput = el('input', { name: 'minutes', type: 'number', min: '1', value: 10 });
     const body = el(
         'div',
@@ -121,7 +110,7 @@ export const openWorkoutAddModal = (store, options = {}) => {
             })
         ),
         el('input', { name: 'exerciseId', type: 'hidden', value: options.exerciseId || '' }),
-        isCardioExercise
+        isCardio
             ? el(
                 'label',
                 { className: 'input-label' },
@@ -144,7 +133,7 @@ export const openWorkoutAddModal = (store, options = {}) => {
                     el('input', { name: 'reps', type: 'number', min: '1', value: 10 })
                 )
             ),
-        isCardioExercise
+        isCardio
             ? null
             : el(
                 'div',
@@ -179,7 +168,7 @@ export const openWorkoutAddModal = (store, options = {}) => {
                 window.alert('운동 이름을 입력해 주세요.');
                 return false;
             }
-            if (isCardioExercise) {
+            if (isCardio) {
                 const minutes = Number(form.querySelector('[name="minutes"]')?.value || 0);
                 if (!minutes || Number.isNaN(minutes) || minutes <= 0) {
                     window.alert('시간(분)을 입력해 주세요.');
@@ -188,18 +177,17 @@ export const openWorkoutAddModal = (store, options = {}) => {
                 updateUserDb(store, (nextDb) => {
                     const dateKey = nextDb.meta.selectedDate.workout;
                     const entry = nextDb.workout[dateKey] || { logs: [] };
-                    const currentCardio = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : [];
+                    const currentCardio = getCardioLogs(entry);
                     entry.cardio = {
                         ...(entry.cardio || {}),
                         logs: currentCardio.concat({
-                            id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                            id: createId(),
                             type: exerciseId || name,
                             minutes,
                             met: cardioMeta?.met
                         })
                     };
                     nextDb.workout[dateKey] = entry;
-                    nextDb.updatedAt = new Date().toISOString();
                 });
                 return true;
             }
@@ -233,7 +221,7 @@ export const openRoutineCreateModal = (store) => {
             updateUserDb(store, (nextDb) => {
                 const routines = Array.isArray(nextDb.routines) ? nextDb.routines : [];
                 routines.push({
-                    id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                    id: createId(),
                     title,
                     exerciseIds: selected,
                     defaults,
@@ -243,7 +231,6 @@ export const openRoutineCreateModal = (store) => {
                     createdAt: Date.now()
                 });
                 nextDb.routines = routines;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         }
@@ -273,7 +260,6 @@ export const openRoutineEditModal = (store, routine) => {
                 target.category = category;
                 target.tags = tags;
                 nextDb.routines = routines;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         }
@@ -284,7 +270,11 @@ export const openWorkoutRoutineModal = (store) => {
     const state = store.getState();
     const lang = state.settings.lang || 'ko';
     const list = el('div', { className: 'list-group' });
-    const userRoutines = Array.isArray(state.userdb?.routines) ? state.userdb.routines : [];
+    // 삭제/수정 직후에도 최신 목록이 보이도록 매번 스토어에서 읽는다.
+    const getUserRoutines = () => {
+        const routines = store.getState().userdb?.routines;
+        return Array.isArray(routines) ? routines : [];
+    };
     const typeSelect = el(
         'select',
         { name: 'routineType' },
@@ -344,8 +334,9 @@ export const openWorkoutRoutineModal = (store) => {
                         ? el(
                             'div',
                             { className: 'row row-gap' },
-                            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.edit', id } }, '수정'),
-                            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.delete', id } }, '삭제')
+                            // 핸들러가 루틴을 찾으려면 버튼에도 type이 있어야 한다.
+                            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.edit', id, type } }, '수정'),
+                            el('button', { type: 'button', className: 'btn btn-secondary btn-sm', dataset: { action: 'routine.delete', id, type } }, '삭제')
                         )
                         : el('button', { type: 'button', className: 'btn btn-secondary btn-sm' }, '추가')
                 )
@@ -389,7 +380,7 @@ export const openWorkoutRoutineModal = (store) => {
         };
 
         Object.entries(ROUTINE_TEMPLATES).forEach(addPreset);
-        userRoutines.forEach(addUser);
+        getUserRoutines().forEach(addUser);
     };
 
     renderList();
@@ -405,7 +396,7 @@ export const openWorkoutRoutineModal = (store) => {
         const id = actionEl.dataset.id;
         const routine =
             type === 'user'
-                ? userRoutines.find((item) => item.id === id)
+                ? getUserRoutines().find((item) => item.id === id)
                 : ROUTINE_TEMPLATES[id];
         if (!routine) return;
         if (action === 'routine.edit') {
@@ -416,31 +407,24 @@ export const openWorkoutRoutineModal = (store) => {
             if (!window.confirm('이 루틴을 삭제할까요?')) return;
             updateUserDb(store, (nextDb) => {
                 nextDb.routines = (nextDb.routines || []).filter((item) => item.id !== id);
-                nextDb.updatedAt = new Date().toISOString();
             });
+            renderList();
             return;
         }
         if (action !== 'routine.select') return;
         const exerciseIds = routine.exerciseIds || routine.exercises || [];
         const defaults = routine.defaults || { sets: 3, reps: 10, weight: 0, unit: 'kg' };
         const defaultsById = routine.defaultsById || {};
-        const isCardioExercise = (exercise) => {
-            if (!exercise) return false;
-            if (exercise.classification === 'cardio') return true;
-            if (exercise.pattern === 'cardio') return true;
-            if (Array.isArray(exercise.equipment) && exercise.equipment.includes('cardio')) return true;
-            return false;
-        };
         const strengthLogs = [];
         const cardioLogs = [];
         exerciseIds.forEach((exerciseId) => {
-            const exercise = EXERCISE_DB.find((item) => item.id === exerciseId);
+            const exercise = getExerciseById(exerciseId);
             const name = exercise ? getLabelByLang(exercise.labels, lang) : exerciseId;
-            if (isCardioExercise(exercise)) {
+            if (isCardioExercise(exercise) || getCardioMetaById(exerciseId)) {
                 const minutes = Math.max(1, Number(defaultsById[exerciseId]?.minutes || 10));
-                const cardioMeta = CARDIO_DB.find((item) => item.id === exerciseId);
+                const cardioMeta = getCardioMetaById(exerciseId);
                 cardioLogs.push({
-                    id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+                    id: createId(),
                     type: exerciseId,
                     minutes,
                     met: cardioMeta?.met
@@ -469,11 +453,10 @@ export const openWorkoutRoutineModal = (store) => {
             const entry = nextDb.workout[dateKey] || { logs: [] };
             entry.logs = entry.logs.concat(strengthLogs);
             if (cardioLogs.length > 0) {
-                const currentCardio = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : [];
+                const currentCardio = getCardioLogs(entry);
                 entry.cardio = { ...(entry.cardio || {}), logs: currentCardio.concat(cardioLogs) };
             }
             nextDb.workout[dateKey] = entry;
-            nextDb.updatedAt = new Date().toISOString();
         });
         closeModal();
     });
@@ -874,7 +857,6 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                 nextTarget.unit = unit;
                 nextTarget.setsDetail = nextSets;
                 nextDb.workout[dateKey] = nextEntry;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         },
@@ -888,7 +870,6 @@ export const openWorkoutEditModal = (store, { log, dateKey, id }) => {
                 const nextEntry = nextDb.workout[dateKey] || { logs: [] };
                 nextEntry.logs = nextEntry.logs.filter((item) => item.id !== id);
                 nextDb.workout[dateKey] = nextEntry;
-                nextDb.updatedAt = new Date().toISOString();
             });
         }
     });

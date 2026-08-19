@@ -25,7 +25,7 @@ const pickMid = (range) => (range ? (range[0] + range[1]) / 2 : null);
 const calcMacroFromPct = (kcal, pct) => (kcal * pct) / 4;
 
 const calcFatFromPct = (kcal, pct) => (kcal * pct) / 9;
-const calcWaterTarget = (weightKg) => clamp(Math.round(weightKg * 35), 1500, 4500);
+export const calcWaterTarget = (weightKg) => clamp(Math.round(weightKg * 35), 1500, 4500);
 
 const resolveGoalDelta = (spec, settings) => {
     const cutPct = settings?.energyModel?.cutPct ?? 0.15;

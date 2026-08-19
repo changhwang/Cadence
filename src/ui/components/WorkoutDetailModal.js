@@ -1,5 +1,6 @@
 import { el } from '../../utils/dom.js';
 import { openModal } from './Modal.js';
+import { playTimerSound, primeTimerSound } from '../sound.js';
 import { todayIso } from '../../utils/date.js';
 import { fromDisplayWeight, roundWeight, toDisplayWeight } from '../../utils/units.js';
 
@@ -55,6 +56,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
     }
     let mode = 'idle';
     let intervalId = null;
+    let controlsObserver = null;
     let workStartAt = 0;
     let restRemaining = Number(targetState.restSec || 60);
     let activeSetIndex = getNextIncompleteSetIndex(setsDetail);
@@ -223,14 +225,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
     const logArea = el('div', { className: 'stack-form timer-log' });
     const addSetButton = el('button', { type: 'button', className: 'btn btn-text' }, '세트 추가');
 
-    const playSound = () => {
-        const audio = document.getElementById('timer-sound');
-        if (!audio) return;
-        const volume = Math.min(1, Math.max(0, Number(store.getState().settings?.sound?.volume || 0) / 100));
-        audio.volume = volume;
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-    };
+    const playSound = () => playTimerSound(store.getState().settings?.sound?.volume);
     const stopTimer = () => {
         if (intervalId) {
             clearInterval(intervalId);
@@ -378,6 +373,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         if (buttons.length === 0) return;
         const primary = buttons[0];
         primary.addEventListener('click', () => {
+            primeTimerSound();
             if (mode === 'idle') {
                 setMode('work');
                 startWorkTimer();
@@ -448,9 +444,13 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
                 : el('div', { className: 'list-subtitle' }, '과거 날짜는 타이머 없이 수정/삭제만 가능합니다.')
         ),
         submitLabel: '닫기',
-        onSubmit: () => {
+        onSubmit: () => true,
+        onClose: () => {
             stopTimer();
-            return true;
+            if (controlsObserver) {
+                controlsObserver.disconnect();
+                controlsObserver = null;
+            }
         }
     });
 
@@ -466,7 +466,7 @@ export const openWorkoutDetailModal = (store, { log, dateISO, onUpdate }) => {
         });
         setMode(activeSetIndex < 0 ? 'done' : 'idle');
         wireButtons();
-        const observer = new MutationObserver(() => wireButtons());
-        observer.observe(controls, { childList: true });
+        controlsObserver = new MutationObserver(() => wireButtons());
+        controlsObserver.observe(controls, { childList: true });
     }
 };

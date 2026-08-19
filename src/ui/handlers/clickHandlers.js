@@ -1,4 +1,11 @@
 import { openWorkoutDetailModal } from '../components/WorkoutDetailModal.js';
+import {
+    ensureDietEntry,
+    getDietEntry,
+    getDietLogs,
+    getMealLogs
+} from '../../services/nutrition/dietEntry.js';
+import { getCardioLogs } from '../../services/workout/workoutEntry.js';
 import { updateUserDb } from '../store/userDb.js';
 import {
     openExerciseSearchModal,
@@ -41,8 +48,7 @@ export const handleDietClickAction = (store, actionEl, action) => {
     if (action === 'diet.water.edit') {
         const { userdb } = store.getState();
         const dateKey = userdb.meta.selectedDate.diet;
-        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-        const log = Array.isArray(entry.logs) ? entry.logs.find((item) => item.id === actionEl.dataset.id) : null;
+        const log = getDietLogs(getDietEntry(userdb, dateKey)).find((item) => item.id === actionEl.dataset.id);
         if (!log) return true;
         openWaterLogModal(store, { log });
         return true;
@@ -53,16 +59,12 @@ export const handleDietClickAction = (store, actionEl, action) => {
         const groupCreatedAt = actionEl.dataset.createdAt;
         const { userdb } = store.getState();
         const dateKey = userdb.meta.selectedDate.diet;
-        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-        const items = Array.isArray(entry.logs)
-            ? entry.logs.filter((log) => {
-                if (log.kind === 'water') return false;
-                if (groupId && log.groupId === groupId) return true;
-                if (!groupId && groupCreatedAt && log.createdAt === groupCreatedAt) return true;
-                if (!groupId && groupKey && `time-${log.timeHHMM || log.createdAt}` === groupKey) return true;
-                return false;
-            })
-            : [];
+        const items = getMealLogs(getDietEntry(userdb, dateKey)).filter((log) => {
+            if (groupId && log.groupId === groupId) return true;
+            if (!groupId && groupCreatedAt && log.createdAt === groupCreatedAt) return true;
+            if (!groupId && groupKey && `time-${log.timeHHMM || log.createdAt}` === groupKey) return true;
+            return false;
+        });
         if (items.length === 0) return true;
         const type = items[0]?.type || '식사';
         const createdAt = items[0]?.groupCreatedAt || items[0]?.createdAt || null;
@@ -93,28 +95,13 @@ export const handleDietClickAction = (store, actionEl, action) => {
         if (!window.confirm('선택한 식단 기록을 삭제할까요?')) return true;
         updateUserDb(store, (nextDb) => {
             const dateKey = nextDb.meta.selectedDate.diet;
-            const entry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
-            entry.meals = entry.meals.filter((meal) => {
-                if (ids.includes(meal.id)) return false;
-                if (groups.includes(meal.groupId)) return false;
-                if (groupKeys.some((key) => key && `time-${meal.timeHHMM || meal.createdAt}` === key)) return false;
-                return true;
+            const entry = ensureDietEntry(nextDb, dateKey);
+            entry.logs = entry.logs.filter((log) => {
+                if (waters.includes(log.id)) return false;
+                if (groups.includes(log.groupId)) return false;
+                if (groupKeys.some((key) => key && `time-${log.timeHHMM || log.createdAt}` === key)) return false;
+                return !ids.includes(log.id);
             });
-            if (Array.isArray(entry.logs)) {
-                entry.logs = entry.logs.filter((log) => {
-                    if (waters.includes(log.id)) return false;
-                    if (groups.includes(log.groupId)) return false;
-                    if (groupKeys.some((key) => key && `time-${log.timeHHMM || log.createdAt}` === key)) return false;
-                    return !ids.includes(log.id);
-                });
-                const waterTotal = entry.logs.reduce(
-                    (sum, log) => sum + (log.kind === 'water' ? Number(log.amountMl || 0) : 0),
-                    0
-                );
-                if (waterTotal > 0) entry.waterMl = waterTotal;
-            }
-            nextDb.diet[dateKey] = entry;
-            nextDb.updatedAt = new Date().toISOString();
         });
         return true;
     }
@@ -148,21 +135,15 @@ export const handleWorkoutClickAction = (store, actionEl, action) => {
             const entry = nextDb.workout[dateKey] || { logs: [] };
             entry.logs = entry.logs.filter((log) => !strengthIds.includes(log.id));
             if (cardioIds.length > 0 || cardioIndexes.length > 0) {
-                const current = Array.isArray(entry.cardio?.logs)
-                    ? entry.cardio.logs
-                    : Array.isArray(entry.cardioLogs)
-                        ? entry.cardioLogs
-                        : Array.isArray(entry.cardio)
-                            ? entry.cardio
-                            : [];
                 const indexSet = new Set(cardioIndexes);
                 entry.cardio = {
                     ...(entry.cardio || {}),
-                    logs: current.filter((log, index) => !cardioIds.includes(log.id) && !indexSet.has(index))
+                    logs: getCardioLogs(entry).filter(
+                        (log, index) => !cardioIds.includes(log.id) && !indexSet.has(index)
+                    )
                 };
             }
             nextDb.workout[dateKey] = entry;
-            nextDb.updatedAt = new Date().toISOString();
         });
         return true;
     }
@@ -218,7 +199,6 @@ export const handleWorkoutClickAction = (store, actionEl, action) => {
                         };
                     }
                     nextDb.workout[dateKey] = nextEntry;
-                    nextDb.updatedAt = new Date().toISOString();
                 });
             }
         });
@@ -229,8 +209,7 @@ export const handleWorkoutClickAction = (store, actionEl, action) => {
         const index = Number(actionEl.dataset.index);
         const { userdb } = store.getState();
         const dateKey = userdb.meta.selectedDate.workout;
-        const entry = userdb.workout[dateKey] || { logs: [] };
-        const current = Array.isArray(entry.cardio?.logs) ? entry.cardio.logs : [];
+        const current = getCardioLogs(userdb.workout[dateKey]);
         const target = id
             ? current.find((log) => log.id === id)
             : current[Number.isInteger(index) ? index : -1];

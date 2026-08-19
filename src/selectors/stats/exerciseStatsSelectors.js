@@ -1,11 +1,11 @@
 import { buildExerciseIndex } from '../../services/analytics/exerciseAgg.js';
+import { createStatsCache, statsCacheKey } from './cache.js';
 
-const cache = new Map();
+const cache = createStatsCache();
 
-const getKey = (state, suffix) => `${state.userdb.updatedAt}:${suffix}`;
 
 export const selectExerciseIndex = (state, range, metric = 'sets', sortKey = 'value', query = '') => {
-    const key = getKey(state, `exercises:${range.key}:${metric}:${sortKey}:${query}`);
+    const key = statsCacheKey(state, `exercises:${range.key}:${metric}:${sortKey}:${query}`);
     if (cache.has(key)) return cache.get(key);
     const result = buildExerciseIndex({
         userdb: state.userdb,

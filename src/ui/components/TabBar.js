@@ -1,3 +1,5 @@
+import { renderIcons } from '../icons.js';
+
 const TABS = [
     { route: 'workout', label: '운동', icon: 'dumbbell' },
     { route: 'diet', label: '식단', icon: 'utensils' },
@@ -33,7 +35,5 @@ export const renderTabBar = ({ route }) => {
         container.appendChild(createTabButton(tab, tab.route === activeRoute));
     });
 
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
+    renderIcons();
 };

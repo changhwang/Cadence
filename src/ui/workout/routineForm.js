@@ -1,5 +1,5 @@
-import { CARDIO_DB } from '../../data/cardio.js';
 import { EXERCISE_DB } from '../../data/exercises.js';
+import { getExerciseById, isCardioExercise } from '../../services/workout/exerciseIndex.js';
 import { el } from '../../utils/dom.js';
 import { fromDisplayWeight, roundWeight, toDisplayWeight } from '../../utils/units.js';
 import { getLabelByLang } from '../utils/labels.js';
@@ -50,15 +50,6 @@ export const buildRoutineForm = (store, routine) => {
         el('option', { value: 'lb', selected: displayUnit === 'lb' }, 'lb')
     );
 
-    const isCardioExercise = (exercise) => {
-        if (!exercise) return false;
-        if (CARDIO_DB.some((item) => item.id === exercise.id)) return true;
-        if (exercise.classification === 'cardio') return true;
-        if (exercise.pattern === 'cardio') return true;
-        if (Array.isArray(exercise.equipment) && exercise.equipment.includes('cardio')) return true;
-        return false;
-    };
-
     const getStrengthDefaults = (id) => {
         const saved = defaultsById[id] || {};
         return {
@@ -83,7 +74,7 @@ export const buildRoutineForm = (store, routine) => {
             return;
         }
         selectedOrder.forEach((id, index) => {
-            const exercise = EXERCISE_DB.find((item) => item.id === id);
+            const exercise = getExerciseById(id);
             const label = exercise ? getLabelByLang(exercise.labels, lang) : id;
             const isCardio = isCardioExercise(exercise);
             const strengthDefaults = getStrengthDefaults(id);

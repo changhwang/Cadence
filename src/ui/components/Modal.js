@@ -1,11 +1,18 @@
 import { el } from '../../utils/dom.js';
 
 let activeOverlay = null;
+let activeOnClose = null;
 
+// onClose는 닫힘 경로(제출/취소/오버레이 클릭/X/다른 모달로 교체)와 무관하게 항상 1회 실행된다.
 export const closeModal = () => {
+    const onClose = activeOnClose;
+    activeOnClose = null;
     if (activeOverlay) {
         activeOverlay.remove();
         activeOverlay = null;
+    }
+    if (typeof onClose === 'function') {
+        onClose();
     }
 };
 
@@ -17,9 +24,11 @@ export const openModal = ({
     dangerLabel,
     onDanger,
     onCancel,
+    onClose,
     showClose = false
 }) => {
     closeModal();
+    activeOnClose = onClose;
 
     const overlay = el('div', { className: 'modal-overlay open center' });
     const content = el('div', { className: 'modal-content' });

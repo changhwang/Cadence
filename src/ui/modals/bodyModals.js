@@ -49,7 +49,6 @@ export const openBodyLogModal = (store) => {
                     fat
                 };
                 nextDb.meta.selectedDate.body = dateISO;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         }

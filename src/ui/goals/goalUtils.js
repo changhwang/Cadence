@@ -1,8 +1,11 @@
+import { GOAL_PRESETS, MODE_LABELS } from '../../services/nutritionPolicies.js';
+
 export const buildGoalModeSpec = (goal) => {
-    if (goal === 'cut') return { mode: 'CUT', cutPct: 0.15 };
-    if (goal === 'minicut') return { mode: 'CUT', cutPct: 0.25 };
-    if (goal === 'bulk') return { mode: 'BULK', bulkPct: 0.1 };
-    if (goal === 'leanbulk') return { mode: 'LEAN_BULK', bulkPct: 0.05 };
-    if (goal === 'recomp') return { mode: 'RECOMP', cutPct: 0.05 };
+    const preset = GOAL_PRESETS[goal] || GOAL_PRESETS.maintain;
+    const pct = Math.abs(preset.deltaPct);
+    if (preset.mode === 'CUT' || preset.mode === 'RECOMP') return { mode: preset.mode, cutPct: pct };
+    if (preset.mode === 'BULK' || preset.mode === 'LEAN_BULK') return { mode: preset.mode, bulkPct: pct };
     return { mode: 'MAINTAIN' };
 };
+
+export const getGoalModeLabel = (mode) => MODE_LABELS[mode] || mode || '-';

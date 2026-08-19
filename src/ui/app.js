@@ -3,14 +3,7 @@ import { renderSaveBanner } from './components/StatusBanner.js';
 import { renderView } from './views/index.js';
 import { handleBackupAction, handleDateAction, handleGoalAction } from './handlers/actionHandlers.js';
 import { handleDietClickAction, handleRouteAction, handleWorkoutClickAction } from './handlers/clickHandlers.js';
-import {
-    handleBackupImportChange,
-    handleBodySubmit,
-    handleDietAddSubmit,
-    handleDietWaterChange,
-    handleSettingsSubmit,
-    handleWorkoutSubmit
-} from './handlers/formHandlers.js';
+import { handleBackupImportChange, handleSettingsSubmit } from './handlers/formHandlers.js';
 
  
 
@@ -38,21 +31,7 @@ export const initApp = (store) => {
     document.addEventListener('click', (event) => handleActionClick(store, event));
     document.addEventListener('submit', (event) => {
         const form = event.target.closest('[data-action]');
-        if (!form) return;
-        const action = form.dataset.action;
-        if (action === 'diet.add') {
-            handleDietAddSubmit(store, event, form);
-            return;
-        }
-        if (action === 'workout.add') {
-            handleWorkoutSubmit(store, event, form);
-            return;
-        }
-        if (action === 'body.save') {
-            handleBodySubmit(store, event, form);
-            return;
-        }
-        if (action === 'settings.save') {
+        if (form?.dataset.action === 'settings.save') {
             handleSettingsSubmit(store, event, form);
         }
     });
@@ -129,17 +108,18 @@ export const initApp = (store) => {
             });
         }
         const actionEl = event.target.closest('[data-action]');
-        if (!actionEl) return;
-        const action = actionEl.dataset.action;
-        if (action === 'diet.water') {
-            handleDietWaterChange(store, actionEl);
-            return;
-        }
-        if (action === 'backup.import') {
+        if (actionEl?.dataset.action === 'backup.import') {
             handleBackupImportChange(store, actionEl);
         }
     });
-    store.subscribe(() => render(store));
+    // 저장 결과 알림은 배너만 갱신한다(뷰를 다시 그리면 입력 중이던 폼이 날아간다).
+    store.subscribe((state, action) => {
+        if (action?.type === 'SAVE_OK' || action?.type === 'SAVE_FAILED') {
+            renderSaveBanner(store);
+            return;
+        }
+        render(store);
+    });
     render(store);
 };
 

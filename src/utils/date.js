@@ -43,10 +43,17 @@ export const parseDateInput = (value, format) => {
         day = digits.slice(6, 8);
     }
 
-    const iso = `${year}-${month}-${day}`;
-    const test = new Date(iso);
+    // Date는 2월 31일 같은 값을 다음 달로 굴려버리므로 파싱 결과를 다시 대조한다.
+    const test = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
     if (Number.isNaN(test.getTime())) return '';
-    return iso;
+    if (
+        test.getUTCFullYear() !== Number(year)
+        || test.getUTCMonth() !== Number(month) - 1
+        || test.getUTCDate() !== Number(day)
+    ) {
+        return '';
+    }
+    return `${year}-${month}-${day}`;
 };
 
 export const calcAge = (birthIso) => {

@@ -1,77 +1,14 @@
 import { enumerateRangeDates } from './period.js';
+import {
+    summarizeCardioMinutes,
+    summarizeStrengthEntry,
+    summarizeStrengthEntryPerformed
+} from '../workout/workoutEntry.js';
 
-const toNumber = (value) => (Number.isNaN(Number(value)) ? 0 : Number(value));
-
-const getCardioLogs = (entry) => {
-    if (!entry) return [];
-    if (Array.isArray(entry.cardio?.logs)) return entry.cardio.logs;
-    if (Array.isArray(entry.cardioLogs)) return entry.cardioLogs;
-    if (Array.isArray(entry.cardio)) return entry.cardio;
-    return [];
-};
-
-const summarizeStrengthLog = (log) => {
-    if (!log) return { sets: 0, volume: 0 };
-    const detail = Array.isArray(log.setsDetail) ? log.setsDetail : [];
-    if (detail.length > 0) {
-        const completed = detail.filter((set) => Boolean(set.completed));
-        const sets = completed.length;
-        const volume = completed.reduce(
-            (sum, set) => sum + toNumber(set.weight) * toNumber(set.reps),
-            0
-        );
-        return { sets, volume };
-    }
-    const sets = toNumber(log.sets);
-    const reps = toNumber(log.reps);
-    const weight = toNumber(log.weight);
-    return { sets, volume: sets * reps * weight };
-};
-
-const summarizeStrengthEntry = (entry) => {
-    const logs = Array.isArray(entry?.logs) ? entry.logs : [];
-    return logs.reduce(
-        (acc, log) => {
-            const summary = summarizeStrengthLog(log);
-            acc.sets += summary.sets;
-            acc.volume += summary.volume;
-            return acc;
-        },
-        { sets: 0, volume: 0 }
-    );
-};
-
-const summarizeStrengthLogPerformed = (log) => {
-    if (!log) return { sets: 0, volume: 0 };
-    const detail = Array.isArray(log.setsDetail) ? log.setsDetail : [];
-    if (detail.length === 0) {
-        return { sets: 0, volume: 0 };
-    }
-    const completed = detail.filter((set) => Boolean(set.completed));
-    const sets = completed.length;
-    const volume = completed.reduce(
-        (sum, set) => sum + toNumber(set.weight) * toNumber(set.reps),
-        0
-    );
-    return { sets, volume };
-};
-
-const summarizeStrengthEntryPerformed = (entry) => {
-    const logs = Array.isArray(entry?.logs) ? entry.logs : [];
-    return logs.reduce(
-        (acc, log) => {
-            const summary = summarizeStrengthLogPerformed(log);
-            acc.sets += summary.sets;
-            acc.volume += summary.volume;
-            return acc;
-        },
-        { sets: 0, volume: 0 }
-    );
-};
-
-const summarizeCardioEntry = (entry) => {
-    const logs = getCardioLogs(entry);
-    return logs.reduce((sum, log) => sum + toNumber(log?.minutes), 0);
+const pickMetric = ({ metric, strength, cardioMinutes }) => {
+    if (metric === 'time') return cardioMinutes;
+    if (metric === 'sets') return strength.sets;
+    return strength.volume;
 };
 
 export const aggregateWorkoutRange = ({ userdb, startISO, endISO, metric = 'volume' }) => {
@@ -83,16 +20,11 @@ export const aggregateWorkoutRange = ({ userdb, startISO, endISO, metric = 'volu
     dates.forEach((dateISO) => {
         const entry = userdb?.workout?.[dateISO];
         const strength = summarizeStrengthEntry(entry);
-        const cardioMinutes = summarizeCardioEntry(entry);
+        const cardioMinutes = summarizeCardioMinutes(entry);
         totalSets += strength.sets;
         totalVol += strength.volume;
         totalTime += cardioMinutes;
-        const value = metric === 'time'
-            ? cardioMinutes
-            : metric === 'sets'
-                ? strength.sets
-                : strength.volume;
-        timeseries.push({ dateISO, value });
+        timeseries.push({ dateISO, value: pickMetric({ metric, strength, cardioMinutes }) });
     });
     return {
         timeseries,
@@ -120,12 +52,8 @@ export const aggregateWorkoutHeatmap = ({
         const strength = performedOnly
             ? summarizeStrengthEntryPerformed(entry)
             : summarizeStrengthEntry(entry);
-        const cardioMinutes = summarizeCardioEntry(entry);
-        const value = metric === 'time'
-            ? cardioMinutes
-            : metric === 'sets'
-                ? strength.sets
-                : strength.volume;
+        const cardioMinutes = summarizeCardioMinutes(entry);
+        const value = pickMetric({ metric, strength, cardioMinutes });
         maxValue = Math.max(maxValue, value);
         days.push({ dateISO, value });
     }

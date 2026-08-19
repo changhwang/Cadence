@@ -1,8 +1,8 @@
 import { el } from '../../utils/dom.js';
 import { renderDateBar } from '../components/DateBar.js';
 import { renderDailySummary } from '../components/DailySummary.js';
-import { CARDIO_DB } from '../../data/cardio.js';
-import { EXERCISE_DB } from '../../data/exercises.js';
+import { getCardioMetaById, getExerciseById } from '../../services/workout/exerciseIndex.js';
+import { getCardioLogs } from '../../services/workout/workoutEntry.js';
 import { estimateCardioKcal } from '../../services/workout/energy.js';
 import { todayIso } from '../../utils/date.js';
 import { getLabelByLang } from '../utils/labels.js';
@@ -12,23 +12,13 @@ const getWorkoutEntry = (userdb, dateKey) => {
     return userdb.workout[dateKey] || { logs: [] };
 };
 
-const getCardioLogs = (entry) => {
-    if (!entry) return [];
-    if (Array.isArray(entry.cardio?.logs)) return entry.cardio.logs;
-    if (Array.isArray(entry.cardioLogs)) return entry.cardioLogs;
-    if (Array.isArray(entry.cardio)) return entry.cardio;
-    return [];
-};
-
 const renderWorkoutList = (logs, lang, manageMode, isToday, unit) => {
     if (logs.length === 0) {
         return el('p', { className: 'empty-state' }, '아직 기록이 없습니다.');
     }
     const list = el('div', { className: 'list-group' });
     logs.forEach((log) => {
-        const exercise = log.exerciseId
-            ? EXERCISE_DB.find((item) => item.id === log.exerciseId)
-            : null;
+        const exercise = log.exerciseId ? getExerciseById(log.exerciseId) : null;
         const displayName = exercise ? getLabelByLang(exercise.labels, lang) : log.name;
         const setsDetail = Array.isArray(log.setsDetail) ? log.setsDetail : [];
         const totalSets = setsDetail.length || Number(log.sets || 0);
@@ -95,7 +85,7 @@ const renderCardioList = (logs, userdb, lang, manageMode) => {
     }
     const list = el('div', { className: 'list-group' });
     logs.forEach((log, index) => {
-        const meta = CARDIO_DB.find((item) => item.id === log.type);
+        const meta = getCardioMetaById(log.type);
         const label = meta ? getLabelByLang(meta.labels, lang) : log.type || '유산소';
         const minutes = Number(log.minutes || 0);
         const kcal = estimateCardioKcal({ entry: log, profile: userdb.profile });

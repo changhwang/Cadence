@@ -1,7 +1,8 @@
 const nowIso = () => new Date().toISOString();
 
 export const createDefaultUserDb = () => ({
-    schemaVersion: 1,
+    schemaVersion: 2,
+    revision: 0,
     createdAt: nowIso(),
     updatedAt: nowIso(),
     workout: {},

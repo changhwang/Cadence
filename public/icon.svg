@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Cadence">
+    <rect width="180" height="180" rx="40" fill="#007AFF"/>
+    <!-- 리듬(cadence)을 나타내는 파형 -->
+    <path d="M28 90 H54 L68 52 L92 128 L106 90 H152"
+          fill="none" stroke="#FFFFFF" stroke-width="12"
+          stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

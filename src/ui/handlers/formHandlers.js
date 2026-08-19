@@ -1,98 +1,13 @@
 import { parseImportPayload } from '../../services/backupService.js';
+import { hydrateSettings, hydrateUserDb } from '../../core/storage.js';
 import { addGoalTimelineEntry } from '../../services/goals/goalService.js';
+import { DEFAULT_ENERGY_MODEL } from '../../services/nutritionPolicies.js';
 import { computeBaseTargets } from '../../services/nutrition/targetEngine.js';
 import { calcAge, parseDateInput, todayIso } from '../../utils/date.js';
 import { updateUserDb } from '../store/userDb.js';
-import { createWorkoutLog } from '../workout/workoutLogUtils.js';
 import { fromDisplayHeight, fromDisplayWeight } from '../../utils/units.js';
 import { buildGoalModeSpec } from '../goals/goalUtils.js';
 import { showStatusBanner } from '../components/StatusBanner.js';
-
-export const handleDietAddSubmit = (store, event, form) => {
-    event.preventDefault();
-    const nameInput = form.querySelector('[name="mealName"]');
-    const typeSelect = form.querySelector('[name="mealType"]');
-    const name = nameInput ? nameInput.value.trim() : '';
-    const type = typeSelect ? typeSelect.value : '기타';
-
-    if (!name) return;
-
-    updateUserDb(store, (userdb) => {
-        const dateKey = userdb.meta.selectedDate.diet;
-        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-        entry.meals = entry.meals.concat({
-            id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-            type,
-            name
-        });
-        userdb.diet[dateKey] = entry;
-        userdb.updatedAt = new Date().toISOString();
-    });
-
-    if (nameInput) nameInput.value = '';
-};
-
-export const handleWorkoutSubmit = (store, event, form) => {
-    event.preventDefault();
-    const nameInput = form.querySelector('[name="exerciseName"]');
-    const setsInput = form.querySelector('[name="sets"]');
-    const repsInput = form.querySelector('[name="reps"]');
-    const weightInput = form.querySelector('[name="weight"]');
-    const unitSelect = form.querySelector('[name="unit"]');
-
-    const name = nameInput ? nameInput.value.trim() : '';
-    const sets = Number(setsInput ? setsInput.value : 0);
-    const reps = Number(repsInput ? repsInput.value : 0);
-    const settingsUnit = store.getState().settings.units?.workout || 'kg';
-    const weight = fromDisplayWeight(Number(weightInput ? weightInput.value : 0), settingsUnit);
-    const unit = unitSelect ? unitSelect.value : settingsUnit;
-
-    if (!name || sets <= 0 || reps <= 0) return;
-
-    updateUserDb(store, (userdb) => {
-        const dateKey = userdb.meta.selectedDate.workout;
-        const entry = userdb.workout[dateKey] || { logs: [] };
-    const nextLog = createWorkoutLog({ name, sets, reps, weight, unit: settingsUnit });
-        entry.logs = entry.logs.concat(nextLog);
-        userdb.workout[dateKey] = entry;
-        userdb.updatedAt = new Date().toISOString();
-    });
-
-    if (nameInput) nameInput.value = '';
-    if (setsInput) setsInput.value = '';
-    if (repsInput) repsInput.value = '';
-    if (weightInput) weightInput.value = '';
-};
-
-export const handleBodySubmit = (store, event, form) => {
-    event.preventDefault();
-    const weightInput = form.querySelector('[name="weight"]');
-    const waistInput = form.querySelector('[name="waist"]');
-    const muscleInput = form.querySelector('[name="muscle"]');
-    const fatInput = form.querySelector('[name="fat"]');
-
-    const settings = store.getState().settings;
-    const weightUnit = settings.units?.weight || 'kg';
-    const heightUnit = settings.units?.height || 'cm';
-    const weightRaw = weightInput ? weightInput.value : '';
-    const waistRaw = waistInput ? waistInput.value : '';
-    const muscleRaw = muscleInput ? muscleInput.value : '';
-    const fat = fatInput ? fatInput.value : '';
-    const weight = weightRaw === '' ? '' : fromDisplayWeight(Number(weightRaw || 0), weightUnit);
-    const waist = waistRaw === '' ? '' : fromDisplayHeight(Number(waistRaw || 0), heightUnit);
-    const muscle = muscleRaw === '' ? '' : fromDisplayWeight(Number(muscleRaw || 0), weightUnit);
-
-    updateUserDb(store, (userdb) => {
-        const dateKey = userdb.meta.selectedDate.body;
-        userdb.body[dateKey] = {
-            weight,
-            waist,
-            muscle,
-            fat
-        };
-        userdb.updatedAt = new Date().toISOString();
-    });
-};
 
 export const handleSettingsSubmit = (store, event, form) => {
     event.preventDefault();
@@ -133,6 +48,7 @@ export const handleSettingsSubmit = (store, event, form) => {
     const exerciseCreditDistribution =
         form.querySelector('[name="exerciseCreditDistribution"]')?.value || 'CARB_BIASED';
     const prevSettings = store.getState().settings;
+    const prevProfile = store.getState().userdb.profile || {};
 
     const nextSettings = {
         ...prevSettings,
@@ -141,7 +57,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         timeFormat,
         lang,
         units: {
-            ...store.getState().settings.units,
+            ...prevSettings.units,
             weight: weightUnit,
             water: waterUnit,
             height: heightUnit,
@@ -149,7 +65,7 @@ export const handleSettingsSubmit = (store, event, form) => {
             workout: workoutUnit
         },
         sound: {
-            ...store.getState().settings.sound,
+            ...prevSettings.sound,
             timerEnabled: nextTimerSound,
             volume: soundVolume
         },
@@ -179,9 +95,15 @@ export const handleSettingsSubmit = (store, event, form) => {
             activity: profileActivity
         };
         const timeline = nextDb.goals?.timeline || [];
+        // 목표/프레임워크뿐 아니라 목표치를 바꾸는 프로필 값이 변해도 오늘부터 재계산해 기록한다.
         const shouldAddGoal = timeline.length === 0
             || prevSettings.nutrition.goal !== nutritionGoal
-            || prevSettings.nutrition.framework !== nutritionFramework;
+            || prevSettings.nutrition.framework !== nutritionFramework
+            || String(prevProfile.weight_kg ?? '') !== String(profileWeight)
+            || String(prevProfile.height_cm ?? '') !== String(profileHeight)
+            || String(prevProfile.birth ?? '') !== String(profileBirth)
+            || prevProfile.sex !== profileSex
+            || prevProfile.activity !== profileActivity;
         if (shouldAddGoal) {
             const age = calcAge(profileBirth);
             const heightCm = Number(profileHeight);
@@ -200,7 +122,7 @@ export const handleSettingsSubmit = (store, event, form) => {
                         activityFactor: profileActivity
                     },
                     spec,
-                    settings: { energyModel: { cutPct: 0.15, bulkPct: 0.1 } }
+                    settings: { energyModel: DEFAULT_ENERGY_MODEL }
                 });
                 if (computed.targets) {
                     const { timeline: nextTimeline } = addGoalTimelineEntry({
@@ -215,20 +137,8 @@ export const handleSettingsSubmit = (store, event, form) => {
                 }
             }
         }
-        nextDb.updatedAt = new Date().toISOString();
     });
     showStatusBanner({ message: '설정이 저장되었습니다.', tone: 'success' });
-};
-
-export const handleDietWaterChange = (store, actionEl) => {
-    const value = Number(actionEl.value || 0);
-    updateUserDb(store, (userdb) => {
-        const dateKey = userdb.meta.selectedDate.diet;
-        const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-        entry.waterMl = Number.isNaN(value) ? 0 : value;
-        userdb.diet[dateKey] = entry;
-        userdb.updatedAt = new Date().toISOString();
-    });
 };
 
 export const handleBackupImportChange = async (store, input) => {
@@ -236,8 +146,9 @@ export const handleBackupImportChange = async (store, input) => {
     if (!file) return;
     try {
         const payload = await parseImportPayload(file);
-        store.dispatch({ type: 'UPDATE_USERDB', payload: payload.userdb });
-        store.dispatch({ type: 'UPDATE_SETTINGS', payload: payload.settings });
+        // 복원 데이터도 로드 경로와 동일하게 기본값 병합 + 마이그레이션을 거친다.
+        store.dispatch({ type: 'UPDATE_USERDB', payload: hydrateUserDb(payload.userdb) });
+        store.dispatch({ type: 'UPDATE_SETTINGS', payload: hydrateSettings(payload.settings) });
         showStatusBanner({ message: '복원이 완료되었습니다.', tone: 'success' });
     } catch (error) {
         showStatusBanner({

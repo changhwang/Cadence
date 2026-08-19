@@ -1,6 +1,8 @@
-import { FOOD_DB } from '../../data/foods.js';
+import { loadFoodDb } from '../../data/foodDb.js';
 import { el } from '../../utils/dom.js';
+import { createId } from '../../utils/id.js';
 import { closeModal, openModal } from '../components/Modal.js';
+import { ensureDietEntry, getDietEntry, getMealLogs } from '../../services/nutrition/dietEntry.js';
 import { updateUserDb } from '../store/userDb.js';
 import { getLabelByLang } from '../utils/labels.js';
 import { coerceTimeHHMM, timeHHMMFromDate, combineDateAndTime } from '../../utils/time.js';
@@ -8,7 +10,11 @@ import { fromDisplayFoodAmount, ozToG, roundWeight, toDisplayFoodAmount } from '
 
 const getNowHHMM = () => timeHHMMFromDate(Date.now()) || '12:00';
 
-export const openFoodSearchModal = (store, options = {}) => {
+const RESULT_LIMIT = 60;
+const SEARCH_DEBOUNCE_MS = 150;
+
+export const openFoodSearchModal = async (store, options = {}) => {
+    const { list: FOOD_DB } = await loadFoodDb();
     const state = store.getState();
     const lang = state.settings.lang || 'ko';
     const foodUnit = state.settings.units?.food || 'g';
@@ -138,7 +144,15 @@ export const openFoodSearchModal = (store, options = {}) => {
             }
             return getValue(b) - getValue(a);
         });
-        items.forEach((item) => {
+        // 800개 넘는 DB를 통째로 그리면 느리다. 상위 결과만 보여주고 검색으로 좁히게 한다.
+        const total = items.length;
+        const visible = items.slice(0, RESULT_LIMIT);
+        if (total > RESULT_LIMIT) {
+            list.appendChild(
+                el('p', { className: 'list-subtitle' }, `${total}개 중 ${RESULT_LIMIT}개 표시 · 검색으로 좁혀보세요`)
+            );
+        }
+        visible.forEach((item) => {
             const label = getLabelByLang(item.labels, lang);
             const kcal = item.nutrition?.kcal ?? '-';
             const fiber = item.nutrition?.fiberG ?? '-';
@@ -182,7 +196,12 @@ export const openFoodSearchModal = (store, options = {}) => {
         typeSelect.value = options.initialType;
     }
     renderList('');
-    searchInput.addEventListener('input', (event) => renderList(event.target.value));
+    let searchTimerId = null;
+    searchInput.addEventListener('input', (event) => {
+        const value = event.target.value;
+        if (searchTimerId) clearTimeout(searchTimerId);
+        searchTimerId = setTimeout(() => renderList(value), SEARCH_DEBOUNCE_MS);
+    });
     categorySelect.addEventListener('change', () => renderList(searchInput.value));
     cuisineSelect.addEventListener('change', () => renderList(searchInput.value));
     sortSelect.addEventListener('change', () => renderList(searchInput.value));
@@ -225,12 +244,11 @@ export const openFoodSearchModal = (store, options = {}) => {
         }
         updateUserDb(store, (userdb) => {
             const dateKey = userdb.meta.selectedDate.diet;
-            const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-            const logId = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+            const entry = ensureDietEntry(userdb, dateKey);
             const timeHHMM = coerceTimeHHMM(getNowHHMM());
             const createdAt = combineDateAndTime(dateKey, timeHHMM) || new Date().toISOString();
             const mealPayload = {
-                id: logId,
+                id: createId(),
                 type,
                 name: label,
                 foodId: food.id,
@@ -251,11 +269,7 @@ export const openFoodSearchModal = (store, options = {}) => {
                 sodiumMg: scaled.sodiumMg,
                 potassiumMg: scaled.potassiumMg
             };
-            entry.meals = entry.meals.concat({ ...mealPayload, createdAt, timeHHMM });
-            entry.logs = Array.isArray(entry.logs) ? entry.logs : [];
             entry.logs.push({ ...mealPayload, kind: 'meal', createdAt, timeHHMM });
-            userdb.diet[dateKey] = entry;
-            userdb.updatedAt = new Date().toISOString();
         });
         closeModal();
     });
@@ -296,10 +310,10 @@ export const openDietEditModal = (store, { id }) => {
     const { userdb, settings } = store.getState();
     const foodUnit = settings.units?.food || 'g';
     const dateKey = userdb.meta.selectedDate.diet;
-    const entry = userdb.diet[dateKey] || { meals: [], waterMl: 0 };
-    const target = entry.meals.find((meal) => meal.id === id);
+    const target = getMealLogs(getDietEntry(userdb, dateKey)).find((log) => log.id === id);
     if (!target) return;
-    const food = target.foodId ? FOOD_DB.find((item) => item.id === target.foodId) : null;
+    // 기록에 담긴 영양 스냅샷으로 재계산한다(음식 DB를 다시 불러올 필요가 없다).
+    const food = target.nutrition ? { nutrition: target.nutrition, serving: target.serving } : null;
     const servingSize = food?.serving?.size || 1;
     const amountG = target.amountUnit === 'oz' ? ozToG(target.amount) : Number(target.amount || 0);
     const displayAmount = target.amountUnit === 'serving'
@@ -375,8 +389,8 @@ export const openDietEditModal = (store, { id }) => {
             };
             if (!name) return false;
             updateUserDb(store, (nextDb) => {
-                const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
-                const nextTarget = nextEntry.meals.find((meal) => meal.id === id);
+                const nextEntry = ensureDietEntry(nextDb, dateKey);
+                const nextTarget = nextEntry.logs.find((log) => log.id === id);
                 if (!nextTarget) return;
                 const createdAt = combineDateAndTime(dateKey, timeHHMM) || nextTarget.createdAt || new Date().toISOString();
                 nextTarget.name = name;
@@ -409,25 +423,6 @@ export const openDietEditModal = (store, { id }) => {
                 nextTarget.proteinG = readNumber('proteinG', nextTarget.proteinG);
                 nextTarget.carbG = readNumber('carbG', nextTarget.carbG);
                 nextTarget.fatG = readNumber('fatG', nextTarget.fatG);
-                if (Array.isArray(nextEntry.logs)) {
-                    const logTarget = nextEntry.logs.find((log) => log.id === id);
-                    if (logTarget) {
-                        logTarget.kind = 'meal';
-                        logTarget.type = type;
-                        logTarget.name = nextTarget.name;
-                        logTarget.amount = nextTarget.amount;
-                        logTarget.amountUnit = nextTarget.amountUnit;
-                        logTarget.kcal = nextTarget.kcal;
-                        logTarget.proteinG = nextTarget.proteinG;
-                        logTarget.carbG = nextTarget.carbG;
-                        logTarget.fatG = nextTarget.fatG;
-                        logTarget.foodId = nextTarget.foodId;
-                        logTarget.timeHHMM = timeHHMM;
-                        logTarget.createdAt = createdAt;
-                    }
-                }
-                nextDb.diet[dateKey] = nextEntry;
-                nextDb.updatedAt = new Date().toISOString();
             });
             return true;
         },
@@ -437,13 +432,8 @@ export const openDietEditModal = (store, { id }) => {
                 return false;
             }
             updateUserDb(store, (nextDb) => {
-                const nextEntry = nextDb.diet[dateKey] || { meals: [], waterMl: 0 };
-                nextEntry.meals = nextEntry.meals.filter((meal) => meal.id !== id);
-                if (Array.isArray(nextEntry.logs)) {
-                    nextEntry.logs = nextEntry.logs.filter((log) => log.id !== id);
-                }
-                nextDb.diet[dateKey] = nextEntry;
-                nextDb.updatedAt = new Date().toISOString();
+                const nextEntry = ensureDietEntry(nextDb, dateKey);
+                nextEntry.logs = nextEntry.logs.filter((log) => log.id !== id);
             });
         }
     });

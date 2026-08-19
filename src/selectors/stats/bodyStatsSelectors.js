@@ -1,11 +1,11 @@
 import { aggregateBodyTrend } from '../../services/analytics/bodyAgg.js';
+import { createStatsCache, statsCacheKey } from './cache.js';
 
-const cache = new Map();
+const cache = createStatsCache();
 
-const getKey = (state, suffix) => `${state.userdb.updatedAt}:${suffix}`;
 
 export const selectBodyTrend = (state, range, metricKey = 'weightKg') => {
-    const key = getKey(state, `body:${range.key}:${metricKey}`);
+    const key = statsCacheKey(state, `body:${range.key}:${metricKey}`);
     if (cache.has(key)) return cache.get(key);
     const result = aggregateBodyTrend({
         userdb: state.userdb,
