@@ -1,10 +1,26 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+// 배포는 저장소 루트를 그대로 서빙하는 방식(GitHub Pages)이라 아이콘도 루트에 둔다.
+// public/에 두면 정적 서빙에서 404가 나므로, 빌드 때만 루트 파일을 dist로 복사한다.
+const ROOT_ASSETS = ['icon.svg', 'apple-touch-icon.png', 'favicon.ico'];
+
+const copyRootAssets = () => ({
+    name: 'cadence-copy-root-assets',
+    generateBundle() {
+        ROOT_ASSETS.forEach((fileName) => {
+            this.emitFile({ type: 'asset', fileName, source: readFileSync(fileName) });
+        });
+    }
+});
 
 export default defineConfig({
     // 정적 호스팅(GitHub Pages 하위 경로 포함) 어디에 올려도 동작하도록 상대 경로로 빌드한다.
     base: './',
+    publicDir: false,
     plugins: [
+        copyRootAssets(),
         VitePWA({
             registerType: 'autoUpdate',
             includeAssets: ['icon.svg', 'apple-touch-icon.png'],
