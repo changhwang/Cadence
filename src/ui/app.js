@@ -20,11 +20,20 @@ const handleActionClick = (store, event) => {
     if (handleBackupAction(store, action)) return;
 };
 
+let lastRenderedRoute = null;
+
 const render = (store) => {
     const state = store.getState();
     renderSaveBanner(store);
     renderTabBar({ route: state.ui.route });
     renderView({ route: state.ui.route, store });
+
+    // #main-content가 스크롤 컨테이너라 화면을 바꿔도 이전 스크롤 위치가 남는다.
+    // 화면이 실제로 바뀔 때만 맨 위로 올린다(같은 화면 내 갱신은 위치 유지).
+    if (state.ui.route !== lastRenderedRoute) {
+        lastRenderedRoute = state.ui.route;
+        document.getElementById('main-content')?.scrollTo({ top: 0 });
+    }
 };
 
 export const initApp = (store) => {

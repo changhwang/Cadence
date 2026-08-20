@@ -1,4 +1,4 @@
-import { el } from '../../utils/dom.js';
+import { el, keepScroll } from '../../utils/dom.js';
 import { todayIso } from '../../utils/date.js';
 import { GROUP_ORDER } from '../../data/muscleGroups.js';
 import { renderBodyMap } from '../components/BodyMap.js';
@@ -770,7 +770,7 @@ const renderNutritionQualityView = (container, store) => {
     );
 };
 
-export const renderStatsView = (container, store, route) => {
+const renderStatsViewInner = (container, store, route) => {
     container.textContent = '';
     const lang = store.getState().settings.lang || 'ko';
     Object.values(statsState).forEach((state) => {
@@ -847,3 +847,5 @@ export const renderStatsView = (container, store, route) => {
     container.appendChild(controls);
     container.appendChild(placeholder);
 };
+
+export const renderStatsView = keepScroll(renderStatsViewInner);

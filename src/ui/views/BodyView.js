@@ -1,4 +1,4 @@
-import { el } from '../../utils/dom.js';
+import { el, keepScroll } from '../../utils/dom.js';
 import { addDays, todayIso } from '../../utils/date.js';
 import { openBodyLogModal } from '../modals/bodyModals.js';
 import { updateUserDb } from '../store/userDb.js';
@@ -190,7 +190,7 @@ let heatmapMonthISO = '';
 let bodyTrendRangeDays = 30;
 let activeBodyMetric = 'weight';
 
-export const renderBodyView = (container, store) => {
+const renderBodyViewInner = (container, store) => {
     container.textContent = '';
 
     const { userdb, settings } = store.getState();
@@ -198,8 +198,10 @@ export const renderBodyView = (container, store) => {
     const entry = getBodyEntry(userdb, dateKey);
     const weightUnit = settings.units?.weight || 'kg';
     const heightUnit = settings.units?.height || 'cm';
+    // 히트맵은 항상 이번 달로 시작한다. (선택된 날짜를 따르면 지난달을 보다가
+    // 다른 탭에 갔다 와도 그 달이 계속 남아 "왜 오늘이 아니지?"가 된다)
     if (!heatmapMonthISO) {
-        heatmapMonthISO = dateKey.slice(0, 7);
+        heatmapMonthISO = todayIso().slice(0, 7);
     }
     const displayWeightValue = (value) => {
         if (value === '' || value === null || value === undefined) return null;
@@ -463,3 +465,5 @@ export const renderBodyView = (container, store) => {
         });
     }
 };
+
+export const renderBodyView = keepScroll(renderBodyViewInner);
