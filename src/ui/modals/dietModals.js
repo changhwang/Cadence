@@ -582,7 +582,7 @@ export const openNutrientDetailModal = (store, options = {}) => {
     const list = el('div', { className: 'list' });
     if (contributions.length === 0) {
         list.appendChild(
-            el('div', { className: 'list-item', style: { padding: '16px', textAlign: 'center', color: '#9AA3AF' } }, '기록된 데이터가 없습니다.')
+            el('div', { className: 'list-item', style: { padding: '16px', textAlign: 'center', color: 'var(--text-muted)' } }, '기록된 데이터가 없습니다.')
         );
     } else {
         contributions.forEach((item) => {
@@ -591,11 +591,11 @@ export const openNutrientDetailModal = (store, options = {}) => {
                 { className: 'list-item' },
                 el('div', { className: 'list-item-main' },
                     el('div', { className: 'list-item-title' }, item.name),
-                    el('div', { className: 'list-item-subtitle', style: { fontSize: '13px', color: '#9AA3AF', marginTop: '4px' } }, item.time)
+                    el('div', { className: 'list-item-subtitle', style: { fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' } }, item.time)
                 ),
                 el('div', { className: 'list-item-right' },
                     el('div', { style: { fontWeight: '600', fontSize: '15px' } }, `${item.amount} ${item.unit}`),
-                    el('div', { style: { fontSize: '12px', color: '#9AA3AF', marginTop: '2px' } }, `${item.pct}%`)
+                    el('div', { style: { fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' } }, `${item.pct}%`)
                 )
             );
             list.appendChild(itemEl);

@@ -8,6 +8,7 @@ import { updateUserDb } from '../store/userDb.js';
 import { fromDisplayHeight, fromDisplayWeight } from '../../utils/units.js';
 import { buildGoalModeSpec } from '../goals/goalUtils.js';
 import { showStatusBanner } from '../components/StatusBanner.js';
+import { applyTheme, coerceTheme } from '../theme.js';
 
 export const handleSettingsSubmit = (store, event, form) => {
     event.preventDefault();
@@ -31,6 +32,7 @@ export const handleSettingsSubmit = (store, event, form) => {
     const profileWeightRaw = form.querySelector('[name="profileWeight"]')?.value || '';
     const profileActivity = form.querySelector('[name="profileActivity"]')?.value || 'light';
     const lang = form.querySelector('[name="lang"]')?.value || 'ko';
+    const theme = coerceTheme(form.querySelector('[name="theme"]')?.value);
     const profileBirth = parseDateInput(profileBirthRaw, dateFormat) || '';
     const profileHeight = profileHeightRaw === ''
         ? ''
@@ -55,6 +57,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         dateFormat,
         dateSync,
         timeFormat,
+        theme,
         lang,
         units: {
             ...prevSettings.units,
@@ -83,6 +86,7 @@ export const handleSettingsSubmit = (store, event, form) => {
         }
     };
 
+    applyTheme(theme);
     store.dispatch({ type: 'UPDATE_SETTINGS', payload: nextSettings });
     updateUserDb(store, (nextDb) => {
         nextDb.profile = {
@@ -148,7 +152,9 @@ export const handleBackupImportChange = async (store, input) => {
         const payload = await parseImportPayload(file);
         // 복원 데이터도 로드 경로와 동일하게 기본값 병합 + 마이그레이션을 거친다.
         store.dispatch({ type: 'UPDATE_USERDB', payload: hydrateUserDb(payload.userdb) });
-        store.dispatch({ type: 'UPDATE_SETTINGS', payload: hydrateSettings(payload.settings) });
+        const restoredSettings = hydrateSettings(payload.settings);
+        applyTheme(restoredSettings.theme);
+        store.dispatch({ type: 'UPDATE_SETTINGS', payload: restoredSettings });
         showStatusBanner({ message: '복원이 완료되었습니다.', tone: 'success' });
     } catch (error) {
         showStatusBanner({

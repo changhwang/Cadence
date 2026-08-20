@@ -1,6 +1,7 @@
 import { STORAGE_KEYS } from './constants.js';
 import { createDefaultSettings, createDefaultUserDb } from './schema.js';
 import { migrateUserDb } from './migrations.js';
+import { coerceTheme } from '../ui/theme.js';
 
 const safeParse = (raw, fallback) => {
     if (!raw) return fallback;
@@ -49,6 +50,7 @@ export const hydrateSettings = (input) => {
     if (merged.timeFormat !== 'H12' && merged.timeFormat !== 'H24') {
         merged.timeFormat = 'H24';
     }
+    merged.theme = coerceTheme(merged.theme);
     if (typeof merged.sound.volume === 'number' && merged.sound.volume <= 1) {
         merged.sound.volume = Math.round(merged.sound.volume * 100);
     }

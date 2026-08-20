@@ -72,7 +72,7 @@ const formatValue = (value) => {
 const fillFor = (value, max) => {
     if (!value || max <= 0) return 'var(--bodymap-empty)';
     const intensity = Math.min(1, value / max);
-    return `rgba(0, 122, 255, ${(0.15 + intensity * 0.75).toFixed(3)})`;
+    return `rgba(var(--accent-rgb), ${(0.15 + intensity * 0.75).toFixed(3)})`;
 };
 
 const buildPanel = ({ title, neutrals, regions, groupTotals, max, labels, metricLabel }) => {

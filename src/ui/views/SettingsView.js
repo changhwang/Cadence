@@ -4,6 +4,7 @@ import { addDays, formatDisplay, todayIso } from '../../utils/date.js';
 import { roundWeight, toDisplayHeight, toDisplayWeight } from '../../utils/units.js';
 import { getGoalModeLabel } from '../goals/goalUtils.js';
 import { FRAMEWORK_OPTIONS, GOAL_OPTIONS, buildOptionSelect, getFrameworkLabel } from '../goals/goalOptions.js';
+import { THEME_OPTIONS, coerceTheme } from '../theme.js';
 
 export const renderSettingsView = (container, store) => {
     container.textContent = '';
@@ -220,6 +221,17 @@ export const renderSettingsView = (container, store) => {
                 value: settings.sound.volume
             })
         )
+    );
+
+    const appearanceSection = el(
+        'div',
+        { className: 'settings-section' },
+        el('h3', { className: 'section-title' }, '화면 테마'),
+        buildOptionSelect({
+            name: 'theme',
+            options: THEME_OPTIONS,
+            selected: coerceTheme(settings.theme)
+        })
     );
 
     const languageSection = el(
@@ -598,6 +610,7 @@ export const renderSettingsView = (container, store) => {
             { className: 'card' },
             el('div', { className: 'card-header' }, el('h3', { className: 'card-title' }, '시스템')),
             dateSection,
+            appearanceSection,
             languageSection,
             unitSection,
             soundSection,

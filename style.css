@@ -1,4 +1,12 @@
+/*
+ * 색상은 전부 토큰으로만 쓴다(하드코딩 금지). 라이트가 기본이고,
+ * 다크는 아래 두 블록에서 같은 토큰을 덮어쓴다.
+ *  - 시스템 설정 따름: prefers-color-scheme (단, 사용자가 라이트를 고르면 제외)
+ *  - 사용자가 직접 고름: html[data-theme="dark"]
+ */
 :root {
+    color-scheme: light;
+
     --ios-bg: #F2F2F7;
     --ios-card: #FFFFFF;
     --ios-blue: #007AFF;
@@ -9,10 +17,166 @@
     --ios-separator: #E5E5EA;
     --text-primary: #000000;
     --text-secondary: #8E8E93;
+
+    /* 이전에 정의 없이 쓰이던 별칭들 (해당 스타일이 무시되고 있었음) */
+    --accent: var(--ios-blue);
+    --border: var(--ios-separator);
+    --card-bg: var(--ios-card);
+    --danger: var(--ios-red);
+    --ios-bg-secondary: #F2F2F2;
+    --ios-border: var(--ios-separator);
+
+    --accent-rgb: 0, 122, 255;
+    --text-muted: #9CA3AF;
+    --text-on-accent: #FFFFFF;
+
+    --surface-muted: #F7F8FA;
+    --surface-sunken: #F0F0F0;
+    --surface-raised: #F9F9F9;
+    --surface-fill: rgba(118, 118, 128, 0.12);
+    --border-strong: #DDDDDD;
+
+    --tab-bar-bg: rgba(255, 255, 255, 0.85);
+    --tab-bar-border: rgba(0, 0, 0, 0.2);
+    --overlay-scrim: rgba(0, 0, 0, 0.5);
+    --overlay-solid: rgba(0, 0, 0, 0.9);
+    --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.06);
+    --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    --summary-gradient: linear-gradient(135deg, #2563EB, #3B82F6);
+    --summary-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+    --focus-ring: rgba(59, 130, 246, 0.35);
+
+    --status-good: #4ECDC4;
+    --status-warn: #FFB347;
+    --status-bad: #FF6B6B;
+
+    --banner-error-bg: #FFECEC;
+    --banner-error-border: #F5B5B5;
+    --banner-error-text: #B42318;
+    --banner-success-bg: #ECFFF2;
+    --banner-success-border: #B9E8C9;
+    --banner-success-text: #16794C;
+
+    --chart-axis: #E5E5EA;
+    --chart-label: #AAAAAA;
+    --bodymap-empty: #E9ECF2;
+    --bodymap-neutral: #DDE1E8;
+    --bodymap-outline: #FFFFFF;
+
     --radius-l: 12px;
     --radius-m: 8px;
     --safe-area-top: env(safe-area-inset-top);
     --safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+
+        --ios-bg: #000000;
+        --ios-card: #1C1C1E;
+        --ios-blue: #0A84FF;
+        --ios-green: #30D158;
+        --ios-red: #FF453A;
+        --ios-orange: #FF9F0A;
+        --ios-gray: #98989F;
+        --ios-separator: #38383A;
+        --text-primary: #FFFFFF;
+        --text-secondary: #98989F;
+
+        --ios-bg-secondary: #2C2C2E;
+        --accent-rgb: 10, 132, 255;
+        --text-muted: #8E8E93;
+
+        --surface-muted: #1C1C1E;
+        --surface-sunken: #2C2C2E;
+        --surface-raised: #2C2C2E;
+        --surface-fill: rgba(118, 118, 128, 0.24);
+        --border-strong: #48484A;
+
+        --tab-bar-bg: rgba(28, 28, 30, 0.85);
+        --tab-bar-border: rgba(255, 255, 255, 0.15);
+        --overlay-scrim: rgba(0, 0, 0, 0.7);
+        --overlay-solid: rgba(0, 0, 0, 0.95);
+        --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.5);
+        --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.6);
+
+        --summary-gradient: linear-gradient(135deg, #1D4ED8, #2563EB);
+        --summary-shadow: 0 10px 20px rgba(0, 0, 0, 0.45);
+        --focus-ring: rgba(96, 165, 250, 0.45);
+
+        --status-good: #2DD4BF;
+        --status-warn: #FBBF24;
+        --status-bad: #F87171;
+
+        --banner-error-bg: #3B1517;
+        --banner-error-border: #7F2A2E;
+        --banner-error-text: #FF9A94;
+        --banner-success-bg: #10291B;
+        --banner-success-border: #205F3C;
+        --banner-success-text: #6EE7A8;
+
+        --chart-axis: #38383A;
+        --chart-label: #6C6C70;
+        --bodymap-empty: #2C2C2E;
+        --bodymap-neutral: #3A3A3C;
+        --bodymap-outline: #1C1C1E;
+    }
+}
+
+/* 사용자가 다크로 고정한 경우 (시스템 설정과 무관) */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --ios-bg: #000000;
+    --ios-card: #1C1C1E;
+    --ios-blue: #0A84FF;
+    --ios-green: #30D158;
+    --ios-red: #FF453A;
+    --ios-orange: #FF9F0A;
+    --ios-gray: #98989F;
+    --ios-separator: #38383A;
+    --text-primary: #FFFFFF;
+    --text-secondary: #98989F;
+
+    --ios-bg-secondary: #2C2C2E;
+    --accent-rgb: 10, 132, 255;
+    --text-muted: #8E8E93;
+
+    --surface-muted: #1C1C1E;
+    --surface-sunken: #2C2C2E;
+    --surface-raised: #2C2C2E;
+    --surface-fill: rgba(118, 118, 128, 0.24);
+    --border-strong: #48484A;
+
+    --tab-bar-bg: rgba(28, 28, 30, 0.85);
+    --tab-bar-border: rgba(255, 255, 255, 0.15);
+    --overlay-scrim: rgba(0, 0, 0, 0.7);
+    --overlay-solid: rgba(0, 0, 0, 0.95);
+    --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.5);
+    --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.6);
+
+    --summary-gradient: linear-gradient(135deg, #1D4ED8, #2563EB);
+    --summary-shadow: 0 10px 20px rgba(0, 0, 0, 0.45);
+    --focus-ring: rgba(96, 165, 250, 0.45);
+
+    --status-good: #2DD4BF;
+    --status-warn: #FBBF24;
+    --status-bad: #F87171;
+
+    --banner-error-bg: #3B1517;
+    --banner-error-border: #7F2A2E;
+    --banner-error-text: #FF9A94;
+    --banner-success-bg: #10291B;
+    --banner-success-border: #205F3C;
+    --banner-success-text: #6EE7A8;
+
+    --chart-axis: #38383A;
+    --chart-label: #6C6C70;
+    --bodymap-empty: #2C2C2E;
+    --bodymap-neutral: #3A3A3C;
+    --bodymap-outline: #1C1C1E;
 }
 
 * {
@@ -68,10 +232,10 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--tab-bar-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 0.5px solid rgba(0, 0, 0, 0.2);
+    border-top: 0.5px solid var(--tab-bar-border);
     display: flex;
     justify-content: space-around;
     padding-bottom: var(--safe-area-bottom);
@@ -125,7 +289,7 @@ body {
     border-radius: var(--radius-l);
     padding: 16px;
     margin-bottom: 14px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-card);
 }
 
 .modal-header-row {
@@ -137,8 +301,8 @@ body {
 
 .modal-close {
     border: none;
-    background: #F2F3F5;
-    color: #6B7280;
+    background: var(--surface-sunken);
+    color: var(--text-secondary);
     width: 28px;
     height: 28px;
     border-radius: 999px;
@@ -148,9 +312,9 @@ body {
 }
 
 .daily-summary {
-    background: linear-gradient(135deg, #2563EB, #3B82F6);
-    color: #fff;
-    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+    background: var(--summary-gradient);
+    color: var(--text-on-accent);
+    box-shadow: var(--summary-shadow);
     padding: 14px 16px;
 }
 
@@ -172,13 +336,13 @@ body {
 .daily-summary .summary-label {
     font-size: 12px;
     letter-spacing: -0.2px;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.82);
 }
 
 .daily-summary .summary-value {
     font-size: 16px;
     font-weight: 700;
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 .diet-summary-card {
@@ -239,7 +403,7 @@ body {
 
 .diet-summary-target {
     font-size: 10px;
-    color: #9CA3AF;
+    color: var(--text-muted);
     grid-column: 2;
     grid-row: 3;
 }
@@ -287,15 +451,15 @@ body {
 }
 
 .status-banner.is-error {
-    background: #ffecec;
-    border-color: #f5b5b5;
-    color: #b42318;
+    background: var(--banner-error-bg);
+    border-color: var(--banner-error-border);
+    color: var(--banner-error-text);
 }
 
 .status-banner.is-success {
-    background: #ecfff2;
-    border-color: #b9e8c9;
-    color: #16794c;
+    background: var(--banner-success-bg);
+    border-color: var(--banner-success-border);
+    color: var(--banner-success-text);
 }
 
 .badge-row {
@@ -618,7 +782,7 @@ h2 {
 /* Buttons */
 .btn {
     background: var(--ios-blue);
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     padding: 10px 18px;
     border-radius: var(--radius-l);
@@ -633,7 +797,7 @@ h2 {
 }
 
 .btn-secondary {
-    background: rgba(118, 118, 128, 0.12);
+    background: var(--surface-fill);
     color: var(--ios-blue);
 }
 
@@ -652,7 +816,7 @@ h2 {
 
 .btn.active {
     background: var(--ios-blue);
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 .btn-secondary:active {
@@ -679,7 +843,7 @@ h2 {
 }
 
 .badge {
-    background: rgba(0, 122, 255, 0.12);
+    background: rgba(var(--accent-rgb), 0.12);
     color: var(--ios-blue);
     font-size: 12px;
     font-weight: 600;
@@ -706,7 +870,7 @@ h2 {
 
 .list-meta {
     font-size: 11px;
-    color: #9CA3AF;
+    color: var(--text-muted);
     margin-left: auto;
 }
 
@@ -728,7 +892,7 @@ h2 {
 
 .timeline-label {
     font-size: 11px;
-    color: #9CA3AF;
+    color: var(--text-muted);
     font-weight: 600;
 }
 
@@ -755,7 +919,7 @@ h2 {
 }
 
 .list-item:active {
-    background-color: #F2F2F2;
+    background-color: var(--ios-bg-secondary);
 }
 
 .list-title {
@@ -765,7 +929,7 @@ h2 {
 
 .list-subtitle {
     font-size: 13px;
-    color: #6c6c70;
+    color: var(--text-secondary);
     margin-top: 3px;
 }
 
@@ -776,7 +940,7 @@ h2 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-scrim);
     z-index: 1000;
     display: none;
     align-items: flex-end;
@@ -858,13 +1022,13 @@ h2 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--overlay-solid);
     z-index: 2000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .pulse-anim {
@@ -892,7 +1056,8 @@ select {
     padding: 10px 12px;
     border-radius: var(--radius-m);
     border: 1px solid var(--ios-separator);
-    background: white;
+    background: var(--ios-card);
+    color: var(--text-primary);
     font-size: 16px;
     margin-bottom: 12px;
 }
@@ -917,7 +1082,7 @@ input::placeholder {
 
 /* Progress Bar */
 .progress-bar-bg {
-    background: #E5E5EA;
+    background: var(--ios-separator);
     height: 8px;
     border-radius: 4px;
     overflow: hidden;
@@ -948,7 +1113,7 @@ input::placeholder {
 }
 
 .date-bar .btn {
-    background: rgba(118, 118, 128, 0.12);
+    background: var(--surface-fill);
     color: var(--ios-blue);
 }
 
@@ -1113,7 +1278,7 @@ label.input-label input[type="checkbox"] {
 }
 
 .badge-ok {
-    background: rgba(52, 199, 89, 0.15);
+    background: rgba(52, 199, 89, 0.18);
     color: var(--ios-green);
 }
 
@@ -1131,7 +1296,7 @@ label.input-label input[type="checkbox"] {
 .progress-bar {
     height: 8px;
     border-radius: 999px;
-    background: #E5E5EA;
+    background: var(--ios-separator);
     overflow: hidden;
     position: relative;
 }
@@ -1299,7 +1464,7 @@ input[type="range"].range-full {
 
 .goal-calendar-cell.is-today {
     border-color: var(--accent);
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+    box-shadow: 0 0 0 1px var(--focus-ring);
 }
 
 .heatmap-grid {
@@ -1321,7 +1486,7 @@ input[type="range"].range-full {
     padding: 6px 0;
     border-radius: 8px;
     color: var(--text-primary);
-    background: rgba(0, 122, 255, 0.08);
+    background: rgba(var(--accent-rgb), 0.08);
     cursor: pointer;
 }
 
@@ -1332,8 +1497,8 @@ input[type="range"].range-full {
 }
 
 .heatmap-cell.is-today {
-    border: 1px solid rgba(0, 122, 255, 0.5);
-    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.2);
+    border: 1px solid rgba(var(--accent-rgb), 0.5);
+    box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.2);
 }
 
 .heatmap-nav {
@@ -1426,8 +1591,8 @@ input[type="range"].range-full {
 
 .stats-mode .btn.is-active,
 .stats-range .btn.is-active {
-    background: rgba(0, 122, 255, 0.12);
-    border-color: rgba(0, 122, 255, 0.35);
+    background: rgba(var(--accent-rgb), 0.12);
+    border-color: rgba(var(--accent-rgb), 0.35);
     color: var(--ios-blue);
 }
 
@@ -1455,8 +1620,8 @@ input[type="range"].range-full {
 }
 
 .stats-metric.is-active {
-    border-color: rgba(0, 122, 255, 0.4);
-    background: rgba(0, 122, 255, 0.08);
+    border-color: rgba(var(--accent-rgb), 0.4);
+    background: rgba(var(--accent-rgb), 0.08);
 }
 
 .stats-metric-label {
@@ -1484,7 +1649,7 @@ input[type="range"].range-full {
 .balance-bar {
     position: relative;
     height: 8px;
-    background: #f0f0f0;
+    background: var(--surface-sunken);
     border-radius: 4px;
     overflow: hidden;
 }
@@ -1494,7 +1659,7 @@ input[type="range"].range-full {
     left: 0;
     top: 0;
     height: 100%;
-    background: #ddd;
+    background: var(--border-strong);
 }
 
 .balance-bar-cur {
@@ -1526,7 +1691,7 @@ input[type="range"].range-full {
 
 .dist-track {
     height: 6px;
-    background: #f0f0f0;
+    background: var(--surface-sunken);
     border-radius: 999px;
     overflow: hidden;
 }
@@ -1567,7 +1732,7 @@ input[type="range"].range-full {
 }
 
 .legend-previous {
-    background: #ddd;
+    background: var(--border-strong);
 }
 
 .legend-text {
@@ -1617,7 +1782,7 @@ input[type="range"].range-full {
     border-radius: 12px;
     padding: 10px;
     text-align: center;
-    background: #f9f9f9;
+    background: var(--surface-raised);
 }
 
 .stats-mini-label {
@@ -1633,7 +1798,7 @@ input[type="range"].range-full {
 
 .stats-segment {
     display: flex;
-    background: #f0f0f0;
+    background: var(--surface-sunken);
     border-radius: 10px;
     padding: 3px;
     gap: 4px;
@@ -1652,9 +1817,9 @@ input[type="range"].range-full {
 }
 
 .stats-segment-btn.is-active {
-    background: white;
+    background: var(--ios-card);
     color: var(--text-primary);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-raised);
 }
 
 /* 바디맵: 근육군별 자극량을 전/후면 실루엣에 색으로 표시 */
@@ -1665,7 +1830,6 @@ input[type="range"].range-full {
 }
 
 .body-map {
-    --bodymap-empty: #E9ECF2;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1686,7 +1850,7 @@ input[type="range"].range-full {
     gap: 6px;
     padding: 10px 6px 8px;
     border-radius: 12px;
-    background: #F7F8FA;
+    background: var(--surface-muted);
 }
 
 .body-map-svg {
@@ -1696,11 +1860,11 @@ input[type="range"].range-full {
 }
 
 .body-map-neutral {
-    fill: #DDE1E8;
+    fill: var(--bodymap-neutral);
 }
 
 .body-map-region {
-    stroke: #FFFFFF;
+    stroke: var(--bodymap-outline);
     stroke-width: 1;
     transition: fill 0.25s ease;
 }
@@ -1775,8 +1939,8 @@ input[type="range"].range-full {
 }
 
 .body-stat-box.is-active {
-    border-color: rgba(0, 122, 255, 0.45);
-    background: rgba(0, 122, 255, 0.08);
+    border-color: rgba(var(--accent-rgb), 0.45);
+    background: rgba(var(--accent-rgb), 0.08);
 }
 
 .body-stat-title {
@@ -1840,7 +2004,7 @@ input[type="range"].range-full {
 }
 
 .body-trend-box {
-    background: #f9f9f9;
+    background: var(--surface-raised);
     border-radius: 14px;
     padding: 16px;
 }

@@ -174,7 +174,7 @@ const renderHeatmap = ({ monthISO, days, onSelectDate }) => {
             'div',
             {
                 className: `heatmap-cell${isEmpty ? ' is-empty' : ''}${isToday ? ' is-today' : ''}`,
-                style: isEmpty ? '' : `background: rgba(0, 122, 255, ${0.1 + intensity * 0.8});`
+                style: isEmpty ? '' : `background: rgba(var(--accent-rgb), ${0.1 + intensity * 0.8});`
             },
             String(dayLabel)
         );

@@ -215,7 +215,7 @@ export const renderDietView = (container, store) => {
         return Math.round(numeric);
     };
     const getHealthColor = (current, target, type) => {
-        if (!target) return '#9AA3AF';
+        if (!target) return 'var(--text-muted)';
         const pct = (current / target) * 100;
         const ranges = {
             calories: { healthy: [80, 120], warning: [50, 150] },
@@ -226,9 +226,9 @@ export const renderDietView = (container, store) => {
             sodium: { healthy: [30, 100], warning: [15, 130] }
         };
         const range = ranges[type] || ranges.calories;
-        if (pct >= range.healthy[0] && pct <= range.healthy[1]) return '#4ECDC4';
-        if (pct >= range.warning[0] && pct <= range.warning[1]) return '#FFB347';
-        return '#FF6B6B';
+        if (pct >= range.healthy[0] && pct <= range.healthy[1]) return 'var(--status-good)';
+        if (pct >= range.warning[0] && pct <= range.warning[1]) return 'var(--status-warn)';
+        return 'var(--status-bad)';
     };
     const buildSummaryItem = ({ icon, label, current, target, unit, type, displayValue, displayTarget, nutrientType }) => {
         const pct = target > 0 ? Math.round((current / target) * 100) : 0;

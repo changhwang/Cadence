@@ -36,6 +36,7 @@ export const createDefaultSettings = () => ({
     dateFormat: 'YMD',
     timeFormat: 'H24',
     dateSync: true,
+    theme: 'auto',
     lang: 'ko',
     units: { height: 'cm', weight: 'kg', water: 'ml', food: 'g', workout: 'kg' },
     sound: { timerEnabled: true, volume: 100 },

@@ -194,9 +194,9 @@ const renderBarChart = ({ items, metricLabel }) => {
     const svg = `
         <svg viewBox="0 0 ${width} 65" class="stats-chart-svg" aria-label="${metricLabel}">
             ${bars}
-            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#eee" stroke-width="1"></line>
-            <text x="0" y="63" font-size="5" fill="#aaa">Min: 0</text>
-            <text x="${width}" y="63" font-size="5" fill="#aaa" text-anchor="end">Max: ${Math.round(maxValue)}</text>
+            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--chart-axis)" stroke-width="1"></line>
+            <text x="0" y="63" font-size="5" fill="var(--chart-label)">Min: 0</text>
+            <text x="${width}" y="63" font-size="5" fill="var(--chart-label)" text-anchor="end">Max: ${Math.round(maxValue)}</text>
         </svg>
     `;
     return el('div', { className: 'stats-chart', innerHTML: svg });
@@ -485,7 +485,7 @@ const renderDistributionView = (container, store) => {
                     { className: 'dist-track' },
                     el('div', {
                         className: 'dist-fill',
-                        style: `background: rgba(0, 122, 255, ${0.2 + intensity * 0.8}); width:${Math.min(
+                        style: `background: rgba(var(--accent-rgb), ${0.2 + intensity * 0.8}); width:${Math.min(
                             100,
                             intensity * 100
                         )}%`
