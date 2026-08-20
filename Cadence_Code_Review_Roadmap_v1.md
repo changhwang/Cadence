@@ -185,8 +185,12 @@
 - [x] PWA (`vite-plugin-pwa`, autoUpdate) — manifest + 서비스워커 생성, precache 10개(495KB)에 foods 청크까지 포함해 **오프라인 음식 검색 가능**
 - [x] 서비스워커 활성화 확인 (크롬 DevTools > Application: `sw.js` activated and running)
 
-> ⚠️ 이제 앱은 **Vite 없이는 실행되지 않습니다** (`import ... from 'lucide'` bare specifier 사용).
-> `python -m http.server` 대신 `npm run dev`를 쓰세요. `.claude/launch.json`도 교체해 두었습니다.
+> ℹ️ 앱은 **빌드 없이 정적 서버로도 그대로 실행됩니다.** (저장소 루트를 그대로 서빙하는 배포 방식 유지)
+> 개발 시에는 `npm run dev`가 편하지만 필수는 아닙니다.
+>
+> 한때 lucide를 npm 패키지로 import하면서 bare specifier 때문에 정적 서빙이 깨진 적이 있습니다
+> (`Failed to resolve module specifier "lucide"` → 흰 화면). 지금은 아이콘 데이터를
+> `src/ui/icons.js`에 직접 담아 외부 의존성 없이 동작합니다.
 
 ### Phase 4 — 성능 ✅ 주요 항목 완료
 - [x] **foods.js(519KB) 지연 로드** — `data/foodDb.js`로 분리, 초기 로딩 모듈에서 제외 확인
